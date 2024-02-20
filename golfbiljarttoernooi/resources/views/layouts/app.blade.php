@@ -14,7 +14,11 @@
         <nav>
             <ul>
                 
-                <!-- Voeg hier links toe naar andere secties van je applicatie -->
+            <li><a href="{{ url('/') }}">Home</a></li>
+        <li><a href="{{ route('games.index') }}">Wedstrijdkalender</a></li>
+        <li><a href="{{ route('divisions.index') }}">Divisies</a></li>
+        <li><a href="{{ route('teams.index') }}">Teams</a></li>
+        <li><a href="{{ route('players.index') }}">Spelers</a></li>
             </ul>
         </nav>
     </header>

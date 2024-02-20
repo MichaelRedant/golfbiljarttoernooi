@@ -49,13 +49,12 @@ Route::put('/games/{game}', [GameController::class, 'update'])->name('games.upda
 Route::delete('/games/{game}', [GameController::class, 'destroy'])->name('games.destroy');
 Route::get('/games/calendar-data', [GameController::class, 'calendarData'])->name('games.calendar-data');
 Route::post('/games/generate', [GameController::class, 'generateMatches'])->name('games.generate');
-Route::get('/games/clear', [GameController::class, 'clearCalendar'])->name('games.clear');
+Route::delete('/games/clear', [GameController::class, 'clearCalendar'])->name('games.clear');
 
-
-
-
-
-// Voeg hier routes toe voor andere acties voor wedstrijden
+//home
+Route::get('/', function () {
+    return view('home');
+})->name('home');
 
 // Routes voor Manches
 Route::get('/manches', [MancheController::class, 'index'])->name('manches.index');

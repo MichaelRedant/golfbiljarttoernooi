@@ -12,30 +12,29 @@
             @csrf
             <button type="submit" class="btn btn-primary">Genereer Wedstrijden</button>
         </form>
-        <a href="{{ route('games.clear') }}" class="btn btn-danger" onclick="return confirm('Weet je zeker dat je de kalender wilt verwijderen? Dit kan niet ongedaan gemaakt worden.');">Kalender Verwijderen</a>
+
+        <form action="{{ route('games.clear') }}" method="POST" class="d-inline">
+    @csrf
+    @method('DELETE')
+    <button type="submit" class="btn btn-danger" onclick="return confirm('Weet je zeker dat je de kalender wilt verwijderen? Dit kan niet ongedaan gemaakt worden.');">
+        Kalender Verwijderen
+    </button>
+</form>
+
+
     </div>
 
-    <!-- Kalender -->
-    <div id='calendar'></div>
+    <!-- Kalender weergave -->
+    @foreach ($gamesByDate as $date => $gamesOnDate)
+        <div class="day">
+            <h2>{{ $date }}</h2>
+            @foreach ($gamesOnDate as $game)
+                <div class="game">
+                    <p>{{ $game->homeTeam->name }} vs {{ $game->awayTeam->name }} - {{ $game->home_score }} : {{ $game->away_score }} om {{ $game->start_time }} {{ $game->home_forfeit || $game->away_forfeit ? '(Forfait)' : '' }}</p>
+                    <a href="{{ route('games.show', $game->id) }}">wedstrijdformulier</a>
+                </div>
+            @endforeach
+        </div>
+    @endforeach
 </div>
-
-<!-- Voeg FullCalendar script en stijlen toe -->
-<link href='{{ asset('fullcalendar/main.css') }}' rel='stylesheet' />
-<script src='{{ asset('fullcalendar/main.js') }}'></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var calendarEl = document.getElementById('calendar');
-    var calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        events: '{{ route("games.calendar-data") }}',
-        eventClick: function(info) {
-            // Actie bij klikken op een event
-            window.location.href = info.event.url;
-            info.jsEvent.preventDefault(); // Voorkomt dat de browser naar de link navigeert
-        }
-    });
-    calendar.render();
-});
-</script>
 @endsection

@@ -11,8 +11,9 @@ class GameController extends Controller
 {
     public function index()
     {
-        $games = Game::all();
-        return view('games.index', compact('games'));
+        $games = Game::with(['homeTeam', 'awayTeam'])->orderBy('date', 'asc')->get();
+    $gamesByDate = $games->groupBy('date'); // Dit groepeert games per datum
+    return view('games.index', compact('gamesByDate'));
     }
 
     public function calendarData()
@@ -30,57 +31,60 @@ class GameController extends Controller
     }
 
     public function generateMatches()
-    {
-        $teams = Team::all()->filter(function ($team) {
-            return $team != null;
-        });
-        $numTeams = $teams->count();
-        $totalRounds = $numTeams - 1;
-        $matchesPerRound = intdiv($numTeams, 2);
-        $matchDate = Carbon::now()->next('Saturday');
+{
+    $teams = Team::all();
+    $numTeams = $teams->count();
+    $totalRounds = $numTeams - 1; // Round-robin systeem
+    $matchesPerRound = intdiv($numTeams, 2);
+    $matchDate = Carbon::now()->next('Saturday');
 
-        if ($numTeams % 2 != 0) {
-            $teams->push(null);
-            $numTeams++;
-        }
+    $schedule = [];
 
-        for ($round = 0; $round < $totalRounds; $round++) {
-            for ($match = 0; $match < $matchesPerRound; $match++) {
-                $homeTeam = $teams->get($match);
-                $awayTeam = $teams->get($numTeams - 1 - $match);
-        
-                // Zorg ervoor dat zowel thuis- als uitteams geen null zijn en daadwerkelijk instanties van Team.
-                if (!is_null($homeTeam) && !is_null($awayTeam) && $homeTeam instanceof Team && $awayTeam instanceof Team) {
-                    Game::create([
-                        'home_team_id' => $homeTeam->id,
-                        'away_team_id' => $awayTeam->id,
-                        'date' => $matchDate->format('Y-m-d'),
-                    ]);
-                }
+    // Double round-robin systeem: elk team speelt twee keer tegen elk ander team, een keer thuis en een keer uit.
+    for ($i = 0; $i < $totalRounds * 2; $i++) {
+        for ($j = 0; $j < $matchesPerRound; $j++) {
+            // Bereken home en away teams voor deze match
+            $home = ($i + $j) % $numTeams;
+            $away = ($i + $numTeams - $j) % $numTeams;
+
+            if ($home != $away) { // Voorkom dat een team tegen zichzelf speelt
+                $schedule[] = [
+                    'home_team_id' => $teams[$home]->id,
+                    'away_team_id' => $teams[$away]->id,
+                    'date' => $matchDate->copy()->addWeeks($i)->format('Y-m-d')
+                ];
             }
-            $teams = $this->rotateTeams($teams);
-            $matchDate = $matchDate->addWeek();
         }
-        
-
-        return redirect()->route('games.index')->with('success', 'Wedstrijden succesvol gegenereerd!');
     }
 
+    // Maak alle geplande games aan in de database
+    foreach ($schedule as $gameData) {
+        Game::create($gameData);
+    }
+
+    return redirect()->route('games.index')->with('success', 'Wedstrijden succesvol gegenereerd!');
+}
+
+
+    
     private function rotateTeams($teams)
-    {
-        $teamsArray = $teams->toArray();
-        $firstTeam = array_shift($teamsArray);
-        $lastTeam = array_pop($teamsArray);
-        array_unshift($teamsArray, $firstTeam);
-        array_push($teamsArray, $lastTeam);
-        return collect($teamsArray);
-    }
+{
+    $teamsArray = $teams->toArray();
+    $firstTeam = array_shift($teamsArray); // Haal het eerste team eruit
+    $teamsArray[] = array_pop($teamsArray); // Plaats het laatste team voor het laatste
+    array_unshift($teamsArray, $firstTeam); // Zet het eerste team terug op de eerste plaats
+    return collect($teamsArray); // Zet het weer om naar een collectie
+}
 
-    public function clearCalendar()
-    {
-        Game::truncate();
-        return redirect()->route('games.index')->with('success', 'Kalender succesvol verwijderd!');
-    }
+    
+
+public function clearCalendar()
+{
+    Game::truncate(); // Dit verwijdert alle records uit de 'games' tabel.
+    return redirect()->route('games.index')->with('success', 'Kalender succesvol verwijderd!');
+}
+
+
 
     public function show(Game $game)
     {
