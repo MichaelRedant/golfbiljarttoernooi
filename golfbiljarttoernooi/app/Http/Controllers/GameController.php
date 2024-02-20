@@ -91,16 +91,60 @@ public function clearCalendar()
         return view('games.show', compact('game'));
     }
 
-    public function edit(Game $game)
-    {
-        return view('games.edit', compact('game'));
+    public function editForm(Game $game)
+{
+    $homeTeamPlayers = $game->homeTeam->players;
+    $awayTeamPlayers = $game->awayTeam->players;
+
+    return view('games.match_form', compact('game', 'homeTeamPlayers', 'awayTeamPlayers'));
+}
+
+
+
+public function update(Request $request, Game $game)
+{
+    // Valideer de ingevoerde gegevens
+    $data = $request->validate([
+        'home_players' => 'required|array',
+        'home_players.*' => 'exists:players,id',
+        'home_captain' => 'required|exists:players,id',
+        'home_reserve' => 'required|exists:players,id',
+        'away_players' => 'required|array',
+        'away_players.*' => 'exists:players,id',
+        'away_captain' => 'required|exists:players,id',
+        'away_reserve' => 'required|exists:players,id',
+        'manche_scores' => 'required|array',
+        'manche_scores.*' => 'string',
+        'belle_score' => 'nullable|string'
+    ]);
+
+    // Werk de game bij met de nieuwe informatie
+    // Dit hangt af van hoe je je database en relaties hebt ingesteld
+    $game->update([
+        // Voeg hier eventuele velden toe die direct bij de Game horen
+    ]);
+
+    // Update spelers en scores - afhankelijk van je databaseontwerp
+    // Dit is een voorbeeld en moet worden aangepast aan je specifieke behoeften
+    $game->homePlayers()->sync($data['home_players']);
+    $game->awayPlayers()->sync($data['away_players']);
+
+    // Werk de scores bij - afhankelijk van je ontwerp
+    // Dit is een voorbeeld; je moet de logica aanpassen aan je database
+    $game->manches()->delete(); // Verwijder oude manche records als dat nodig is
+    foreach ($data['manche_scores'] as $score) {
+        // Voeg nieuwe manche records toe
+        $game->manches()->create(['score' => $score]);
     }
 
-    public function update(Request $request, Game $game)
-    {
-        $game->update($request->all());
-        return redirect()->route('games.index');
+    if ($data['belle_score']) {
+        // Update of voeg de belle score toe
+        $game->belle()->create(['score' => $data['belle_score']]);
     }
+
+    return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol bijgewerkt!');
+}
+
 
     public function destroy(Game $game)
     {

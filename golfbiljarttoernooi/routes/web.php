@@ -44,12 +44,13 @@ Route::delete('/players/{player}', [PlayerController::class, 'destroy'])->name('
 // Routes voor Wedstrijden
 Route::resource('games', GameController::class);
 Route::get('/games', [GameController::class, 'index'])->name('games.index');
-Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
 Route::put('/games/{game}', [GameController::class, 'update'])->name('games.update');
 Route::delete('/games/{game}', [GameController::class, 'destroy'])->name('games.destroy');
 Route::get('/games/calendar-data', [GameController::class, 'calendarData'])->name('games.calendar-data');
 Route::post('/games/generate', [GameController::class, 'generateMatches'])->name('games.generate');
 Route::delete('/games/clear', [GameController::class, 'clearCalendar'])->name('games.clear');
+Route::get('/games/{game}/form', [GameController::class, 'editForm'])->name('games.form');
+
 
 //home
 Route::get('/', function () {

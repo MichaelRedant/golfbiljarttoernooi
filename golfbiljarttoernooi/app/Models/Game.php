@@ -38,6 +38,11 @@ class Game extends Model
     {
         return $this->hasMany(Belle::class);
     }
+
+    protected $casts = [
+        'date' => 'datetime:Y-m-d',
+    ];
+    
     
     use HasFactory;
 }

@@ -31,7 +31,8 @@
             @foreach ($gamesOnDate as $game)
                 <div class="game">
                     <p>{{ $game->homeTeam->name }} vs {{ $game->awayTeam->name }} - {{ $game->home_score }} : {{ $game->away_score }} om {{ $game->start_time }} {{ $game->home_forfeit || $game->away_forfeit ? '(Forfait)' : '' }}</p>
-                    <a href="{{ route('games.show', $game->id) }}">wedstrijdformulier</a>
+                    <a href="{{ route('games.form', $game->id) }}" class="btn btn-primary">Wedstrijdformulier</a>
+
                 </div>
             @endforeach
         </div>

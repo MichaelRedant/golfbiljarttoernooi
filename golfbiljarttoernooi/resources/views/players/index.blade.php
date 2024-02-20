@@ -1,14 +1,17 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container">
-        <h1>Spelerslijst</h1>
-        @php
-            // Sorteer de spelers op achternaam
-            $sortedPlayers = $players->sortBy('last_name');
-        @endphp
+<div class="container">
+    <h1>Spelerslijst</h1>
 
-        @foreach ($sortedPlayers as $player)
+    @php
+        // Groepeer de spelers per team
+        $playersByTeam = $players->sortBy('last_name')->groupBy('team.name');
+    @endphp
+
+    @foreach ($playersByTeam as $teamName => $players)
+        <h2>{{ $teamName ?? 'Niet toegewezen' }}</h2>
+        @foreach ($players as $player)
             <div class="player">
                 <p><strong>Naam:</strong> {{ $player->first_name }} {{ $player->last_name }}</p>
                 <p><strong>Divisie:</strong> {{ $player->division->name ?? 'Niet toegewezen' }}</p>
@@ -27,7 +30,8 @@
             <!-- Voeg een horizontale lijn toe na elke speler -->
             <hr>
         @endforeach
+    @endforeach
 
-        <a href="{{ route('players.create') }}" class="btn btn-primary">Nieuwe Speler Toevoegen</a>
-    </div>
+    <a href="{{ route('players.create') }}" class="btn btn-primary">Nieuwe Speler Toevoegen</a>
+</div>
 @endsection
