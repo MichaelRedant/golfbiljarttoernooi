@@ -5,6 +5,17 @@
 @section('content')
 <div class="container mt-4">
     <h1>Wedstrijdkalender</h1>
+    
+    <!-- Actieknoppen -->
+    <div class="mb-4">
+        <form action="{{ route('games.generate') }}" method="POST" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-primary">Genereer Wedstrijden</button>
+        </form>
+        <a href="{{ route('games.clear') }}" class="btn btn-danger" onclick="return confirm('Weet je zeker dat je de kalender wilt verwijderen? Dit kan niet ongedaan gemaakt worden.');">Kalender Verwijderen</a>
+    </div>
+
+    <!-- Kalender -->
     <div id='calendar'></div>
 </div>
 
@@ -19,14 +30,12 @@ document.addEventListener('DOMContentLoaded', function() {
         initialView: 'dayGridMonth',
         events: '{{ route("games.calendar-data") }}',
         eventClick: function(info) {
-            // Hier kan je een actie definiëren wanneer op een event geklikt wordt, bijv. redirect naar game details
+            // Actie bij klikken op een event
             window.location.href = info.event.url;
-            info.jsEvent.preventDefault(); // voorkomt dat de browser naar de link navigeert
+            info.jsEvent.preventDefault(); // Voorkomt dat de browser naar de link navigeert
         }
     });
     calendar.render();
 });
 </script>
 @endsection
-
-  

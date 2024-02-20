@@ -48,6 +48,10 @@ Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show')
 Route::put('/games/{game}', [GameController::class, 'update'])->name('games.update');
 Route::delete('/games/{game}', [GameController::class, 'destroy'])->name('games.destroy');
 Route::get('/games/calendar-data', [GameController::class, 'calendarData'])->name('games.calendar-data');
+Route::post('/games/generate', [GameController::class, 'generateMatches'])->name('games.generate');
+Route::get('/games/clear', [GameController::class, 'clearCalendar'])->name('games.clear');
+
+
 
 
 
