@@ -31,6 +31,7 @@
                                 <th>2M</th>
                                 <th>Belle</th>
                                 <th>Uitslag</th>
+                                <th>Acties</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -139,6 +140,9 @@
     <div class="text-center mt-4">
         <button type="submit" class="btn btn-primary">Wedstrijd opslaan</button>
     </div>
+    <input type="hidden" name="home_score" id="home_score" value="{{ old('home_score', $game->home_score ?? 0) }}">
+<input type="hidden" name="away_score" id="away_score" value="{{ old('away_score', $game->away_score ?? 0) }}">
+
 </form>
 </div>
 
@@ -151,6 +155,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateFinalMatchScore() {
         // Update de tekst van de finale uitslag op basis van de gewonnen matches
         document.getElementById('finalScore').textContent = `Thuis Team : Bezoekende Team = ${homeWins} : ${awayWins}`;
+        // Stuur de geüpdatete scores terug naar de server om op te slaan
+        document.getElementById('home_score').value = homeWins;
+        document.getElementById('away_score').value = awayWins;
     }
 
     rows.forEach(row => {
@@ -158,6 +165,31 @@ document.addEventListener('DOMContentLoaded', function() {
         const manche2Select = row.querySelector('select[name*="[2M]"]');
         const belleSelect = row.querySelector('select[name*="[Belle]"]');
         const resultInput = row.querySelector('input[type="text"].result');
+
+        const actionCell = row.insertCell(-1); // Voegt een nieuwe cel toe aan het einde van de rij
+        actionCell.innerHTML = 
+        '<button type="button" class="btn btn-primary mr-1 lockButton">Afsluiten</button><button type="button" class="btn btn-secondary editButton" disabled>Bewerken</button>';
+
+        const lockButton = actionCell.querySelector('.lockButton');
+        const editButton = actionCell.querySelector('.editButton');
+
+        lockButton.addEventListener('click', function() {
+            toggleEdit(row, false);
+            this.disabled = true;
+            editButton.disabled = false;
+        });
+
+        editButton.addEventListener('click', function() {
+            toggleEdit(row, true);
+            this.disabled = true;
+            lockButton.disabled = false;
+        });
+
+        function toggleEdit(row, enable) {
+            Array.from(row.querySelectorAll('select, input:not(.result)')).forEach(element => {
+                element.disabled = !enable;
+            });
+        }
 
         function calculateResult() {
             const manche1 = parseInt(manche1Select.value);
@@ -194,10 +226,8 @@ document.addEventListener('DOMContentLoaded', function() {
         belleSelect.addEventListener('change', calculateResult);
     });
 });
-
-
-
 </script>
+
 
 
 

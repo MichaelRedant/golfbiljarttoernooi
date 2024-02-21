@@ -111,6 +111,7 @@ public function update(Request $request, Game $game)
         'home_reserve' => 'required|exists:players,id',
         'away_players' => 'required|array',
         'away_players.*' => 'exists:players,id',
+        'scores' => 'required|array',
         'away_captain' => 'required|exists:players,id',
         'away_reserve' => 'required|exists:players,id',
         'manche_scores' => 'required|array',
@@ -132,6 +133,7 @@ public function update(Request $request, Game $game)
     // Werk de scores bij - afhankelijk van je ontwerp
     // Dit is een voorbeeld; je moet de logica aanpassen aan je database
     $game->manches()->delete(); // Verwijder oude manche records als dat nodig is
+    
     foreach ($data['manche_scores'] as $score) {
         // Voeg nieuwe manche records toe
         $game->manches()->create(['score' => $score]);
@@ -141,6 +143,26 @@ public function update(Request $request, Game $game)
         // Update of voeg de belle score toe
         $game->belle()->create(['score' => $data['belle_score']]);
     }
+
+    $homeWins = 0;
+    $awayWins = 0;
+    foreach ($data['scores'] as $score) {
+        if ($score['winner'] == 'home') {
+            $homeWins++;
+        } elseif ($score['winner'] == 'away') {
+            $awayWins++;
+        }
+    }
+
+    // Werk de wedstrijd bij met de nieuwe scores
+    $game->update([
+        'home_score' => $homeWins, // Zorg ervoor dat je model deze velden accepteert
+        'away_score' => $awayWins,
+        // Voeg andere velden toe die je wilt bijwerken
+    ]);
+    $game->home_score = $request->input('home_score');
+    $game->away_score = $request->input('away_score');
+    $game->save(); // Opslaan van de bijgewerkte scores
 
     return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol bijgewerkt!');
 }
