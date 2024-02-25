@@ -145,7 +145,13 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const rows = document.querySelectorAll('tbody tr');
-    let totalMatchWins = { home: 0, away: 0 };
+    let homeWins = 0;
+    let awayWins = 0;
+
+    function updateFinalMatchScore() {
+        // Update de tekst van de finale uitslag op basis van de gewonnen matches
+        document.getElementById('finalScore').textContent = `Thuis Team : Bezoekende Team = ${homeWins} : ${awayWins}`;
+    }
 
     rows.forEach(row => {
         const manche1Select = row.querySelector('select[name*="[1M]"]');
@@ -153,24 +159,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const belleSelect = row.querySelector('select[name*="[Belle]"]');
         const resultInput = row.querySelector('input[type="text"].result');
 
-        manche1Select.value = "0";
-        manche2Select.value = "0";
-        belleSelect.innerHTML = `<option value="0" selected>-</option><option value="1">Thuisploeg</option><option value="2">Bezoekers</option>`;
-
         function calculateResult() {
             const manche1 = parseInt(manche1Select.value);
             const manche2 = parseInt(manche2Select.value);
-            const belle = parseInt(belleSelect.value);
-            let homePoints = 0, awayPoints = 0;
+            let belle = belleSelect.value ? parseInt(belleSelect.value) : 0;
+            let homePoints = 0;
+            let awayPoints = 0;
 
-            // Punten toekennen op basis van manches
             if (manche1 === 1) homePoints++;
-            if (manche2 === 1) homePoints++;
-            if (manche1 === 2) awayPoints++;
             if (manche2 === 2) awayPoints++;
+            if (manche1 === 2) awayPoints++;
+            if (manche2 === 1) homePoints++;
 
-            // Belle activeer logica
-            if (homePoints === awayPoints && homePoints > 0) { // Gelijkspel en niet beide 0
+            if (homePoints === awayPoints && homePoints !== 0) {
                 belleSelect.disabled = false;
                 if (belle === 1) homePoints++;
                 if (belle === 2) awayPoints++;
@@ -179,14 +180,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 belleSelect.value = "0";
             }
 
-            // Uitslag instellen
             resultInput.value = `${homePoints}-${awayPoints}`;
 
-            // Check winnaar van de match
-            if (homePoints > awayPoints) totalMatchWins.home++;
-            if (awayPoints > homePoints) totalMatchWins.away++;
+            // Update de winst per match in plaats van totale punten
+            if (homePoints > awayPoints) homeWins++;
+            if (awayPoints > homePoints) awayWins++;
 
-            // Update de finale wedstrijdscore
             updateFinalMatchScore();
         }
 
@@ -194,11 +193,10 @@ document.addEventListener('DOMContentLoaded', function() {
         manche2Select.addEventListener('change', calculateResult);
         belleSelect.addEventListener('change', calculateResult);
     });
-
-    function updateFinalMatchScore() {
-        document.getElementById('finalScore').textContent = `Thuis Team : Bezoekende Team = ${totalMatchWins.home} : ${totalMatchWins.away}`;
-    }
 });
+
+
+
 </script>
 
 
