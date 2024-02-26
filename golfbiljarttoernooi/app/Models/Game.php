@@ -19,6 +19,8 @@ class Game extends Model
         'other_date'
     ];
 
+    
+
     public function homeTeam()
     {
         return $this->belongsTo(Team::class, 'home_team_id');
@@ -36,7 +38,7 @@ class Game extends Model
 
     public function belles()
     {
-        return $this->hasMany(Belle::class);
+        return $this->hasMany(Belle::class, 'match_id');
     }
 
     protected $casts = [

@@ -91,16 +91,7 @@ public function clearCalendar()
         return view('games.show', compact('game'));
     }
 
-    public function editForm(Game $game)
-{
-    $homeTeamPlayers = $game->homeTeam->players;
-    $awayTeamPlayers = $game->awayTeam->players;
-
-    return view('games.match_form', compact('game', 'homeTeamPlayers', 'awayTeamPlayers'));
-}
-
-
-
+    
 public function update(Request $request, Game $game)
 {
     // Valideer de ingevoerde gegevens
@@ -118,10 +109,10 @@ public function update(Request $request, Game $game)
         'belle_score' => 'nullable|string'
     ]);
 
-    // Werk de game bij met de nieuwe informatie
-    // Dit hangt af van hoe je je database en relaties hebt ingesteld
     $game->update([
-        // Voeg hier eventuele velden toe die direct bij de Game horen
+        'home_score' => $data['home_score'],
+        'away_score' => $data['away_score'],
+        // Andere velden die moeten worden bijgewerkt
     ]);
 
     // Update spelers en scores - afhankelijk van je databaseontwerp
@@ -143,6 +134,16 @@ public function update(Request $request, Game $game)
     }
 
     return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol bijgewerkt!');
+}
+
+public function editForm(Game $game)
+{
+    $game->load('homeTeam.players', 'awayTeam.players', 'manches', 'belles');
+
+    $homeTeamPlayers = $game->homeTeam->players;
+    $awayTeamPlayers = $game->awayTeam->players;
+
+    return view('games.match_form', compact('game', 'homeTeamPlayers', 'awayTeamPlayers'));
 }
 
 

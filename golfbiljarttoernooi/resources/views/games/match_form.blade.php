@@ -31,6 +31,7 @@
                                 <th>2M</th>
                                 <th>Belle</th>
                                 <th>Uitslag</th>
+                                <th>Acties</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -39,35 +40,43 @@
                                 <td>
                                     <select class="form-control" name="home_players[{{ $i }}]">
                                         @foreach ($homeTeamPlayers as $player)
-                                        <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }}</option>
+                                        <option value="{{ $player->id }}" {{ (old('home_players.'.$i, optional($game->homePlayers[$i] ?? null)->id) == $player->id) ? 'selected' : '' }}>{{ $player->first_name }} {{ $player->last_name }}</option>
                                         @endforeach
                                     </select>
                                 </td>
                                 <td>
                                     <select class="form-control" name="away_players[{{ $i }}]">
                                         @foreach ($awayTeamPlayers as $player)
-                                        <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }}</option>
+                                        <option value="{{ $player->id }}" {{ (old('away_players.'.$i, optional($game->awayPlayers[$i] ?? null)->id) == $player->id) ? 'selected' : '' }}>{{ $player->first_name }} {{ $player->last_name }}</option>
                                         @endforeach
                                     </select>
                                 </td>
                                 <td>
     <select class="form-control manche" name="scores[{{ $i }}][1M]">
-        <option value="0" selected>0</option>
-        <option value="1">1</option>
-        <option value="2">2</option>
+        <option value="0" {{ (old('scores.'.$i.'.1M', optional($game->scores[$i] ?? null)['1M']) == 0) ? 'selected' : '' }}>0</option>
+                                <option value="1" {{ (old('scores.'.$i.'.1M', optional($game->scores[$i] ?? null)['1M']) == 1) ? 'selected' : '' }}>1</option>
+                                <option value="2" {{ (old('scores.'.$i.'.1M', optional($game->scores[$i] ?? null)['1M']) == 2) ? 'selected' : '' }}>2</option>
     </select>
 </td>
 <td>
     <select class="form-control manche" name="scores[{{ $i }}][2M]">
-        <option value="0" selected>0</option>
-        <option value="1">1</option>
-        <option value="2">2</option>
+        <option value="0" {{ (old('scores.'.$i.'.2M', optional($game->scores[$i] ?? null)['2M']) == 0) ? 'selected' : '' }}>0</option>
+                                <option value="1" {{ (old('scores.'.$i.'.2M', optional($game->scores[$i] ?? null)['2M']) == 1) ? 'selected' : '' }}>1</option>
+                                <option value="2" {{ (old('scores.'.$i.'.2M', optional($game->scores[$i] ?? null)['2M']) == 2) ? 'selected' : '' }}>2</option>
     </select>
 </td>
 
-                                <td><select class="form-control belle" name="scores[{{ $i }}][Belle]" disabled><option value="">-</option><option value="1">1</option><option value="2">2</option></select></td>
+                                <td><select class="form-control belle" name="scores[{{ $i }}][Belle]" disabled> <option value="" {{ (old('belle.'.$i, optional($game->belles[$i] ?? null)->result) === null) ? 'selected' : '' }}>-</option>
+                                    <option value="1" {{ (old('belle.'.$i, optional($game->belles[$i] ?? null)->result) == 1) ? 'selected' : '' }}>1</option>
+                                    <option value="2" {{ (old('belle.'.$i, optional($game->belles[$i] ?? null)->result) == 2) ? 'selected' : '' }}>2</option></select></td>
                                 <td><input type="text" class="form-control result" name="results[{{ $i }}]" readonly></td>
+                                <td>
+                                    <!-- Afsluiten en Bewerken knoppen -->
+                                    <button type="button" class="btn btn-secondary lockMatch" data-index="{{ $i }}">Afsluiten</button>
+                                    <button type="button" class="btn btn-primary unlockMatch" data-index="{{ $i }}" disabled>Bewerken</button>
+                                </td>
                             </tr>
+                            
                             @endfor
                         </tbody>
                     </table>
@@ -77,7 +86,7 @@
 
         <div class="final-result mt-4">
     <h4>Finale Uitslag</h4>
-    <p id="finalScore">Thuis Team : Bezoekende Team = 0 : 0</p>
+    <p id="finalScore">{{ $game->homeTeam->name }} : {{ $game->awayTeam->name }} = {{ old('home_score', $game->home_score ?? 0) }} : {{ old('away_score', $game->away_score ?? 0) }}</p>
 </div>
 
 
@@ -92,7 +101,7 @@
                         <label for="home_reserve">Reservespeler:</label>
                         <select id="home_reserve" name="home_reserve" class="form-control">
                             @foreach ($homeTeamPlayers as $player)
-                                <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }}</option>
+                            <option value="{{ $player->id }}" {{ (old('home_reserve', $game->home_reserve ?? '') == $player->id) ? 'selected' : '' }}>{{ $player->first_name }} {{ $player->last_name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -101,7 +110,7 @@
                         <label for="home_captain">Kapitein:</label>
                         <select id="home_captain" name="home_captain" class="form-control">
                             @foreach ($homeTeamPlayers as $player)
-                                <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }}</option>
+                            <option value="{{ $player->id }}" {{ (old('home_captain', $game->home_captain ?? '') == $player->id) ? 'selected' : '' }}>{{ $player->first_name }} {{ $player->last_name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -118,7 +127,7 @@
                         <label for="away_reserve">Reservespeler:</label>
                         <select id="away_reserve" name="away_reserve" class="form-control">
                             @foreach ($awayTeamPlayers as $player)
-                                <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }}</option>
+                            <option value="{{ $player->id }}" {{ (old('away_reserve', $game->away_reserve ?? '') == $player->id) ? 'selected' : '' }}>{{ $player->first_name }} {{ $player->last_name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -127,7 +136,7 @@
                         <label for="away_captain">Kapitein:</label>
                         <select id="away_captain" name="away_captain" class="form-control">
                             @foreach ($awayTeamPlayers as $player)
-                                <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }}</option>
+                            <option value="{{ $player->id }}" {{ (old('away_captain', $game->away_captain ?? '') == $player->id) ? 'selected' : '' }}>{{ $player->first_name }} {{ $player->last_name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -136,7 +145,7 @@
         </div>
     </div>
 
-    <div class="text-center mt-4">
+    <div class="text-center mt-4 mb-4">
         <button type="submit" class="btn btn-primary">Wedstrijd opslaan</button>
     </div>
 </form>
@@ -144,6 +153,44 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+
+
+   // Functie om de rijen te vergrendelen/ontgrendelen
+   function toggleRow(index, lock) {
+        const row = document.querySelectorAll('tbody tr')[index];
+        const inputs = row.querySelectorAll('input, select');
+        inputs.forEach(input => input.disabled = lock);
+
+        const lockButton = row.querySelector('.lockMatch');
+        const unlockButton = row.querySelector('.unlockMatch');
+
+        lockButton.disabled = lock;
+        unlockButton.disabled = !lock;
+    }
+
+    // Functie om te controleren of alle matches zijn afgesloten
+    function checkAllMatchesLocked() {
+        return Array.from(document.querySelectorAll('.lockMatch')).every(button => button.disabled === true);
+    }
+
+    // Functie om de staat van de opslaan knop te updaten
+    function updateSaveButtonState() {
+        document.querySelector('button[type="submit"]').disabled = !checkAllMatchesLocked();
+    }
+
+    // Event listeners toevoegen voor de afsluiten en bewerken knoppen
+    document.querySelectorAll('.lockMatch, .unlockMatch').forEach(button => {
+        button.addEventListener('click', function() {
+            const rowIndex = this.getAttribute('data-index');
+            const isLocking = this.classList.contains('lockMatch');
+            toggleRow(rowIndex, isLocking);
+            updateSaveButtonState(); // Update de staat van de opslaan knop elke keer dat een actie wordt uitgevoerd
+        });
+    });
+
+    // Initialiseren van de staat van de opslaan knop bij het laden van de pagina
+    updateSaveButtonState();
+    
     const rows = document.querySelectorAll('tbody tr');
     let homeWins = 0;
     let awayWins = 0;
