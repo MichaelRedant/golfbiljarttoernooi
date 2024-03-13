@@ -42,13 +42,12 @@ Route::put('/players/{player}', [PlayerController::class, 'update'])->name('play
 Route::delete('/players/{player}', [PlayerController::class, 'destroy'])->name('players.destroy');
 
 // Routes voor Wedstrijden
-Route::resource('games', GameController::class);
 Route::get('/games', [GameController::class, 'index'])->name('games.index');
 Route::put('/games/{game}', [GameController::class, 'update'])->name('games.update');
 Route::delete('/games/{game}', [GameController::class, 'destroy'])->name('games.destroy');
 Route::get('/games/calendar-data', [GameController::class, 'calendarData'])->name('games.calendar-data');
 Route::post('/games/generate', [GameController::class, 'generateMatches'])->name('games.generate');
-Route::delete('/games/clear', [GameController::class, 'clearCalendar'])->name('games.clear');
+Route::post('/games/clear', [GameController::class, 'clearCalendar'])->name('games.clear');
 Route::get('/games/{game}/form', [GameController::class, 'editForm'])->name('games.form');
 
 

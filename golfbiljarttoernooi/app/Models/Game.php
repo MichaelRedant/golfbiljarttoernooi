@@ -15,7 +15,7 @@ class Game extends Model
         'start_time',
         'home_forfeit',
         'away_forfeit',
-        'date', // Zorg ervoor dat deze overeenkomt met je tabelstructuur.
+        'date', 
         'other_date'
     ];
 

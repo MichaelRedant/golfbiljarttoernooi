@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Game;
+use App\Models\Manche;
 use App\Models\Team;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -80,9 +81,14 @@ class GameController extends Controller
 
 public function clearCalendar()
 {
-    Game::truncate(); // Dit verwijdert alle records uit de 'games' tabel.
+    // Verwijder eerst gerelateerde records om buitenlandse sleutelbeperkingen te respecteren
+    Manche::query()->delete(); // Verwijder alle manches (ervan uitgaande dat je een Manche model hebt)
+
+    Game::query()->delete(); // Verwijdert alle records uit de 'games' tabel.
+
     return redirect()->route('games.index')->with('success', 'Kalender succesvol verwijderd!');
 }
+
 
 
 
@@ -104,10 +110,10 @@ public function update(Request $request, Game $game)
         'away_players.*' => 'exists:players,id',
         'away_captain' => 'required|exists:players,id',
         'away_reserve' => 'required|exists:players,id',
-        'manche_scores' => 'required|array',
-        'manche_scores.*' => 'string',
-        'belle_score' => 'nullable|string',
-        'home_score' => 'nullable|integer', 
+        'scores.*.1M' => 'nullable|numeric',
+        'scores.*.2M' => 'nullable|numeric',
+        'scores.*.Belle' => 'nullable|numeric',
+        'home_score' => 'nullable|integer',
         'away_score' => 'nullable|integer'
     ]);
 
@@ -118,12 +124,10 @@ public function update(Request $request, Game $game)
     ]);
 
     // Update spelers en scores - afhankelijk van je databaseontwerp
-    // Dit is een voorbeeld en moet worden aangepast aan je specifieke behoeften
     $game->homePlayers()->sync($data['home_players']);
     $game->awayPlayers()->sync($data['away_players']);
 
     // Werk de scores bij - afhankelijk van je ontwerp
-    // Dit is een voorbeeld; je moet de logica aanpassen aan je database
     $game->manches()->delete(); // Verwijder oude manche records als dat nodig is
     foreach ($data['manche_scores'] as $score) {
         // Voeg nieuwe manche records toe

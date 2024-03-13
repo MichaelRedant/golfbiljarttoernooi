@@ -13,13 +13,11 @@
             <button type="submit" class="btn btn-primary">Genereer Wedstrijden</button>
         </form>
 
-        <form action="{{ route('games.clear') }}" method="POST" class="d-inline">
-    @csrf
-    @method('DELETE')
-    <button type="submit" class="btn btn-danger" onclick="return confirm('Weet je zeker dat je de kalender wilt verwijderen? Dit kan niet ongedaan gemaakt worden.');">
-        Kalender Verwijderen
-    </button>
-</form>
+        <form action="{{ route('games.clear') }}" method="POST">
+            @csrf
+            <button type="submit" class="btn btn-danger">Kalender Leegmaken</button>
+        </form>
+
 
 
     </div>

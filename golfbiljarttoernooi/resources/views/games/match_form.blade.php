@@ -10,7 +10,16 @@
             <p><strong>Thuisploeg:</strong> {{ $game->homeTeam->name }}</p>
             <p><strong>Bezoekers:</strong> {{ $game->awayTeam->name }}</p>
             <p><strong>Datum:</strong> {{ $game->date }}</p>
-            <p><strong>Forfait:</strong> {{ $game->forfeit ? 'Ja' : 'Nee' }}</p>
+            <!-- Toggle Switch Container -->
+            
+            <div class="switch-container">
+                <strong class="mr-2">Forfait:</strong>
+                <label class="switch">
+                    <input type="checkbox" name="forfait" id="forfait" {{ $game->forfait ? 'checked' : '' }} value="1">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+  
         </div>
     </div>
 
@@ -52,23 +61,15 @@
                                     </select>
                                 </td>
                                 <td>
-    <select class="form-control manche" name="scores[{{ $i }}][1M]">
-        <option value="0" {{ (old('scores.'.$i.'.1M', optional($game->scores[$i] ?? null)['1M']) == 0) ? 'selected' : '' }}>0</option>
-                                <option value="1" {{ (old('scores.'.$i.'.1M', optional($game->scores[$i] ?? null)['1M']) == 1) ? 'selected' : '' }}>1</option>
-                                <option value="2" {{ (old('scores.'.$i.'.1M', optional($game->scores[$i] ?? null)['1M']) == 2) ? 'selected' : '' }}>2</option>
-    </select>
-</td>
-<td>
-    <select class="form-control manche" name="scores[{{ $i }}][2M]">
-        <option value="0" {{ (old('scores.'.$i.'.2M', optional($game->scores[$i] ?? null)['2M']) == 0) ? 'selected' : '' }}>0</option>
-                                <option value="1" {{ (old('scores.'.$i.'.2M', optional($game->scores[$i] ?? null)['2M']) == 1) ? 'selected' : '' }}>1</option>
-                                <option value="2" {{ (old('scores.'.$i.'.2M', optional($game->scores[$i] ?? null)['2M']) == 2) ? 'selected' : '' }}>2</option>
-    </select>
-</td>
+                                    <input type="text" class="form-control manche" name="scores[{{ $i }}][1M]" value="{{ old('scores.'.$i.'.1M', optional($game->scores[$i] ?? null)['1M']) }}">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control manche" name="scores[{{ $i }}][2M]" value="{{ old('scores.'.$i.'.2M', optional($game->scores[$i] ?? null)['2M']) }}">
+                                </td>
 
-                                <td><select class="form-control belle" name="scores[{{ $i }}][Belle]" disabled> <option value="" {{ (old('belle.'.$i, optional($game->belles[$i] ?? null)->result) === null) ? 'selected' : '' }}>-</option>
-                                    <option value="1" {{ (old('belle.'.$i, optional($game->belles[$i] ?? null)->result) == 1) ? 'selected' : '' }}>1</option>
-                                    <option value="2" {{ (old('belle.'.$i, optional($game->belles[$i] ?? null)->result) == 2) ? 'selected' : '' }}>2</option></select></td>
+                                <td>
+                                    <input type="text" class="form-control belle" name="scores[{{ $i }}][Belle]" value="{{ old('belle.'.$i, optional($game->belles[$i] ?? null)->result) }}">
+
                                 <td><input type="text" class="form-control result" name="results[{{ $i }}]" readonly></td>
                                 <td>
                                     <!-- Afsluiten en Bewerken knoppen -->
@@ -156,10 +157,8 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-
-
-   // Functie om de rijen te vergrendelen/ontgrendelen
-   function toggleRow(index, lock) {
+    // Functie om de rijen te vergrendelen/ontgrendelen
+    function toggleRow(index, lock) {
         const row = document.querySelectorAll('tbody tr')[index];
         const inputs = row.querySelectorAll('input, select');
         inputs.forEach(input => input.disabled = lock);
@@ -193,26 +192,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialiseren van de staat van de opslaan knop bij het laden van de pagina
     updateSaveButtonState();
-    
+
     const rows = document.querySelectorAll('tbody tr');
     let homeWins = 0;
     let awayWins = 0;
 
     function updateFinalMatchScore() {
-        // Update de tekst van de finale uitslag op basis van de gewonnen matches
-        document.getElementById('finalScore').textContent = `Thuis Team : Bezoekende Team = ${homeWins} : ${awayWins}`;
-    }
+    // Update de tekst van de finale uitslag op basis van de gewonnen matches
+    document.getElementById('finalScore').textContent = `Thuis Team : Bezoekende Team = ${homeWins} : ${awayWins}`;
+
+    // Update ook de waarden van de verborgen velden zodat deze verzonden worden met het formulier
+    document.getElementById('home_score').value = homeWins;
+    document.getElementById('away_score').value = awayWins;
+}
 
     rows.forEach(row => {
-        const manche1Select = row.querySelector('select[name*="[1M]"]');
-        const manche2Select = row.querySelector('select[name*="[2M]"]');
-        const belleSelect = row.querySelector('select[name*="[Belle]"]');
+        // Verander 'select' naar de juiste selectie voor tekstvelden
+        const manche1Input = row.querySelector('input[name*="[1M]"]');
+        const manche2Input = row.querySelector('input[name*="[2M]"]');
+        const belleInput = row.querySelector('input[name*="[Belle]"]');
         const resultInput = row.querySelector('input[type="text"].result');
 
         function calculateResult() {
-            const manche1 = parseInt(manche1Select.value);
-            const manche2 = parseInt(manche2Select.value);
-            let belle = belleSelect.value ? parseInt(belleSelect.value) : 0;
+            const manche1 = parseInt(manche1Input.value);
+            const manche2 = parseInt(manche2Input.value);
+            let belle = belleInput.value ? parseInt(belleInput.value) : 0;
             let homePoints = 0;
             let awayPoints = 0;
 
@@ -222,12 +226,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (manche2 === 1) homePoints++;
 
             if (homePoints === awayPoints && homePoints !== 0) {
-                belleSelect.disabled = false;
+                belleInput.disabled = false;
                 if (belle === 1) homePoints++;
                 if (belle === 2) awayPoints++;
             } else {
-                belleSelect.disabled = true;
-                belleSelect.value = "0";
+                belleInput.disabled = true;
+                belleInput.value = "";
             }
 
             resultInput.value = `${homePoints}-${awayPoints}`;
@@ -239,15 +243,18 @@ document.addEventListener('DOMContentLoaded', function() {
             updateFinalMatchScore();
         }
 
-        manche1Select.addEventListener('change', calculateResult);
-        manche2Select.addEventListener('change', calculateResult);
-        belleSelect.addEventListener('change', calculateResult);
-        document.getElementById('home_score').value = homeWins;
-        document.getElementById('away_score').value = awayWins;
+        // Voeg event listeners toe voor de tekstvelden
+        manche1Input.addEventListener('input', calculateResult);
+        manche2Input.addEventListener('input', calculateResult);
+        belleInput.addEventListener('input', calculateResult);
     });
+
+    
+
+
+    // Zorg ervoor dat de finale scores worden bijgewerkt wanneer de waarden veranderen
+    updateFinalMatchScore();
 });
-
-
 
 </script>
 
