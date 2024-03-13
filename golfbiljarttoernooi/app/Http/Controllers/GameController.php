@@ -106,7 +106,9 @@ public function update(Request $request, Game $game)
         'away_reserve' => 'required|exists:players,id',
         'manche_scores' => 'required|array',
         'manche_scores.*' => 'string',
-        'belle_score' => 'nullable|string'
+        'belle_score' => 'nullable|string',
+        'home_score' => 'nullable|integer', 
+        'away_score' => 'nullable|integer'
     ]);
 
     $game->update([

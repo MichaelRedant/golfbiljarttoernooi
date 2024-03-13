@@ -86,6 +86,9 @@
 
         <div class="final-result mt-4">
     <h4>Finale Uitslag</h4>
+    <input type="hidden" name="home_score" id="home_score" value="{{ old('home_score', $game->home_score ?? 0) }}">
+    <input type="hidden" name="away_score" id="away_score" value="{{ old('away_score', $game->away_score ?? 0) }}">
+
     <p id="finalScore">{{ $game->homeTeam->name }} : {{ $game->awayTeam->name }} = {{ old('home_score', $game->home_score ?? 0) }} : {{ old('away_score', $game->away_score ?? 0) }}</p>
 </div>
 
@@ -239,6 +242,8 @@ document.addEventListener('DOMContentLoaded', function() {
         manche1Select.addEventListener('change', calculateResult);
         manche2Select.addEventListener('change', calculateResult);
         belleSelect.addEventListener('change', calculateResult);
+        document.getElementById('home_score').value = homeWins;
+        document.getElementById('away_score').value = awayWins;
     });
 });
 
