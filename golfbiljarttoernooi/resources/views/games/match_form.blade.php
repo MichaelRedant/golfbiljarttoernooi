@@ -10,15 +10,23 @@
             <p><strong>Thuisploeg:</strong> {{ $game->homeTeam->name }}</p>
             <p><strong>Bezoekers:</strong> {{ $game->awayTeam->name }}</p>
             <p><strong>Datum:</strong> {{ $game->date }}</p>
-            <!-- Toggle Switch Container -->
-            
-            <div class="switch-container">
-                <strong class="mr-2">Forfait:</strong>
-                <label class="switch">
-                    <input type="checkbox" name="forfait" id="forfait" {{ $game->forfait ? 'checked' : '' }} value="1">
-                    <span class="slider round"></span>
-                </label>
-            </div>
+           <!-- Toggle Switch Container voor Home Team Forfeit -->
+<div class="switch-container">
+    <strong class="mr-2">Forfait thuisploeg:</strong>
+    <label class="switch">
+        <input type="checkbox" name="home_forfeit" {{ old('home_forfeit', $game->home_forfeit) ? 'checked' : '' }} value="1">
+        <span class="slider round"></span>
+    </label>
+</div>
+
+<!-- Toggle Switch Container voor Away Team Forfeit -->
+<div class="switch-container">
+    <strong class="mr-2">Forfait bezoekers:</strong>
+    <label class="switch">
+        <input type="checkbox" name="away_forfeit" {{ old('away_forfeit', $game->away_forfeit) ? 'checked' : '' }} value="1">
+        <span class="slider round"></span>
+    </label>
+</div>
   
         </div>
     </div>

@@ -97,51 +97,118 @@ public function clearCalendar()
         return view('games.show', compact('game'));
     }
 
+    protected function updatePlayerScores(Game $game, array $playersData)
+    {
+        // Voorbereiden van de data voor de pivot tabel
+        $pivotData = [];
+        foreach ($playersData as $playerId => $data) {
+            $pivotData[$playerId] = [
+                'manche_1_score' => $data['manche_1_score'] ?? 0,
+                'manche_2_score' => $data['manche_2_score'] ?? 0,
+                'belle_score' => $data['belle_score'] ?? 0,
+                'is_belle_winner' => isset($data['belle_winner']) && $data['belle_winner'] == $playerId
+            ];
+        }
     
-public function update(Request $request, Game $game)
-{
-    // Valideer de ingevoerde gegevens
-    $data = $request->validate([
-        'home_players' => 'required|array',
-        'home_players.*' => 'exists:players,id',
-        'home_captain' => 'required|exists:players,id',
-        'home_reserve' => 'required|exists:players,id',
-        'away_players' => 'required|array',
-        'away_players.*' => 'exists:players,id',
-        'away_captain' => 'required|exists:players,id',
-        'away_reserve' => 'required|exists:players,id',
-        'scores.*.1M' => 'nullable|numeric',
-        'scores.*.2M' => 'nullable|numeric',
-        'scores.*.Belle' => 'nullable|numeric',
-        'home_score' => 'nullable|integer',
-        'away_score' => 'nullable|integer'
-    ]);
-
-    $game->update([
-        'home_score' => $data['home_score'],
-        'away_score' => $data['away_score'],
-        // Andere velden die moeten worden bijgewerkt
-    ]);
-
-    // Update spelers en scores - afhankelijk van je databaseontwerp
-    $game->homePlayers()->sync($data['home_players']);
-    $game->awayPlayers()->sync($data['away_players']);
-
-    // Werk de scores bij - afhankelijk van je ontwerp
-    $game->manches()->delete(); // Verwijder oude manche records als dat nodig is
-    foreach ($data['manche_scores'] as $score) {
-        // Voeg nieuwe manche records toe
-        $game->manches()->create(['score' => $score]);
+        // Bijwerken van de pivot tabel met nieuwe scores
+        $game->players()->sync($pivotData);
     }
 
-    if ($data['belle_score']) {
-        // Update of voeg de belle score toe
-        $game->belle()->create(['score' => $data['belle_score']]);
-    }
+    
+    public function update(Request $request, Game $game)
+    {
+        $validatedData = $request->validate([
+            'home_team_id' => 'required|exists:teams,id',
+            'away_team_id' => 'required|exists:teams,id',
+            'home_forfeit' => 'sometimes|boolean',
+            'away_forfeit' => 'sometimes|boolean',
+            'date' => 'required|date',
+            'home_score' => 'nullable|integer',
+            'away_score' => 'nullable|integer',
+            'players' => 'required|array',
+        'players.*.player_id' => 'required|exists:players,id',
+        'players.*.manche_1_score' => 'required|integer|min:0',
+        'players.*.manche_2_score' => 'required|integer|min:0',
+        'players.*.belle_score' => 'nullable|integer|min:0',
+        'players.*.is_belle_winner' => 'required|boolean',
+        ]);
+    
+        // Na validatie
+        $game->home_team_id = $validatedData['home_team_id'];
+        $game->away_team_id = $validatedData['away_team_id'];
+        $game->date = $validatedData['date'];
 
-    return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol bijgewerkt!');
+// Direct instellen van home_forfeit en away_forfeit, ervan uitgaande dat de checkboxen zijn gebruikt in het formulier.
+// Als de checkbox niet is aangevinkt, wordt het veld niet meegestuurd in de request, dus we gebruiken $request->has() om te controleren.
+        $game->home_forfeit = $request->has('home_forfeit') ? 1 : 0;
+        $game->away_forfeit = $request->has('away_forfeit') ? 1 : 0;
+
+// Bijwerken van scores, als ze niet nullable zijn of je wilt ze expliciet instellen op 0 als ze niet zijn meegegeven, moet je dat hier controleren.
+        $game->home_score = $validatedData['home_score'] ?? 0; 
+        $game->away_score = $validatedData['away_score'] ?? 0;
+
+// Sla de bijgewerkte game op
+        $game->save();
+
+       // Bijwerken van scores in de pivot tabel
+foreach ($validatedData['players'] as $player) {
+    $game->players()->syncWithoutDetaching([
+        $player['player_id'] => [
+            'manche_1_score' => $player['manche_1_score'],
+            'manche_2_score' => $player['manche_2_score'],
+            'belle_score' => $player['belle_score'] ?? null, // Maak nullable als geen score voor belle
+            'is_belle_winner' => $player['is_belle_winner'],
+        ]
+    ]);
 }
 
+    // Bijwerken van speler scores
+    $this->updatePlayerScores($game, $request->input('players'));
+
+        return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol bijgewerkt!');
+    }
+    
+    
+    
+    protected function updateManches(Game $game, array $manchesData)
+    {
+    // Eerst verwijderen we alle bestaande relaties om ze te herstellen
+    // Dit is een eenvoudige aanpak maar niet de meest efficiënte voor grote datasets.
+    // Overweeg een meer geavanceerde logica voor het bijwerken van bestaande records.
+    $game->players()->detach();
+
+    foreach ($manchesData as $playerId => $scores) {
+        // Hier gaan we ervan uit dat $manchesData is georganiseerd per speler ID,
+        // met scores voor elke manche en de belle.
+        $game->players()->attach($playerId, [
+            'manche_1_score' => $scores['manche_1_score'] ?? 0,
+            'manche_2_score' => $scores['manche_2_score'] ?? 0,
+            'belle_score' => $scores['belle_score'] ?? 0,
+            // Bepaal op basis van scores of de speler de belle heeft gewonnen
+            'is_belle_winner' => isset($scores['belle_score']) && $scores['belle_score'] > 0
+        ]);
+    }
+}
+    
+    protected function updateBelles(Game $game, array $bellesData)
+    {
+        // Aangezien een game maximaal één belle kan hebben, overwegen we de bestaande te overschrijven.
+        // Eerst verwijderen we de bestaande belle-gegevens voor deze game, indien aanwezig.
+        $game->belles()->delete();
+    
+        // Nu voegen we de nieuwe belle-gegevens toe, gebaseerd op de meegeleverde bellesData.
+        // Dit voorbeeld gaat ervan uit dat bellesData de ID's bevat van spelers die de belle hebben gespeeld en hun scores.
+        foreach ($bellesData as $belle) {
+            $game->belles()->create([
+                'player_id' => $belle['player_id'],
+                'score' => $belle['score'],
+                // Aannemende dat er een 'is_winner' veld is om aan te geven wie de belle heeft gewonnen
+                'is_winner' => $belle['is_winner'] ?? false,
+                // Voeg andere relevante belle-gerelateerde velden toe zoals benodigd
+            ]);
+        }
+    }
+    
 public function editForm(Game $game)
 {
     $game->load('homeTeam.players', 'awayTeam.players', 'manches', 'belles');

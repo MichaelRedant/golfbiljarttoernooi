@@ -16,6 +16,13 @@ class Player extends Model
 {
     return $this->belongsTo(Division::class);
 }
+
+public function games()
+{
+    return $this->belongsToMany(Game::class, 'game_player')
+                ->withPivot(['manche_1_score', 'manche_2_score', 'belle_score', 'is_belle_winner']);
+}
+
     
     use HasFactory;
 

@@ -15,6 +15,7 @@ class Game extends Model
         'start_time',
         'home_forfeit',
         'away_forfeit',
+        'forfait',
         'date', 
         'other_date'
     ];
@@ -44,6 +45,13 @@ class Game extends Model
     protected $casts = [
         'date' => 'datetime:Y-m-d',
     ];
+
+    public function players()
+{
+    return $this->belongsToMany(Player::class, 'game_player')
+                ->withPivot(['manche_1_score', 'manche_2_score', 'belle_score', 'is_belle_winner']);
+}
+
     
     
     use HasFactory;
