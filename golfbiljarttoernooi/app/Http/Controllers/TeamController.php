@@ -40,12 +40,13 @@ class TeamController extends Controller
     }
 
     public function show(Team $team)
-    {
-        // Ophalen van de divisie van het team
-    $team->load('division');
+{
+    // Ophalen van de divisie van het team en de bijbehorende spelers
+    $team->load('division', 'players');
 
     return view('teams.show', compact('team'));
-    }
+}
+
 
     public function edit(Team $team)
     {

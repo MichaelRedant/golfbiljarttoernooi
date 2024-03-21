@@ -100,6 +100,15 @@
 
     <p id="finalScore">{{ $game->homeTeam->name }} : {{ $game->awayTeam->name }} = {{ old('home_score', $game->home_score ?? 0) }} : {{ old('away_score', $game->away_score ?? 0) }}</p>
 </div>
+@if ($errors->any())
+    <div class="alert alert-danger">
+        <ul>
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
 
 
        {{-- Reserve en Kapitein Selectie met Dynamische Teamnamen --}}
@@ -222,6 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const resultInput = row.querySelector('input[type="text"].result');
 
         function calculateResult() {
+            
             const manche1 = parseInt(manche1Input.value);
             const manche2 = parseInt(manche2Input.value);
             let belle = belleInput.value ? parseInt(belleInput.value) : 0;

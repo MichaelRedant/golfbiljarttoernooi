@@ -65,10 +65,12 @@ class PlayerController extends Controller
     }
 
     public function edit(Player $player)
-    {
-        $divisions = Division::all();
-        return view('players.edit', compact('player', 'divisions'));
-    }
+{
+    $divisions = Division::all();
+    $teams = Team::all();  // Zorg dat je alle teams ophaalt
+    return view('players.edit', compact('player', 'divisions', 'teams'));
+}
+
 
     public function update(Request $request, Player $player)
     {

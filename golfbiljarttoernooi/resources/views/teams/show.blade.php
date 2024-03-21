@@ -7,7 +7,18 @@
     <p><strong>Naam:</strong> {{ $team->name }}</p>
     <p><strong>Divisie:</strong> {{ $team->division->name }}</p>
 
-    <!-- Andere details van het team hieronder, afhankelijk van wat je nog wilt weergeven -->
+    <h2>Spelers</h2>
+    @if($team->players->isNotEmpty())
+        <ul>
+            @foreach($team->players as $player)
+                <li>{{ $player->first_name }} {{ $player->last_name }}</li>
+            @endforeach
+        </ul>
+    @else
+        <p>Er zijn momenteel geen spelers in dit team.</p>
+    @endif
 
     <a href="{{ route('teams.edit', $team) }}" class="btn btn-secondary">Bewerken</a>
 @endsection
+
+
