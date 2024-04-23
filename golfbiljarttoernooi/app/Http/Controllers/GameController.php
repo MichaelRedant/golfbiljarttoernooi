@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Game;
 use App\Models\Manche;
 use App\Models\Team;
+use App\Models\Player;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -23,7 +24,7 @@ class GameController extends Controller
         $events = [];
         foreach ($games as $game) {
             $events[] = [
-                'title' => $game->homeTeam->name . ' vs ' . $game->awayTeam->name,
+                'title' => $game->homeTeam->name . ' tegen ' . $game->awayTeam->name,
                 'start' => $game->date,
                 'url'   => route('games.show', $game->id),
             ];
@@ -117,7 +118,7 @@ public function clearCalendar()
     
     public function update(Request $request, Game $game)
 {
-    $request->validate([
+    $validatedData = $request->validate([
         'home_team_id' => 'exists:teams,id',
         'away_team_id' => 'exists:teams,id',
         'home_forfeit' => 'sometimes|boolean',
@@ -132,36 +133,33 @@ public function clearCalendar()
         'players.*.is_belle_winner' => 'required|boolean',
     ]);
 
-    //Na validatie
-    // $game->home_team_id = $validatedData['home_team_id'];
-    // $game->away_team_id = $validatedData['away_team_id'];
-    // $game->home_forfeit = $request->has('home_forfeit') ? 1 : 0;
-    // $game->away_forfeit = $request->has('away_forfeit') ? 1 : 0;
-    // $game->home_score = $validatedData['home_score'] ?? 0; 
-    // $game->away_score = $validatedData['away_score'] ?? 0;
 
-    $game->update([
-        'home_score' => $request->home_score,
-        'away_score' => $request->away_score,
-    ]);
+    $game->update($validatedData);
+    $this->updateMatchStatistics($game, $validatedData);
 
-    // Sla de bijgewerkte game op
-    //$game->save();
-
-    // Verwijder eerst alle bestaande speler relaties om ze te herstellen
-    // $game->players()->detach();
-
-    // Bijwerken van scores en details van spelers
-    // foreach ($validatedData['players'] as $playerData) {
-    //     $game->players()->attach($playerData['player_id'], [
-    //         'manche_1_score' => $playerData['manche_1_score'],
-    //         'manche_2_score' => $playerData['manche_2_score'],
-    //         'belle_score' => $playerData['belle_score'] ?? null, // Maak nullable als geen score voor belle
-    //         'is_belle_winner' => $playerData['is_belle_winner'],
-    //     ]);
-    // }
 
     return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol bijgewerkt.');
+}
+
+protected function updateMatchStatistics(Game $game, $validatedData)
+{
+    // Voorbeeld van hoe je kunt bepalen wie de winnaar is en de statistieken bijwerken
+    foreach ($validatedData['players'] as $playerData) {
+        $player = Player::find($playerData['player_id']);
+
+        // Basislogica voor het bijwerken van spelersstatistieken
+        // Dit moet worden aangepast op basis van je specifieke logica voor winnen/verliezen
+        if ($playerData['is_winner']) {
+            $player->matches_won++;
+        } else {
+            $player->matches_lost++;
+        }
+
+        $player->save();
+    }
+
+    // Bijwerken van teamstatistieken
+    // Dit is vergelijkbaar en hangt af van hoe je de teamstatistieken bijhoudt
 }
 
     
@@ -203,6 +201,7 @@ public function clearCalendar()
             ]);
         }
     }
+    
     
 public function editForm(Game $game)
 {

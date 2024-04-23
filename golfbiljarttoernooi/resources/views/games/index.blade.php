@@ -5,21 +5,10 @@
 @section('content')
 <div class="container mt-4">
     <h1>Wedstrijdkalender</h1>
-    
+
     <!-- Actieknoppen -->
-    <div class="mb-4">
-        <form action="{{ route('games.generate') }}" method="POST" class="d-inline">
-            @csrf
-            <button type="submit" class="btn btn-primary">Genereer Wedstrijden</button>
-        </form>
-
-        <form action="{{ route('games.clear') }}" method="POST">
-            @csrf
-            <button type="submit" class="btn btn-danger">Kalender Leegmaken</button>
-        </form>
-
-
-
+    <div class="action-buttons mb-4">
+        <!-- ... -->
     </div>
 
     <!-- Kalender weergave -->
@@ -27,13 +16,21 @@
         <div class="day">
             <h2>{{ $date }}</h2>
             @foreach ($gamesOnDate as $game)
-                <div class="game">
-                    <p>{{ $game->homeTeam->name }} vs {{ $game->awayTeam->name }} - {{ $game->home_score }} : {{ $game->away_score }} om {{ $game->start_time }} {{ $game->home_forfeit || $game->away_forfeit ? '(Forfait)' : '' }}</p>
-                    <a href="{{ route('games.form', $game->id) }}" class="btn btn-primary">Wedstrijdformulier</a>
-
+                <div class="game card">
+                    <div class="card-body">
+                        <p> 
+                            <a href="{{ route('teams.show', $game->homeTeam->id) }}" class="font-weight-bold">{{ $game->homeTeam->name }}</a> 
+                            tegen 
+                            <a href="{{ route('teams.show', $game->awayTeam->id) }}" class="font-weight-bold">{{ $game->awayTeam->name }}</a>
+                            <p><span class="font-weight-bold">Uitslag:</span> {{ $game->home_score }} : {{ $game->away_score }}</p>  
+                            
+                        </p>
+                        <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-outline-primary">Wedstrijdformulier</a>
+                    </div>
                 </div>
             @endforeach
         </div>
     @endforeach
 </div>
 @endsection
+
