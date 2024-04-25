@@ -14,6 +14,19 @@ class Team extends Model
         return $this->belongsTo(Division::class);
     }
 
+    // in Team model
+
+public function gamesHome()
+{
+    return $this->hasMany(Game::class, 'home_team_id');
+}
+
+public function gamesAway()
+{
+    return $this->hasMany(Game::class, 'away_team_id');
+}
+
+
     public function players()
     {
         return $this->hasMany(Player::class);

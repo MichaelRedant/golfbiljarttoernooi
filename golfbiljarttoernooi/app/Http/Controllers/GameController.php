@@ -133,6 +133,57 @@ public function clearCalendar()
         'players.*.is_belle_winner' => 'required|boolean',
     ]);
 
+      // Verwerk scores voor elke speler...
+    if (array_key_exists('players', $validatedData)) {
+        // Verwerk scores voor elke speler...
+        foreach ($validatedData['players'] as $playerId => $scores) {
+            $player = Player::find($playerId);
+            $mancheWinCount = 0;
+            $mancheLossCount = 0;
+
+            // Bepaal manche winsten en verliezen...
+            if ($scores['manche_1_score'] > $scores['manche_2_score']) {
+                $mancheWinCount++;
+            } elseif ($scores['manche_1_score'] < $scores['manche_2_score']) {
+                $mancheLossCount++;
+            }
+
+            // Controleer voor belle winst/verlies...
+            if ($scores['belle_score'] === 1) {
+                $mancheWinCount++;
+            } elseif ($scores['belle_score'] === 2) {
+                $mancheLossCount++;
+            }
+
+            // Werk de player statistieken bij...
+            $player->increment('manches_won', $mancheWinCount);
+            $player->increment('manches_lost', $mancheLossCount);
+
+            // Bepaal of de speler de wedstrijd gewonnen of verloren heeft...
+            // Dit is een vereenvoudigd voorbeeld, je moet de logica aanpassen aan jouw regels
+            if ($game->home_team_id === $player->team_id && $validatedData['home_score'] > $validatedData['away_score']) {
+                $player->increment('matches_won');
+            } else {
+                $player->increment('matches_lost');
+            }
+
+            // Sla de bijgewerkte spelergegevens op...
+            $player->save();
+        }
+    }
+
+    // Werk de game record bij met de totale scores
+    $game->update([
+        'home_score' => $validatedData['home_score'],
+        'away_score' => $validatedData['away_score'],
+        'matches_won' => $validatedData['matches_won'],
+        'matches_lost' => $validatedData['matches_lost'],
+        'manches_won' => $validatedData['manches_won'],
+        'manches_lost' => $validatedData['matches_lost'],
+    ]);
+
+    $this->updatePlayerStats($game, $validatedData);
+
 
     $game->update($validatedData);
     $this->updateMatchStatistics($game, $validatedData);
@@ -161,6 +212,29 @@ protected function updateMatchStatistics(Game $game, $validatedData)
     // Bijwerken van teamstatistieken
     // Dit is vergelijkbaar en hangt af van hoe je de teamstatistieken bijhoudt
 }
+
+protected function updatePlayerStats($game, $validatedData) {
+    // Voor elke speler die heeft deelgenomen aan de game
+    foreach ($validatedData['players'] as $playerData) {
+        $player = Player::find($playerData['player_id']);
+        
+        // Hier check je wie de winnaar van de manche is en verhoog je de win/loss counters
+        // Dit is pseudocode, je zult de logica moeten schrijven gebaseerd op je formuliervelden en regels
+        if ($game->isForfeit()) {
+            $player->increment('matches_lost');
+        } else {
+            if ($playerData['is_winner']) {
+                $player->increment('matches_won');
+                $player->increment('manches_won', $playerData['manche_wins']);
+            } else {
+                $player->increment('matches_lost');
+                $player->increment('manches_lost', $playerData['manche_losses']);
+            }
+        }
+        $player->save();
+    }
+}
+
 
     
     

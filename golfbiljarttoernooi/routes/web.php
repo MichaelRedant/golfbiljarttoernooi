@@ -8,6 +8,7 @@ use App\Http\Controllers\GameController;
 use App\Http\Controllers\MancheController;
 use App\Http\Controllers\BelleController;
 use App\Http\Controllers\ReservePlayerController;
+use App\Http\Controllers\RankingController;
 
 // Routes voor Divisies
 Route::get('/divisions', [DivisionController::class, 'index'])->name('divisions.index');
@@ -32,6 +33,7 @@ Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.
 Route::get('/get-teams', [PlayerController::class, 'getTeams'])->name('get-teams');
 
 
+
 // Routes voor Spelers
 Route::get('/players', [PlayerController::class, 'index'])->name('players.index');
 Route::get('/players/create', [PlayerController::class, 'create'])->name('players.create');
@@ -49,6 +51,18 @@ Route::get('/games/calendar-data', [GameController::class, 'calendarData'])->nam
 Route::post('/games/generate', [GameController::class, 'generateMatches'])->name('games.generate');
 Route::post('/games/clear', [GameController::class, 'clearCalendar'])->name('games.clear');
 Route::get('/games/{game}/form', [GameController::class, 'editForm'])->name('games.form');
+
+//Route voor Rankings
+Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');
+Route::get('/rankings/{division}/teams', [RankingController::class, 'teamRankings'])->name('rankings.teams');
+Route::get('/rankings/{division}/players', [RankingController::class, 'playerRankings'])->name('rankings.players');
+Route::get('/team-standings', [TeamController::class, 'calculateTeamStandings'])->name('team.standings');
+Route::get('/divisions/{divisionId}/standings', [PlayerController::class, 'calculatePlayerStandings'])->name('players.standings');
+// Route om teams op te halen op basis van de divisie
+Route::get('/get-teams', [TeamController::class, 'getTeamsByDivision'])->name('get-teams');
+// Route om spelers op te halen op basis van het team
+Route::get('/get-players-by-team', [PlayerController::class, 'getPlayersByTeam'])->name('get-players-by-team');
+
 
 
 //home

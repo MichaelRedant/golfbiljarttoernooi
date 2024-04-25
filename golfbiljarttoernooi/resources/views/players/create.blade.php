@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<div class="card p-3">
     <h1>Nieuwe Speler Toevoegen</h1>
 
     <form action="{{ route('players.store') }}" method="POST" enctype="multipart/form-data">
@@ -14,6 +15,11 @@
             <input type="text" name="last_name" class="form-control" id="last_name" required>
         </div>
         <div class="form-group">
+            <label for="photo">Speler Foto:</label>
+            <input type="file" name="photo" class="form-control" id="photo">
+        </div>
+        
+        <div class="form-group">
             <label for="division_id">Divisie:</label>
             <select name="division_id" class="form-control" id="division_id" required>
                 <option value="">Selecteer een divisie</option>
@@ -24,7 +30,7 @@
         </div>
         <div class="form-group">
             <label for="team">Team:</label>
-            <select name="team_id" required>
+            <select name="team_id" class="form-control" id="team" required>
                 <option value="">Selecteer een team</option>
                 @foreach($teams as $team)
                     <option value="{{ $team->id }}">{{ $team->name }}</option>
@@ -34,10 +40,17 @@
         
         <button type="submit" class="btn btn-primary">Opslaan</button>
     </form>
+</div>
+    
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script>
         $(document).ready(function () {
+            let urlParams = new URLSearchParams(window.location.search);
+            let teamId = urlParams.get('team_id');
+            if (teamId) {
+        $('#team').val(teamId);
+    }
             $('#division_id').on('change', function () {
                 var divisionId = $(this).val();
                 if (divisionId) {

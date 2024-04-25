@@ -1,3 +1,17 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.content-wrapper {
+  min-height: 100vh;  /* 100% van de viewport hoogte */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Verdeelt de ruimte tussen en rondom content */
+}
+
+
 .container {
   max-width: 1200px;
   margin: auto;
@@ -93,6 +107,173 @@
 
 .btn-primary:hover, .btn-danger:hover {
   opacity: 0.8;
+}
+
+/* Kaartstijlen voor divisies */
+.division-card {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transition: box-shadow 0.3s;
+  border-radius: 15px;
+}
+
+.division-card:hover {
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+/* Knopstijlen */
+.btn-primary, .btn-secondary {
+  border-radius: 50px; /* Ronde pill-knoppen */
+}
+
+.btn-primary:hover, .btn-secondary:hover {
+  transform: scale(1.05); /* Licht vergroten bij hover */
+  opacity: 0.9;
+}
+
+/*home stijl */
+
+/* Navigation card styling */
+.nav-flex-column .nav-card-link {
+  display: block;
+  padding: 20px;
+  background-color: #ffffff;
+  color: #007bff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  text-decoration: none;
+}
+
+.nav-flex-column .nav-card-link:hover {
+  background-color: #f8f9fa;
+  color: #0056b3;
+  transition: background-color 0.3s ease;
+}
+
+/* Content section styling */
+.container-fluid {
+  padding-top: 20px;
+}
+
+.text-justify {
+  text-align: justify;
+  padding: 15px;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #333;
+}
+
+h1.text-center {
+  color: #007bff;
+  margin-bottom: 25px;
+}
+
+/* Player Card CSS */
+.player-card {
+  background-color: #fff;
+  border-radius: 15px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.player-card-header {
+  /* background: url('/path/to/your/background-image.png') no-repeat center center; */
+  /* background-size: cover; */
+  color: #000000;
+  text-align: center;
+  padding: 20px;
+}
+
+.player-photo {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 5px solid #fff;
+  margin-top: -60px; /* Adjust as needed to fit the design */
+}
+
+.player-name {
+  margin-top: 10px;
+  font-size: 1.5em;
+}
+
+.player-nickname {
+  font-size: 1em;
+  color: #ffd700; /* Or any other color */
+}
+
+.player-card-body {
+  padding: 20px;
+}
+
+.player-details,
+.player-stats {
+  margin-bottom: 10px;
+}
+
+/* Style for link to the team page */
+.player-card a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.player-card a:hover {
+  text-decoration: underline;
+}
+
+
+/* CSS for video container and video */
+
+.nav-cards, .video-container {
+  flex-grow: 1; /* Laat de secties groeien en de beschikbare ruimte vullen */
+  overflow: auto; /* Voegt scroll toe binnen de sectie als de inhoud groter is dan de sectie */
+}
+
+.video-container {
+  margin-top: 40px;
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #fff; /* White background */
+  border-radius: 20px; /* Rounded corners */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Subtle shadow */
+  text-align: center;
+}
+
+.home-video {
+  width: 100%; /* Responsive video width */
+  border-radius: 15px; /* Rounded corners for the video */
+  outline: none; /* Remove focus outline */
+}
+
+
+/* footer stijl */
+
+/* Footer styling */
+.footer {
+  margin-top: auto;  /* Duwt automatisch de footer naar beneden */
+  background: #eaeaea;
+  color: white;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.footer-logo {
+  max-width: 100px; /* Pas de grootte aan naar wens */
+}
+
+.footer-text {
+  margin-top: 10px;
+  font-size: 16px;
+  color: #333;
+}
+
+.footer-text a {
+  color: #007bff;
+}
+
+.footer-text a:hover {
+  text-decoration: none;
+  color: #0056b3;
 }
 
 

@@ -1,44 +1,65 @@
-<!-- resources/views/teams/index.blade.php -->
-
 @extends('layouts.app')
 
 @section('content')
-    <h1>Teams</h1>
+<div class="card p-3">
+    
+<h1>Teams</h1>
 
-    <a href="{{ route('teams.create') }}" class="btn btn-primary mb-2">Nieuw Team Toevoegen</a>
-
-    @if ($teams->isEmpty())
-        <p>Er zijn geen teams beschikbaar.</p>
-    @else
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Naam</th>
-                    <th>Acties</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($teams as $team)
-                    <tr>
-                        <td>{{ $team->id }}</td>
-                        <td>{{ $team->name }}</td>
-                        <td>
-                            <a href="{{ route('teams.show', $team) }}" class="btn btn-primary btn-sm">Bekijken</a>
-                            <a href="{{ route('teams.edit', $team) }}" class="btn btn-secondary btn-sm">Bewerken</a>
-                            <a href="{{ route('teams.destroy', $team) }}" class="btn btn-danger btn-sm"
-    onclick="event.preventDefault(); document.getElementById('delete-team-{{ $team->id }}').submit();">
-    Verwijderen
-</a>
-
-<form id="delete-team-{{ $team->id }}" action="{{ route('teams.destroy', $team) }}" method="POST" style="display: none;">
-    @csrf
-    @method('DELETE')
-</form>
-                        </td>
-                    </tr>
+<form action="{{ route('teams.index') }}" method="GET">
+    <div class="card">
+        <div class="card-body">
+            <label for="division" class="form-label">Selecteer een divisie:</label>
+            <select id="division" name="division" class="form-select form-select-lg mb-3">
+                <option value="">Alle divisies</option>
+                @foreach($divisions as $division)
+                    <option value="{{ $division->id }}">{{ $division->name }}</option>
                 @endforeach
-            </tbody>
-        </table>
-    @endif
+            </select>
+            <button type="submit" class="btn btn-primary">Toon Teams</button>
+        </div>
+    </div>
+</form>
+
+@if ($teams->isNotEmpty())
+<div p-2>
+    <h2>{{$division->name}}</h2>
+    <div class="card">
+        <div class="card-body">
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Naam</th>
+                            <!-- Voeg hier andere kolommen toe zoals gespeelde wedstrijden, gewonnen wedstrijden, enzovoort -->
+                            <th>Acties</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($teams as $team)
+                            <tr>
+                                <td>{{ $team->id }}</td>
+                                <td><a href="{{ route('teams.show', $team) }}">{{ $team->name }}</a></td>
+                                <!-- Voeg hier andere kolommen toe zoals gespeelde wedstrijden, gewonnen wedstrijden, enzovoort -->
+                                <td>
+                                                                    
+                                    <form action="{{ route('teams.destroy', $team) }}" method="POST" style="display: inline;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Weet je zeker dat je dit team wilt verwijderen?')">Verwijderen</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+    
+@endif
+
+</div>    
+
 @endsection

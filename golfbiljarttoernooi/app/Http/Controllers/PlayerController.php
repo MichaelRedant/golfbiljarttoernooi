@@ -13,7 +13,8 @@ class PlayerController extends Controller
     public function index()
     {
         $players = Player::all();
-        return view('players.index', compact('players'));
+        $divisions = Division::all(); // Haal alle divisies op
+        return view('players.index', compact('players', 'divisions'));
     }
 
     public function create()
@@ -59,10 +60,12 @@ class PlayerController extends Controller
 
 
 
-    public function show(Player $player)
-    {
-        return view('players.show', compact('player'));
-    }
+public function show(Player $player)
+{
+    // Ensure the image URL is generated correctly.
+    $imageUrl = Storage::url('photos/'.$player->photo);
+    return view('players.show', compact('player', 'imageUrl'));
+}
 
     public function edit(Player $player)
 {
@@ -77,7 +80,7 @@ class PlayerController extends Controller
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'team_id' => 'required|string|max:255',
+            'team_id' => 'required|exists:teams,id',
             'division_id' => 'required|exists:divisions,id',
             'photo' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
         ]);
@@ -107,6 +110,83 @@ class PlayerController extends Controller
         return redirect()->route('players.index')->with('success', 'Speler succesvol bijgewerkt.');
     }
 
+    public function getTeams(Request $request)
+    {
+        $teams = Team::where('division_id', $request->division_id)->get();
+        return response()->json($teams);
+    }
+
+    public function calculatePlayerStandings($divisionId)
+{
+    // Haal alle spelers op in de opgegeven divisie met hun games en scores, inclusief teamgegevens
+    $players = Player::with(['games', 'games.manches', 'team'])
+                     ->where('division_id', $divisionId)
+                     ->get();
+
+    $standings = [];
+    foreach ($players as $player) {
+        $gamesWon = 0;
+        $gamesLost = 0;
+        $manchesWon = 0;
+        $manchesLost = 0;
+
+        foreach ($player->games as $game) {
+            foreach ($game->manches as $manche) {
+                if ($manche->winner_id == $player->id) {
+                    $manchesWon++;
+                    $gamesWon += ($manche->is_final_manche) ? 1 : 0;
+                } else {
+                    $manchesLost++;
+                    $gamesLost += ($manche->is_final_manche) ? 1 : 0;
+                }
+            }
+        }
+
+        $standings[] = [
+            'player_id' => $player->id,
+            'player_name' => $player->first_name . ' ' . $player->last_name,
+            'team_id' => $player->team->id,
+            'team_name' => $player->team->name,
+            'games_won' => $gamesWon,
+            'games_lost' => $gamesLost,
+            'manches_won' => $manchesWon,
+            'manches_lost' => $manchesLost,
+            'points' => $manchesWon
+        ];
+    }
+
+    usort($standings, function ($a, $b) {
+        if ($a['points'] === $b['points']) {
+            return $b['manches_won'] <=> $a['manches_won'];
+        }
+        return $b['points'] <=> $a['points'];
+    });
+
+    return view('players.standings', ['standings' => $standings, 'divisionId' => $divisionId]);
+}
+
+
+public function getPlayersByTeam(Request $request)
+{
+    $teamId = $request->query('team_id');
+    $players = Player::with(['games'])->where('team_id', $teamId)->get();
+
+    $playersData = $players->map(function ($player) {
+        return [
+            'id' => $player->id,
+            'name' => $player->first_name . ' ' . $player->last_name,
+            'games_played' => $player->games->count(),
+        ];
+    });
+
+    return response()->json($playersData);
+}
+
+
+
+
+
+
     public function destroy(Player $player)
     {
         Storage::delete(['public/photos/' . $player->photo, 'public/thumbnails/' . $player->thumbnail]);
@@ -114,10 +194,6 @@ class PlayerController extends Controller
         return redirect()->route('players.index')->with('success', 'Speler succesvol verwijderd.');
     }
 
-    public function getTeams(Request $request)
-    {
-        $teams = Team::where('division_id', $request->division_id)->get();
-        return response()->json($teams);
-    }
+    
 }
 

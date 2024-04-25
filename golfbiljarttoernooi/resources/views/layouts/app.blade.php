@@ -11,12 +11,12 @@
 
 
 </head>
-<body>
+<body class="content-wrapper">
     <header>
         <!-- Navigatiemenu -->
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container">
-        <a class="navbar-brand" href="{{ url('/') }}">Mijn Applicatie</a>
+        <a class="navbar-brand" href="{{ url('/') }}">Golfbiljart Bond Aalst</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -34,7 +34,8 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('players.index') }}">Spelers</a>
                 </li>
-                <!-- Voeg meer items toe zoals nodig -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('rankings.index') }}">Rankings</a></li>
             </ul>
         </div>
     </div>
@@ -46,8 +47,11 @@
         @yield('content')
     </main>
 
-    <footer>
-        <!-- Footer inhoud -->
+    <footer class="footer">
+        <div class="container">
+            <img src="{{ asset('images/Pixapop_black.webp') }}" alt="Pixapop Logo" class="footer-logo">
+            <p class="footer-text">Designed & created by <a href="https://pixapop.be" target="_blank">Pixapop webdesign</a> © {{ date('Y') }}</p>
+        </div>
     </footer>
     <!-- Optioneel JavaScript -->
 <!-- jQuery eerst, dan Popper.js, dan Bootstrap JS -->
