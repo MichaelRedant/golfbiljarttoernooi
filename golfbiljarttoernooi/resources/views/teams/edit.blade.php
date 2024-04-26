@@ -3,7 +3,7 @@
 @section('content')
 <div class="card p-3">
     <h1>Team Bewerken</h1>
-
+ 
     <form action="{{ route('teams.update', $team) }}" method="POST">
         @csrf
         @method('PUT')
