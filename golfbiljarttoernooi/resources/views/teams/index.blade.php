@@ -8,8 +8,11 @@
 <form action="{{ route('teams.index') }}" method="GET">
     <div class="card">
         <div class="card-body">
-            <label for="division" class="form-label">Selecteer een divisie:</label>
-            <select id="division" name="division" class="form-select form-select-lg mb-3">
+            <label for="division" class="form-label ">Selecteer een divisie:</label>
+            <p>
+                 <select id="division" name="division" class="form-select form-control form-select-lg mb-3">
+            </p>
+           
                 <option value="">Alle divisies</option>
                 @foreach($divisions as $division)
                     <option value="{{ $division->id }}">{{ $division->name }}</option>
@@ -29,7 +32,6 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>Naam</th>
                             <!-- Voeg hier andere kolommen toe zoals gespeelde wedstrijden, gewonnen wedstrijden, enzovoort -->
                             <th>Acties</th>
@@ -38,7 +40,6 @@
                     <tbody>
                         @foreach ($teams as $team)
                             <tr>
-                                <td>{{ $team->id }}</td>
                                 <td><a href="{{ route('teams.show', $team) }}">{{ $team->name }}</a></td>
                                 <!-- Voeg hier andere kolommen toe zoals gespeelde wedstrijden, gewonnen wedstrijden, enzovoort -->
                                 <td>

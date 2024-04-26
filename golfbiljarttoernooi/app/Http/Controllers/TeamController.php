@@ -70,12 +70,13 @@ class TeamController extends Controller
 
 
     public function edit(Team $team)
-    {
-        // Haal alle divisies op uit de database
-        $divisions = Division::all();
+{
+    $divisions = Division::all();
+    $players = $team->players; // Zorg ervoor dat de relatie correct gedefinieerd is.
+    $allTeams = Team::all(); // Haal alle teams op voor de dropdown.
 
-        return view('teams.edit', compact('team', 'divisions'));
-    }
+    return view('teams.edit', compact('team', 'divisions', 'players', 'allTeams'));
+}
 
     public function update(Request $request, Team $team)
     {

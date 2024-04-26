@@ -26,7 +26,7 @@
             @endif
         </div>
         <div class="card-footer">
-            <a href="{{ route('teams.edit', $team) }}" class="btn btn-secondary">Bewerken</a>
+            <a href="{{ route('teams.edit', $team) }}" class="btn btn-secondary">Bewerk {{ $team->name }}</a>
         </div>
     </div>
 </div>

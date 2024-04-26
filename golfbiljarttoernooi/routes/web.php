@@ -31,6 +31,7 @@ Route::get('/teams/{team}/edit', [TeamController::class, 'edit'])->name('teams.e
 Route::put('/teams/{team}', [TeamController::class, 'update'])->name('teams.update');
 Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
 Route::get('/get-teams', [PlayerController::class, 'getTeams'])->name('get-teams');
+Route::post('players/{player}/move-to-team', 'PlayerController@moveToTeam')->name('players.moveToTeam');
 
 
 
@@ -41,6 +42,7 @@ Route::post('/players', [PlayerController::class, 'store'])->name('players.store
 Route::get('/players/{player}', [PlayerController::class, 'show'])->name('players.show');
 Route::get('/players/{player}/edit', [PlayerController::class, 'edit'])->name('players.edit');
 Route::put('/players/{player}', [PlayerController::class, 'update'])->name('players.update');
+Route::get('players/{player}/remove/{team}', 'PlayerController@removeFromTeam')->name('players.remove');
 Route::delete('/players/{player}', [PlayerController::class, 'destroy'])->name('players.destroy');
 
 // Routes voor Wedstrijden

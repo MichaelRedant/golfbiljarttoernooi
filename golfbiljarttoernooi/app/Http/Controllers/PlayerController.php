@@ -59,7 +59,6 @@ class PlayerController extends Controller
 }
 
 
-
 public function show(Player $player)
 {
     // Ensure the image URL is generated correctly.
@@ -67,10 +66,10 @@ public function show(Player $player)
     return view('players.show', compact('player', 'imageUrl'));
 }
 
-    public function edit(Player $player)
+   public function edit(Player $player)
 {
     $divisions = Division::all();
-    $teams = Team::all();  // Zorg dat je alle teams ophaalt
+    $teams = Team::all();
     return view('players.edit', compact('player', 'divisions', 'teams'));
 }
 
@@ -184,6 +183,29 @@ public function getPlayersByTeam(Request $request)
 
 
 
+public function removeFromTeam(Player $player, Team $team)
+{
+    // Verwijder de speler uit het team
+    $player->team_id = null; // Stel in op null of een andere standaardwaarde
+    $player->save();
+
+    return redirect()->back()->with('success', 'Speler verwijderd uit team.');
+}
+
+// Je zou ook een methode kunnen toevoegen om spelers te verzetten naar een ander team
+public function moveToTeam(Request $request, Player $player)
+{
+    // Valideer dat het nieuwe team_id bestaat
+    $request->validate([
+        'new_team_id' => 'required|exists:teams,id'
+    ]);
+
+    // Update de speler met het nieuwe team_id
+    $player->team_id = $request->new_team_id;
+    $player->save();
+
+    return redirect()->back()->with('success', 'Speler succesvol verplaatst naar ander team.');
+}
 
 
 
