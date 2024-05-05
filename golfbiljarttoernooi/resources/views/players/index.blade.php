@@ -59,7 +59,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 let rows = players.map(player => `
                     <tr>
                         <td><a href="/players/${player.id}">${player.name}</a></td>
-                        <td>${player.games_played}</td>
                     </tr>
                 `).join('');
 
@@ -68,7 +67,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         <thead>
                             <tr>
                                 <th>Naam</th>
-                                <th>Gespeelde Games</th>
                             </tr>
                         </thead>
                         <tbody>

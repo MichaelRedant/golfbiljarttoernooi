@@ -52,7 +52,12 @@ class Game extends Model
                 ->withPivot(['manche_1_score', 'manche_2_score', 'belle_score', 'is_belle_winner']);
 }
 
-    
+public function games()
+{
+    return $this->belongsToMany(Game::class, 'game_player')
+                ->withPivot(['manche_1_score', 'manche_2_score', 'belle_score', 'is_belle_winner']);
+}
+
     
     use HasFactory;
 }

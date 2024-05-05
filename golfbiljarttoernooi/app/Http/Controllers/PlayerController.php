@@ -149,13 +149,15 @@ public function show(Player $player)
 public function getPlayersByTeam(Request $request)
 {
     $teamId = $request->query('team_id');
-    $players = Player::with(['games'])->where('team_id', $teamId)->get();
+    $players = Player::with('games','games.maches') // Zorg ervoor dat je 'games' correct relateert in je Player model
+                      ->where('team_id', $teamId)
+                      ->get();
 
     $playersData = $players->map(function ($player) {
         return [
             'id' => $player->id,
             'name' => $player->first_name . ' ' . $player->last_name,
-            'games_played' => $player->games->count(),
+            'games_played' => $player->games->count(), // Telt het aantal gerelateerde 'games' records
         ];
     });
 

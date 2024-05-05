@@ -30,7 +30,8 @@ Route::get('/teams/{team}', [TeamController::class, 'show'])->name('teams.show')
 Route::get('/teams/{team}/edit', [TeamController::class, 'edit'])->name('teams.edit');
 Route::put('/teams/{team}', [TeamController::class, 'update'])->name('teams.update');
 Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
-Route::get('/get-teams', [PlayerController::class, 'getTeams'])->name('get-teams');
+Route::get('/get-teams', [PlayerController::class, 'getTeamsByDivision'])->name('get-teams');
+Route::get('/get-players-by-team', [PlayerController::class, 'getPlayersByTeam'])->name('get-players-by-team');
 Route::post('players/{player}/move-to-team', 'PlayerController@moveToTeam')->name('players.moveToTeam');
 
 

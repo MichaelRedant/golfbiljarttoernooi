@@ -276,6 +276,13 @@ h1.text-center {
   color: #0056b3;
 }
 
+.player-avatar {
+  width: 100px;  /* of elke andere grootte */
+  height: 100px; /* moet hetzelfde zijn als de breedte voor een cirkel */
+  border-radius: 50%; /* maakt de afbeelding cirkelvormig */
+  object-fit: cover; /* zorgt ervoor dat de afbeelding goed past zonder te vervormen */
+}
+
 
 
 /* De switch - de doos rond de slider */
