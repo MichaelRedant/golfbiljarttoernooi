@@ -53,6 +53,7 @@ Route::get('/games/calendar-data', [GameController::class, 'calendarData'])->nam
 Route::post('/games/generate', [GameController::class, 'generateMatches'])->name('games.generate');
 Route::post('/games/clear', [GameController::class, 'clearCalendar'])->name('games.clear');
 Route::get('/games/{game}/form', [GameController::class, 'editForm'])->name('games.form');
+Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
 
 //Route voor Rankings
 Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');

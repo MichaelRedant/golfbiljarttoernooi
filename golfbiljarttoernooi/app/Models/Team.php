@@ -2,40 +2,40 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Team extends Model
 {
-    protected $fillable = ['name','division_id'];
+    use HasFactory;
 
+    protected $fillable = ['name', 'captain_id', 'reserve_id'];
     public function division()
     {
         return $this->belongsTo(Division::class);
     }
-
-    // in Team model
-
-public function gamesHome()
-{
-    return $this->hasMany(Game::class, 'home_team_id');
-}
-
-public function gamesAway()
-{
-    return $this->hasMany(Game::class, 'away_team_id');
-}
-
-
+    public function gamesHome()
+    {
+        return $this->hasMany(Game::class, 'home_team_id');
+    }
+    
+    public function gamesAway()
+    {
+        return $this->hasMany(Game::class, 'away_team_id');
+    }
     public function players()
     {
         return $this->hasMany(Player::class);
     }
 
-    public function reserves()
+    public function homeGames()
     {
-        return $this->hasMany(ReservePlayer::class);
+        return $this->hasMany(Game::class, 'home_team_id');
     }
-    
-    use HasFactory;
+
+    public function awayGames()
+    {
+        return $this->hasMany(Game::class, 'away_team_id');
+    }
 }
+

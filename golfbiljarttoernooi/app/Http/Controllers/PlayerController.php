@@ -118,51 +118,32 @@ public function show(Player $player)
     public function calculatePlayerStandings($divisionId)
 {
     // Haal alle spelers op in de opgegeven divisie met hun games en scores, inclusief teamgegevens
-    $players = Player::with(['games', 'games.manches', 'team'])
+    $players = Player::with(['team', 'games.manches'])
                      ->where('division_id', $divisionId)
                      ->get();
 
     $standings = [];
     foreach ($players as $player) {
-        $gamesWon = 0;
-        $gamesLost = 0;
-        $manchesWon = 0;
-        $manchesLost = 0;
-
-        foreach ($player->games as $game) {
-            foreach ($game->manches as $manche) {
-                if ($manche->winner_id == $player->id) {
-                    $manchesWon++;
-                    $gamesWon += ($manche->is_final_manche) ? 1 : 0;
-                } else {
-                    $manchesLost++;
-                    $gamesLost += ($manche->is_final_manche) ? 1 : 0;
-                }
-            }
-        }
-
         $standings[] = [
             'player_id' => $player->id,
             'player_name' => $player->first_name . ' ' . $player->last_name,
             'team_id' => $player->team->id,
             'team_name' => $player->team->name,
-            'games_won' => $gamesWon,
-            'games_lost' => $gamesLost,
-            'manches_won' => $manchesWon,
-            'manches_lost' => $manchesLost,
-            'points' => $manchesWon
+            'games_won' => $player->matches_won, // Deze waarden worden nu rechtstreeks uit het model gehaald
+            'games_lost' => $player->matches_lost,
+            'manches_won' => $player->manches_won,
+            'manches_lost' => $player->manches_lost,
+            'points' => $player->manches_won - $player->manches_lost, // Punten kunnen een simpele berekening zijn
         ];
     }
 
     usort($standings, function ($a, $b) {
-        if ($a['points'] === $b['points']) {
-            return $b['manches_won'] <=> $a['manches_won'];
-        }
-        return $b['points'] <=> $a['points'];
+        return $b['points'] <=> $a['points']; // Sorteren op punten, hoog naar laag
     });
 
     return view('players.standings', ['standings' => $standings, 'divisionId' => $divisionId]);
 }
+
 
 
 public function getPlayersByTeam(Request $request)

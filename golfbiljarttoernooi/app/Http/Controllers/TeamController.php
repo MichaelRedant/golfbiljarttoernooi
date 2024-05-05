@@ -43,31 +43,70 @@ class TeamController extends Controller
 
     public function show(Team $team)
     {
-        $team->load('division', 'players');
+        $team->load('division', 'players', 'gamesHome', 'gamesAway');
     
-        // Hier simuleren we het ophalen van statistieken, maar je moet je logica implementeren
+        // Verzamel alle games thuis en uit
+        $allGames = $team->gamesHome->merge($team->gamesAway);
+    
+        $gamesWon = $allGames->filter(function ($game) use ($team) {
+            return ($game->home_team_id == $team->id && $game->home_score > $game->away_score) ||
+                   ($game->away_team_id == $team->id && $game->away_score > $game->home_score);
+        })->count();
+    
+        $gamesLost = $allGames->filter(function ($game) use ($team) {
+            return ($game->home_team_id == $team->id && $game->home_score < $game->away_score) ||
+                   ($game->away_team_id == $team->id && $game->away_score < $game->home_score);
+        })->count();
+    
+        $gamesDraw = $allGames->filter(function ($game) use ($team) {
+            return $game->home_score == $game->away_score;
+        })->count();
+    
+        // Veronderstellen dat je 3 punten voor een winst en 1 punt voor een gelijkspel telt
+        $points = $gamesWon * 3 + $gamesDraw * 1;
+    
         $teamStats = [
-            'games_won' => $team->gamesHome->where('home_score', '>', 'away_score')->count() + $team->gamesAway->where('away_score', '>', 'home_score')->count(),
-            'games_lost' => $team->gamesHome->where('home_score', '<', 'away_score')->count() + $team->gamesAway->where('away_score', '<', 'home_score')->count(),
-            'games_draw' => $team->gamesHome->where('home_score', '=', 'away_score')->count() + $team->gamesAway->where('away_score', '=', 'home_score')->count(),
-            'points' => $team->gamesHome->sum(function ($game) {
-                return $game->home_score > $game->away_score ? 3 : ($game->home_score == $game->away_score ? 1 : 0);
-            }) + $team->gamesAway->sum(function ($game) {
-                return $game->away_score > $game->home_score ? 3 : ($game->away_score == $game->home_score ? 1 : 0);
-            }),
-            // Aanname dat je een methode hebt om de rang te bepalen
+            'games_won' => $gamesWon,
+            'games_lost' => $gamesLost,
+            'games_draw' => $gamesDraw,
+            'points' => $points,
+            // De berekening van 'rank' zou moeten worden geïmplementeerd op een manier die overeenkomt met de ranking logica
             'rank' => $this->calculateRank($team)
         ];
     
         return view('teams.show', compact('team', 'teamStats'));
     }
     
-    protected function calculateRank(Team $team)
-    {
-        // Logica om de rang van het team te berekenen
-        return 1; // Voorbeeld waarde
-    }
 
+    protected function calculateRank(Team $team)
+{
+    $teams = $team->division->teams()->with(['gamesHome', 'gamesAway'])->get();
+
+    $rankings = $teams->map(function ($team) {
+        $gamesWon = $team->gamesHome->where('home_score', '>', 'away_score')->count() +
+                    $team->gamesAway->where('away_score', '>', 'home_score')->count();
+
+        $gamesDraw = $team->gamesHome->where('home_score', '=', 'away_score')->count() +
+                     $team->gamesAway->where('away_score', '=', 'home_score')->count();
+
+        $points = $gamesWon * 3 + $gamesDraw;  // Points from wins and draws
+
+        return [
+            'team_id' => $team->id,
+            'points' => $points,
+            'games_won' => $gamesWon,  // Additional tiebreaker
+        ];
+    })->sortByDesc(function ($team) {
+        return [$team['points'], $team['games_won']];  // Primary sort by points, secondary by wins
+    });
+
+    // Finding the rank
+    $rank = $rankings->pluck('team_id')->search($team->id) + 1;
+
+    return $rank;
+}
+
+    
 
     public function edit(Team $team)
 {
