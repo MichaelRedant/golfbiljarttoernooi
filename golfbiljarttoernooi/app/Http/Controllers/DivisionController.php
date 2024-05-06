@@ -4,17 +4,31 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Season;
 use App\Models\Division;
 use Illuminate\Http\Request;
 
 class DivisionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $divisions = Division::all();
-        return view('divisions.index', ['divisions' => $divisions]);
+        $seasons = Season::all();
+        $currentSeasonId = $request->input('season_id', Season::latest('id')->first()->id);
+
+        $divisions = Division::with(['teams' => function($query) use ($currentSeasonId) {
+            $query->where('season_id', $currentSeasonId);
+        }])->get();
+
+        return view('divisions.index', compact('divisions', 'seasons', 'currentSeasonId'));
+    
     }
 
+    public function getDivisions() {
+    $divisions = Division::all();
+    return response()->json($divisions);
+}
+
+    
     public function show(Division $division)
     {
         // Laad de teams die bij deze divisie horen

@@ -2,21 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Game;
-use App\Models\Manche;
-use App\Models\Team;
-use App\Models\Player;
 use Carbon\Carbon;
+use App\Models\Game;
+use App\Models\Team;
+use App\Models\Manche;
+use App\Models\Player;
+use App\Models\Season;
 use Illuminate\Http\Request;
 
 class GameController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $games = Game::with(['homeTeam', 'awayTeam'])->orderBy('date', 'asc')->get();
-    $gamesByDate = $games->groupBy('date'); // Dit groepeert games per datum
-    return view('games.index', compact('gamesByDate'));
+        $currentSeasonId = $request->input('season_id', Season::latest()->first()->id); // Neem het meest recente seizoen als standaard
+        $seasons = Season::all(); // Haal alle seizoenen op voor de dropdown
+        $gamesByDate = Game::with(['homeTeam', 'awayTeam'])
+                           ->where('season_id', $currentSeasonId)
+                           ->orderBy('date', 'asc')
+                           ->get()
+                           ->groupBy('date');
+    
+        return view('games.index', compact('gamesByDate', 'seasons', 'currentSeasonId'));
     }
+    
 
     public function calendarData()
     {
@@ -32,34 +40,47 @@ class GameController extends Controller
         return response()->json($events);
     }
 
-    public function generateMatches()
+    public function store(Request $request)
+{
+    $data = $request->validate([
+        'home_team_id' => 'required|exists:teams,id',
+        'away_team_id' => 'required|exists:teams,id',
+        // Overige validatie
+    ]);
+
+    $game = new Game($data);
+    $game->season_id = Season::latest()->first()->id; // Wijs het meest recente seizoen toe
+    $game->save();
+
+    return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol toegevoegd!');
+}
+
+public function generateMatches()
 {
     $teams = Team::all();
     $numTeams = $teams->count();
-    $totalRounds = $numTeams - 1; // Round-robin systeem
+    $totalRounds = $numTeams - 1;
     $matchesPerRound = intdiv($numTeams, 2);
     $matchDate = Carbon::now()->next('Saturday');
+    $currentSeason = Season::latest()->first()->id; // Haal het huidige seizoen op
 
     $schedule = [];
 
-    // Double round-robin systeem: elk team speelt twee keer tegen elk ander team, een keer thuis en een keer uit.
     for ($i = 0; $i < $totalRounds * 2; $i++) {
         for ($j = 0; $j < $matchesPerRound; $j++) {
-            // Bereken home en away teams voor deze match
             $home = ($i + $j) % $numTeams;
             $away = ($i + $numTeams - $j) % $numTeams;
-
-            if ($home != $away) { // Voorkom dat een team tegen zichzelf speelt
+            if ($home != $away) {
                 $schedule[] = [
                     'home_team_id' => $teams[$home]->id,
                     'away_team_id' => $teams[$away]->id,
+                    'season_id' => $currentSeason,
                     'date' => $matchDate->copy()->addWeeks($i)->format('Y-m-d')
                 ];
             }
         }
     }
 
-    // Maak alle geplande games aan in de database
     foreach ($schedule as $gameData) {
         Game::create($gameData);
     }

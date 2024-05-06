@@ -1,8 +1,12 @@
 @extends('layouts.app')
+@php
+    $hasGames = $hasGames ?? false;
+@endphp
 
 @section('content')
 <div class="container card">
     <h1>Team Klassement</h1>
+    <a href="{{ route('rankings.index') }}" class="btn btn-secondary mb-3">Terug naar Rankings</a>
     <table class="table">
         <thead>
             <tr>
@@ -14,15 +18,16 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($standings as $standing)
-                <tr>
-                    <td><a href="{{ route('teams.show', ['team' => $standing['team_id']]) }}">{{ $standing['team_name'] }}</a></td>
-                    <td>{{ $standing['games_won'] }}</td>
-                    <td>{{ $standing['games_lost'] }}</td>
-                    <td>{{ $standing['games_draw'] }}</td>
-                    <td>{{ $standing['points'] }}</td>
-                </tr>
+            @if ($hasGames)
+            @foreach ($teams as $team)
+            <tr>
+                <td colspan="5">Geen wedstrijden gevonden voor dit seizoen.</td>
+            </tr>
             @endforeach
+            @else
+                <tr><td colspan="5">Geen wedstrijden gevonden voor dit seizoen.</td></tr>
+            @endif
+        
         </tbody>
     </table>
 </div>

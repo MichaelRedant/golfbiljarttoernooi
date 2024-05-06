@@ -8,17 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Game extends Model
 {
     protected $fillable = [
-        'home_team_id',
-        'away_team_id',
-        'home_score',
-        'away_score',
-        'start_time',
-        'home_forfeit',
-        'away_forfeit',
-        'forfait',
-        'date', 
-        'other_date'
+        'home_team_id', 'away_team_id', 'date', 'season_id', 'home_score', 'away_score', 'forfeit'
     ];
+    
 
     
 
@@ -57,6 +49,12 @@ public function games()
     return $this->belongsToMany(Game::class, 'game_player')
                 ->withPivot(['manche_1_score', 'manche_2_score', 'belle_score', 'is_belle_winner']);
 }
+
+public function season()
+{
+    return $this->belongsTo(Season::class);
+}
+
 
     
     use HasFactory;

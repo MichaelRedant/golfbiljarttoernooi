@@ -1,14 +1,15 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DivisionController;
-use App\Http\Controllers\TeamController;
-use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\GameController;
-use App\Http\Controllers\MancheController;
+use App\Http\Controllers\TeamController;
 use App\Http\Controllers\BelleController;
-use App\Http\Controllers\ReservePlayerController;
+use App\Http\Controllers\MancheController;
+use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\SeasonController;
 use App\Http\Controllers\RankingController;
+use App\Http\Controllers\DivisionController;
+use App\Http\Controllers\ReservePlayerController;
 
 // Routes voor Divisies
 Route::get('/divisions', [DivisionController::class, 'index'])->name('divisions.index');
@@ -34,6 +35,14 @@ Route::get('/get-teams', [PlayerController::class, 'getTeamsByDivision'])->name(
 Route::get('/get-players-by-team', [PlayerController::class, 'getPlayersByTeam'])->name('get-players-by-team');
 Route::post('players/{player}/move-to-team', 'PlayerController@moveToTeam')->name('players.moveToTeam');
 
+// Routes voor seasons
+Route::resource('seasons', SeasonController::class);
+Route::get('/seasons/create', [App\Http\Controllers\SeasonController::class, 'create'])->name('seasons.create');
+Route::post('/seasons', [App\Http\Controllers\SeasonController::class, 'store'])->name('seasons.store');
+Route::get('/seasons', [App\Http\Controllers\SeasonController::class, 'index'])->name('seasons.index');
+Route::get('/seasons/{season}/edit', [App\Http\Controllers\SeasonController::class, 'edit'])->name('seasons.edit');
+Route::put('/seasons/{season}', [App\Http\Controllers\SeasonController::class, 'update'])->name('seasons.update');
+Route::delete('/seasons/{season}', [App\Http\Controllers\SeasonController::class, 'destroy'])->name('seasons.destroy');
 
 
 // Routes voor Spelers
@@ -66,6 +75,8 @@ Route::get('/divisions/{divisionId}/standings', [PlayerController::class, 'calcu
 Route::get('/get-teams', [TeamController::class, 'getTeamsByDivision'])->name('get-teams');
 // Route om spelers op te halen op basis van het team
 Route::get('/get-players-by-team', [PlayerController::class, 'getPlayersByTeam'])->name('get-players-by-team');
+
+
 
 
 
