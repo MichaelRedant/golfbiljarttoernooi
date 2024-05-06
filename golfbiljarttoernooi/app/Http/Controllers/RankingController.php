@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Team;
 use App\Models\User;
+use Illuminate\Http\Request;
+use App\Models\Division;
 use App\Models\Player;
 use App\Models\Season;
-use App\Models\Division;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class RankingController extends Controller
 {
@@ -28,41 +26,52 @@ class RankingController extends Controller
         $query->where('season_id', $seasonId);
     }])->get();
 
-    // Controleer of er daadwerkelijk games zijn
-    $hasGames = $teams->pluck('games')->flatten()->isNotEmpty();
-
-    return view('rankings.teams', compact('division', 'teams', 'seasonId', 'hasGames'));
-}
-
-    
-public function getRankingsForDivisionAndSeason($divisionId, $seasonId) {
-    // Eerst haal je de teams van de divisie op voor het geselecteerde seizoen
-    $teams = Team::where('division_id', $divisionId)->with(['games' => function($query) use ($seasonId) {
-        $query->where('season_id', $seasonId);
-    }])->get();
-
-    $rankings = $teams->map(function ($team) {
-        // Bereken totaal gewonnen, verloren, gelijk en punten
-        $gamesWon = $team->games->where('result', 'win')->count();
-        $gamesLost = $team->games->where('result', 'loss')->count();
-        $gamesDraw = $team->games->where('result', 'draw')->count();
-        $points = ($gamesWon * 3) + $gamesDraw; // Stel dat een winst 3 punten geeft en een gelijkspel 1 punt
+    // Bereken standings
+    $standings = $teams->map(function ($team) use ($seasonId) {
+        $games = $team->games->where('season_id', $seasonId);
+        $won = 0;
+        $lost = 0;
+        $draw = 0;
+        $points = 0;
+        
+        foreach ($games as $game) {
+            if ($game->home_team_id == $team->id) {
+                if ($game->home_score > $game->away_score) {
+                    $won++;
+                    $points += 3; // Voorbeeld: 3 punten voor een win
+                } elseif ($game->home_score == $game->away_score) {
+                    $draw++;
+                    $points += 1; // 1 punt voor een draw
+                } else {
+                    $lost++;
+                }
+            } else if ($game->away_team_id == $team->id) {
+                if ($game->away_score > $game->home_score) {
+                    $won++;
+                    $points += 3;
+                } elseif ($game->away_score == $game->home_score) {
+                    $draw++;
+                    $points += 1;
+                } else {
+                    $lost++;
+                }
+            }
+        }
 
         return [
             'team_name' => $team->name,
-            'games_won' => $gamesWon,
-            'games_lost' => $gamesLost,
-            'games_draw' => $gamesDraw,
-            'points' => $points
+            'games_won' => $won,
+            'games_lost' => $lost,
+            'games_draw' => $draw,
+            'points' => $points,
+            'team_id' => $team->id
         ];
     });
 
-    // Sorteer rankings op punten, daarna op gewonnen games
-    $sortedRankings = $rankings->sortByDesc('points')->values();
+    $standings = collect($standings);
 
-    return response()->json($sortedRankings);
+    return view('rankings.teams', compact('division', 'standings', 'seasonId'));
 }
-    
 
 public function playerRankings(Request $request, Division $division)
 {

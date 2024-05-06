@@ -185,14 +185,12 @@ class TeamController extends Controller
     return view('teams.standings', ['standings' => $standings]);
 }
 
-// In TeamController.php
-public function getTeamsByDivision(Request $request)
+public function getTeamsByDivision($divisionId)
 {
-    $divisionId = $request->query('division_id');
     $teams = Team::where('division_id', $divisionId)->get();
-
     return response()->json($teams);
 }
+
 
 
     public function destroy(Team $team)
