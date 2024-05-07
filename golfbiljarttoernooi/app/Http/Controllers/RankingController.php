@@ -11,13 +11,15 @@ use App\Models\Season;
 class RankingController extends Controller
 {
     public function index(Request $request)
-    {
-        $seasons = Season::all();
-        $currentSeasonId = $request->input('season_id', Season::latest('id')->first()->id);
-        $divisions = Division::all();
+{
+    $seasons = Season::all();
+    $latestSeason = Season::latest('id')->first();
+    $currentSeasonId = $latestSeason ? $latestSeason->id : null;
+    $divisions = Division::all();
 
-        return view('rankings.index', compact('divisions', 'seasons', 'currentSeasonId'));
-    }
+    return view('rankings.index', compact('divisions', 'seasons', 'currentSeasonId'));
+}
+
     
     public function teamRankings(Request $request, Division $division)
 {

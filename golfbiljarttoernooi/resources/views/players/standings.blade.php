@@ -8,10 +8,11 @@
             <tr>
                 <th>Speler</th>
                 <th>Team</th>
-                <th>Games Gewonnen</th>
-                <th>Games Verloren</th>
-                <th>Manches Gewonnen</th>
-                <th>Manches Verloren</th>
+                <th>Wedstrijden Gewonnen</th>
+                <th>Wedstrijden Gelijkspel</th>
+                <th>Wedstrijden Verloren</th>
+                <th>Matches Gewonnen</th>
+                <th>Matches Verloren</th>
                 <th>Punten</th>
             </tr>
         </thead>
@@ -19,11 +20,12 @@
             @foreach ($standings as $standing)
                 <tr>
                     <td><a href="{{ route('players.show', ['player' => $standing['player_id']]) }}">{{ $standing['player_name'] }}</a></td>
-                    <td><a href="{{ route('teams.show', $standing['team_id']) }}">{{ $standing['team_name'] }}</a></td>
+                    <td><a href="{{ route('teams.show', ['team' => $standing['team_id']]) }}">{{ $standing['team_name'] }}</a></td>
                     <td>{{ $standing['games_won'] }}</td>
+                    <td>{{ $standing['games_drawn'] }}</td>
                     <td>{{ $standing['games_lost'] }}</td>
-                    <td>{{ $standing['manches_won'] }}</td>
-                    <td>{{ $standing['manches_lost'] }}</td>
+                    <td>{{ $standing['matches_won'] }}</td>
+                    <td>{{ $standing['matches_lost']}}</td>
                     <td>{{ $standing['points'] }}</td>
                 </tr>
             @endforeach

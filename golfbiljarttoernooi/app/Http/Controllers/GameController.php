@@ -13,17 +13,31 @@ use Illuminate\Http\Request;
 class GameController extends Controller
 {
     public function index(Request $request)
-    {
-        $currentSeasonId = $request->input('season_id', Season::latest()->first()->id); // Neem het meest recente seizoen als standaard
-        $seasons = Season::all(); // Haal alle seizoenen op voor de dropdown
+{
+    // Ophalen van alle seizoenen voor de dropdown.
+    $seasons = Season::all();
+
+    // Vind het laatste seizoen en haal het id op indien beschikbaar.
+    $latestSeason = Season::latest('id')->first();
+    $currentSeasonId = $latestSeason ? $latestSeason->id : null;
+
+    // Ophalen van games die gesorteerd zijn op datum en gegroepeerd op de datum, rekening houdend met het geselecteerde seizoen.
+    if ($currentSeasonId) {
         $gamesByDate = Game::with(['homeTeam', 'awayTeam'])
                            ->where('season_id', $currentSeasonId)
                            ->orderBy('date', 'asc')
                            ->get()
                            ->groupBy('date');
-    
-        return view('games.index', compact('gamesByDate', 'seasons', 'currentSeasonId'));
+    } else {
+        // Als er geen seizoenen zijn, zorg ervoor dat er een lege collectie wordt teruggestuurd.
+        $gamesByDate = collect();
     }
+
+    // Terugsturen van de data naar de view met de games gegroepeerd op datum, de lijst van seizoenen en het ID van het huidige seizoen.
+    return view('games.index', compact('gamesByDate', 'seasons', 'currentSeasonId'));
+}
+
+
     
 
     public function calendarData()

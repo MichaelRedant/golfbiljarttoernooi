@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Team;
 use App\Models\Division;
+use App\Models\Season;
 use Illuminate\Http\Request;
 
 class TeamController extends Controller
@@ -43,7 +44,12 @@ class TeamController extends Controller
 
     public function show(Team $team)
     {
-        $team->load('division', 'players', 'gamesHome', 'gamesAway');
+        $currentSeasonId = Season::latest()->first()->id; // Veronderstel dat je het meest recente seizoen wilt
+    $team->load(['division', 'players', 'gamesHome' => function ($query) use ($currentSeasonId) {
+        $query->where('season_id', $currentSeasonId);
+    }, 'gamesAway' => function ($query) use ($currentSeasonId) {
+        $query->where('season_id', $currentSeasonId);
+    }]);
     
         // Verzamel alle games thuis en uit
         $allGames = $team->gamesHome->merge($team->gamesAway);
@@ -106,6 +112,7 @@ class TeamController extends Controller
     return $rank;
 }
 
+
     
 
     public function edit(Team $team)
@@ -130,8 +137,12 @@ class TeamController extends Controller
 
     public function calculateTeamStandings()
 {
-    // Eerst halen we alle teams op met hun thuis- en uitgames
-    $teams = Team::with('gamesHome', 'gamesAway')->get();
+    $currentSeasonId = Season::latest()->first()->id; // Veronderstel dat je het meest recente seizoen wilt
+    $teams = Team::with(['gamesHome' => function ($query) use ($currentSeasonId) {
+                    $query->where('season_id', $currentSeasonId);
+                }, 'gamesAway' => function ($query) use ($currentSeasonId) {
+                    $query->where('season_id', $currentSeasonId);
+                }])->get();
 
     // We zullen een array opstellen om het klassement bij te houden
     $standings = [];
@@ -185,11 +196,13 @@ class TeamController extends Controller
     return view('teams.standings', ['standings' => $standings]);
 }
 
-public function getTeamsByDivision($divisionId)
+public function getTeamsByDivision(Request $request)
 {
+    $divisionId = $request->query('division_id');
     $teams = Team::where('division_id', $divisionId)->get();
     return response()->json($teams);
 }
+
 
 
 

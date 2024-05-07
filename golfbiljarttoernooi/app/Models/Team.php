@@ -37,5 +37,10 @@ class Team extends Model
     {
         return $this->hasMany(Game::class, 'away_team_id');
     }
+
+    public function getGamesAttribute()
+    {
+        return $this->homeGames->merge($this->awayGames);
+    }
 }
 
