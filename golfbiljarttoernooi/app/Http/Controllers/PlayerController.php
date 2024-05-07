@@ -164,6 +164,16 @@ public function getPlayersByTeam(Request $request)
     return response()->json($playersData);
 }
 
+public function playersBySeason($divisionId, $seasonId)
+{
+    return Player::whereHas('games', function ($query) use ($seasonId) {
+                   $query->where('season_id', $seasonId);
+               })
+               ->where('division_id', $divisionId)
+               ->get();
+}
+
+
 
 
 public function removeFromTeam(Player $player, Team $team)
