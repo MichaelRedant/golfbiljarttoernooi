@@ -11,5 +11,10 @@ class Season extends Model
     protected $casts = [
         'start_date' => 'date',
     ];
+
+    public function games()
+    {
+        return $this->hasMany(Game::class);
+    }
 }
 

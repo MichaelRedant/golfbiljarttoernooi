@@ -36,4 +36,13 @@ class Player extends Model
         return $this->belongsToMany(Game::class, 'game_player')
                     ->withPivot(['manche_1_score', 'manche_2_score', 'belle_score', 'is_belle_winner']);
     }
+    // Player model
+
+public function seasons()
+{
+    // Dit haalt alle unieke seizoenen op waarin de speler heeft deelgenomen via games.
+    return $this->games()->with('season')->get()->pluck('season')->unique('id');
+}
+
+
 }

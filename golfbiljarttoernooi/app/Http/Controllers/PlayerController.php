@@ -61,12 +61,53 @@ class PlayerController extends Controller
 }
 
 
-public function show(Player $player)
+public function show(Player $player, Request $request)
 {
-    // Ensure the image URL is generated correctly.
     $imageUrl = Storage::url('photos/'.$player->photo);
-    return view('players.show', compact('player', 'imageUrl'));
+    $currentSeasonId = $request->input('season_id') ?? Season::latest('id')->first()->id;
+    $seasons = Season::all();
+
+    // Retrieve games
+    $teamGamesHome = $player->team->homeGames()->where('season_id', $currentSeasonId)->get();
+    $teamGamesAway = $player->team->awayGames()->where('season_id', $currentSeasonId)->get();
+    $teamGames = $teamGamesHome->merge($teamGamesAway);
+
+    // Debug output
+    Log::info('Home Games: ' . $teamGamesHome->count());
+    Log::info('Away Games: ' . $teamGamesAway->count());
+
+    $gamesWon = $teamGames->where('winner_id', $player->team_id)->count();
+    $gamesLost = $teamGames->where('loser_id', $player->team_id)->count();
+
+    // Player-specific games
+    $playerGames = $player->games()->whereHas('season', function ($query) use ($currentSeasonId) {
+        $query->where('id', $currentSeasonId);
+    })->get();
+
+    // Count wins and losses
+    $matchesWon = $playerGames->sum(function ($game) use ($player) {
+        return $game->manches->where('winner_id', $player->id)->count();
+    });
+    $matchesLost = $playerGames->sum(function ($game) use ($player) {
+        return $game->manches->where('loser_id', $player->id)->count();
+    });
+
+
+    // Pass all necessary data to the view
+    return view('players.show', compact(
+        'player',
+        'seasons',
+        'currentSeasonId',
+        'gamesWon',
+        'gamesLost',
+        'matchesWon',
+        'matchesLost',
+        'imageUrl'
+    ));
 }
+
+
+
 
    public function edit(Player $player)
 {

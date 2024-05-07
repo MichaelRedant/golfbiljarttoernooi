@@ -136,66 +136,51 @@ class TeamController extends Controller
     }
 
     public function calculateTeamStandings()
-{
-    $currentSeasonId = Season::latest()->first()->id; // Veronderstel dat je het meest recente seizoen wilt
-    $teams = Team::with(['gamesHome' => function ($query) use ($currentSeasonId) {
-                    $query->where('season_id', $currentSeasonId);
-                }, 'gamesAway' => function ($query) use ($currentSeasonId) {
-                    $query->where('season_id', $currentSeasonId);
-                }])->get();
-
-    // We zullen een array opstellen om het klassement bij te houden
-    $standings = [];
-
-    foreach ($teams as $team) {
-        // Bereken de punten voor elk team
-        $won = 0; // Aantal gewonnen games
-        $lost = 0; // Aantal verloren games
-        $draw = 0; // Aantal gelijke spelen
-
-        foreach ($team->gamesHome as $game) {
-            if ($game->home_score > $game->away_score) {
-                $won++;
-            } elseif ($game->home_score < $game->away_score) {
-                $lost++;
-            } else {
-                $draw++;
-            }
-        }
-
-        foreach ($team->gamesAway as $game) {
-            if ($game->away_score > $game->home_score) {
-                $won++;
-            } elseif ($game->away_score < $game->home_score) {
-                $lost++;
-            } else {
-                $draw++;
-            }
-        }
-
-        // Voeg de teamresultaten toe aan de klassement array
-        $standings[] = [
-            'team_id' => $team->id,
-            'team_name' => $team->name,
-            'games_won' => $won,
-            'games_lost' => $lost,
-            'games_draw' => $draw,
-            'points' => $won * 3 + $draw // 3 punten voor een overwinning, 1 punt voor een gelijkspel
-        ];
+    {
+        $currentSeasonId = Season::latest()->first()->id; // Veronderstel dat je het meest recente seizoen wilt
+        $teams = Team::with(['gamesHome' => function ($query) use ($currentSeasonId) {
+                        $query->where('season_id', $currentSeasonId)
+                              ->whereNotNull('home_score')
+                              ->whereNotNull('away_score');
+                    }, 'gamesAway' => function ($query) use ($currentSeasonId) {
+                        $query->where('season_id', $currentSeasonId)
+                              ->whereNotNull('home_score')
+                              ->whereNotNull('away_score');
+                    }])->get();
+    
+        $standings = $teams->map(function ($team) {
+            // Bereken gewonnen, verloren en gelijke games
+            $gamesWon = $team->gamesHome->reduce(function ($carry, $game) {
+                return $carry + (($game->home_score > $game->away_score) ? 1 : 0);
+            }, 0) + $team->gamesAway->reduce(function ($carry, $game) {
+                return $carry + (($game->away_score > $game->home_score) ? 1 : 0);
+            }, 0);
+    
+            $gamesLost = $team->gamesHome->reduce(function ($carry, $game) {
+                return $carry + (($game->home_score < $game->away_score) ? 1 : 0);
+            }, 0) + $team->gamesAway->reduce(function ($carry, $game) {
+                return $carry + (($game->away_score < $game->home_score) ? 1 : 0);
+            }, 0);
+    
+            $gamesDraw = $team->gamesHome->reduce(function ($carry, $game) {
+                return $carry + (($game->home_score === $game->away_score) ? 1 : 0);
+            }, 0) + $team->gamesAway->reduce(function ($carry, $game) {
+                return $carry + (($game->away_score === $game->home_score) ? 1 : 0);
+            }, 0);
+    
+            return [
+                'team_id' => $team->id,
+                'team_name' => $team->name,
+                'games_won' => $gamesWon,
+                'games_lost' => $gamesLost,
+                'games_draw' => $gamesDraw,
+                'points' => $gamesWon * 3 + $gamesDraw // 3 punten voor een overwinning, 1 punt voor een gelijkspel
+            ];
+        })->sortByDesc('points')->values()->all();
+    
+        return view('teams.standings', ['standings' => $standings]);
     }
-
-    // Sorteer de array op punten, dan op gewonnen games
-    usort($standings, function ($a, $b) {
-        if ($a['points'] === $b['points']) {
-            return $b['games_won'] <=> $a['games_won'];
-        }
-        return $b['points'] <=> $a['points'];
-    });
-
-    // Stuur de klassement array naar een view
-    return view('teams.standings', ['standings' => $standings]);
-}
-
+    
 public function getTeamsByDivision(Request $request)
 {
     $divisionId = $request->query('division_id');

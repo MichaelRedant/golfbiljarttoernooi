@@ -31,5 +31,8 @@
             @endforeach
         </tbody>
     </table>
+    <div class="mt-4">
+        <a href="{{ route('rankings.index') }}" class="btn btn-primary">Terug naar Overzicht</a>
+    </div>
 </div>
 @endsection
