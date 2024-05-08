@@ -39,6 +39,12 @@
             </ul>
         </div>
     </div>
+    <div class="navbar-text">
+        Donkere mode: <label class="switch">
+          <input type="checkbox" id="nightModeToggle">
+          <span class="slider round"></span>
+        </label>
+    </div>
 </nav>
 
     </header>
@@ -58,6 +64,24 @@
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nightModeToggle = document.getElementById('nightModeToggle');
+    const isNightMode = localStorage.getItem('nightMode') === 'true';
+
+    // Stel de toggle in op basis van opgeslagen voorkeur
+    nightModeToggle.checked = isNightMode;
+    document.body.classList.toggle('night-mode', isNightMode);
+
+    // Luister naar veranderingen in de toggle
+    nightModeToggle.addEventListener('change', function() {
+        document.body.classList.toggle('night-mode', this.checked);
+        // Bewaar de voorkeur in localStorage
+        localStorage.setItem('nightMode', this.checked);
+    });
+});
+</script>
+
 
 </body>
 </html>

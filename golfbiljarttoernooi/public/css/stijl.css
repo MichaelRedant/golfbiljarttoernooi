@@ -347,4 +347,40 @@ h1.text-center {
   .slider.round:before {
     border-radius: 50%;
   }
+
+  /* Basis Night Mode stijlen */
+body.night-mode {
+  background-color: #333;
+  color: #ccc;
+}
+
+body.night-mode .navbar,
+body.night-mode .footer {
+  background-color: #222;
+  color: #fff;
+}
+
+body.night-mode .card {
+  background-color: #424242;
+  color: #fff;
+}
+
+body.night-mode a {
+  color: #9cf;
+}
+
+body.night-mode .btn-primary {
+  background-color: #666;
+  border-color: #666;
+}
+
+body.night-mode .btn-primary:hover {
+  background-color: #555;
+  border-color: #555;
+}
+
+body.night-mode .text-justify{
+  color: #fff;
+}
+
   
