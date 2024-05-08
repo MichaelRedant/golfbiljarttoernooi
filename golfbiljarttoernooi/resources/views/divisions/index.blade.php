@@ -11,16 +11,16 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Naam</th>
-                    <th>Acties</th>
+                    <th class="text-justify">ID</th>
+                    <th class="text-justify">Naam</th>
+                    <th class="text-justify">Acties</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($divisions as $division)
                     <tr>
-                        <td>{{ $division->id }}</td>
-                        <td>{{ $division->name }}</td>
+                        <td class="text-justify">{{ $division->id }}</td>
+                        <td class="text-justify">{{ $division->name }}</td>
                         <td>
                             <a href="{{ route('divisions.show', $division) }}" class="btn btn-primary btn-sm">Bekijken</a>
                             <a href="{{ route('divisions.edit', $division) }}" class="btn btn-secondary btn-sm">Bewerken</a>
@@ -41,3 +41,4 @@
         </table>
     @endif
 @endsection
+ 

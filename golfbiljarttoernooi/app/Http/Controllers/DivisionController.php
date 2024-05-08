@@ -1,6 +1,5 @@
 <?php
 
-// app/Http/Controllers/DivisionController.php
 
 namespace App\Http\Controllers;
 
@@ -10,18 +9,12 @@ use Illuminate\Http\Request;
 
 class DivisionController extends Controller
 {
-    public function index(Request $request)
-    {
-        $seasons = Season::all();
-        $currentSeasonId = $request->input('season_id', Season::latest('id')->first()->id);
+    public function index()
+{
+    $divisions = Division::with('teams')->get(); // Laadt alleen teams zonder seizoensfilter
 
-        $divisions = Division::with(['teams' => function($query) use ($currentSeasonId) {
-            $query->where('season_id', $currentSeasonId);
-        }])->get();
-
-        return view('divisions.index', compact('divisions', 'seasons', 'currentSeasonId'));
-    
-    }
+    return view('divisions.index', compact('divisions'));
+}
 
     public function getDivisions() {
     $divisions = Division::all();

@@ -22,7 +22,6 @@
                     <a class="nav-link" href="{{ route('players.index') }}">Spelers</a>
                 </li>
                 
-                
             </ul>
             <ul class="navbar-nav ms-auto">
                 @auth
@@ -47,8 +46,18 @@
                     <a class="nav-link" href="{{ route('login') }}">Login</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ route('register') }}">Register</a>
+                    <a class="nav-link" href="{{ route('register') }}">Registreer</a>
                 </li>
+                <div class="vr mx-3"></div>
+                <div class="navbar-text">
+                <i class="fas fa-sun" style="color:#e5e500;"></i>
+            <label class="switch">
+              <input type="checkbox" id="nightModeToggle">
+              <span class="slider round"></span>
+            </label>
+           
+            <i class="fas fa-moon" style="color: black;"></i>
+        </div>
                 @endguest
             </ul>
         </div>
