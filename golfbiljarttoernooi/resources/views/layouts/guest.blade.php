@@ -5,29 +5,20 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Golfbiljart') }}</title>
+        <title>Golfbiljart</title>
 <!-- Fonts en Styles -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito">
     <link href="{{ asset('css/stijl.css') }}" rel="stylesheet">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Scripts (Veronderstel dat Vite of vergelijkbare build tool gebruikt wordt voor assets) -->
-    @vite(['css/stijl.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-sans antialiased">
     <!-- Navigation -->
     @include('layouts.navigation')
 
-    <!-- Page Heading -->
-    @if (isset($header))
-        <header class="bg-white dark:bg-gray-800 shadow">
-            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                {{ $header }}
-            </div>
-        </header>
-    @endif
-
-    <!-- Page Content -->
+        <!-- Page Content -->
     <main>
         @yield('content')
     </main>
