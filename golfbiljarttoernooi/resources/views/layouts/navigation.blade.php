@@ -26,28 +26,36 @@
             <ul class="navbar-nav ms-auto">
                 @auth
                 <li class="nav-item dropdown">
+                    
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         {{ Auth::user()->name }}
                     </a>
-                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                        <a class="dropdown-item" href="{{ route('profile.edit') }}">Profile</a>
+                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownMenuLink">
+                        <a class="dropdown-item" href="{{ route('dashboard') }}">Profiel</a>
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                            Log Out
+                            Uitloggen
                         </a>
                         <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
                             @csrf
                         </form>
                     </div>
                 </li>
+                <div class="vr mx-3"></div>
+                <div class="navbar-text">
+                <i class="fas fa-sun" style="color:#e5e500;"></i>
+            <label class="switch">
+              <input type="checkbox" id="nightModeToggle">
+              <span class="slider round"></span>
+            </label>
+           
+            <i class="fas fa-moon" style="color: black;"></i>
                 @endauth
                 @guest
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('login') }}">Login</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('register') }}">Registreer</a>
-                </li>
+                
                 <div class="vr mx-3"></div>
                 <div class="navbar-text">
                 <i class="fas fa-sun" style="color:#e5e500;"></i>

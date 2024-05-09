@@ -9,6 +9,7 @@
         <p>Datum: {{ $game->date->format('d-m-Y') }}</p>
         <p>Wedstrijdscore: <strong>{{ $game->home_score }} - {{ $game->away_score }}</strong></p>
         <a href="{{ route('games.index') }}" class="btn btn-primary">Terug naar Wedstrijdkalender</a>
+
         <table class="table">
             <thead>
                 <tr>

@@ -10,8 +10,8 @@
                     <div class="card-body">
                         <h5 class="card-title">{{ $division->name }}</h5>
                         @if($currentSeasonId)
-                            <a href="{{ route('team.standings', ['divisionId' => $division->id, 'season_id' => $currentSeasonId]) }}" class="btn btn-primary btn-block rounded-pill mt-2">Team Rankings</a>
-                            <a href="{{ route('players.standings', ['divisionId' => $division->id, 'season_id' => $currentSeasonId]) }}" class="btn btn-secondary btn-block rounded-pill mt-2">Player Rankings</a>
+                            <a href="{{ route('teams.standings', ['divisionId' => $division->id, ]) }}" class="btn btn-primary btn-block rounded-pill mt-2">Team Rankings</a>
+                            <a href="{{ route('players.standings', ['divisionId' => $division->id, ]) }}" class="btn btn-secondary btn-block rounded-pill mt-2">Player Rankings</a>
                         @else
                             <p>Geen gespeelde wedstrijden gevonden.</p>
                         @endif

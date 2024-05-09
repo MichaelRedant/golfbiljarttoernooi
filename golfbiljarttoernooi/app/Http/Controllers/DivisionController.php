@@ -22,13 +22,21 @@ class DivisionController extends Controller
 }
 
     
-    public function show(Division $division)
-    {
-        // Laad de teams die bij deze divisie horen
-        $division->load('teams');
+public function show(Division $division)
+{
+    // Haal alle divisies op behalve de huidige
+    $divisions = Division::where('id', '!=', $division->id)->get();
 
-        return view('divisions.show', compact('division'));
+    // Stuur een lege collectie naar de view als er geen andere divisies zijn
+    if ($divisions->isEmpty()) {
+        $noOtherDivisions = 'Geen andere divisies beschikbaar.';
+        return view('divisions.show', compact('division', 'divisions', 'noOtherDivisions'));
     }
+
+    return view('divisions.show', compact('division', 'divisions'));
+}
+
+
 
     public function create()
     {
@@ -44,6 +52,7 @@ class DivisionController extends Controller
         Division::create($request->all());
         return redirect()->route('divisions.index');
     }
+    
 
     public function edit(Division $division)
     {

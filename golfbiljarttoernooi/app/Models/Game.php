@@ -27,6 +27,7 @@ class Game extends Model
     {
         return $this->hasMany(Manche::class);
     }
+    
 
     public function belles()
     {

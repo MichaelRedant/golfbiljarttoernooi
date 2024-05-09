@@ -17,11 +17,10 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-    ];
+    protected $fillable = ['name', 'email', 'password', 'profile_photo_path'];
+
+    
+    
 
     /**
      * The attributes that should be hidden for serialization.
@@ -42,4 +41,10 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function isAdmin()
+{
+    return $this->role === 'admin'; // Of een andere logica die bepaalt of de gebruiker een admin is
+}
+use HasFactory;
 }

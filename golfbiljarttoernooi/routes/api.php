@@ -18,6 +18,3 @@ use App\Http\Controllers\DivisionController;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
-Route::get('/divisions', [DivisionController::class, 'getDivisions']);
-Route::get('/api/divisions/{seasonId}', 'DivisionController@getDivisionsForSeason');
-Route::get('/api/rankings/{divisionId}/season/{seasonId}', 'RankingController@getRankingsForDivisionAndSeason');

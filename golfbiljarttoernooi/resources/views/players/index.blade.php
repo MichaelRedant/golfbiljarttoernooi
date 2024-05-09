@@ -22,8 +22,6 @@
         </select>
     </div>
 
-    <a href="" id="addPlayerButton" class="btn btn-primary mb-3" style="display:none;">Nieuwe Speler Toevoegen</a>
-
     <div id="playerList">
         <!-- Spelerslijst komt hier -->
     </div>
@@ -42,16 +40,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 teamSelect.disabled = false;
                 teamSelect.innerHTML = '<option value="">Selecteer een team</option>' + 
                     data.map(team => `<option value="${team.id}">${team.name}</option>`).join('');
-                addPlayerButton.style.display = 'none'; // Verberg de knop totdat een team is gekozen
             });
     };
 
     teamSelect.onchange = function () {
         const selectedTeamId = this.value;
         const selectedTeamName = teamSelect.options[teamSelect.selectedIndex].text;
-        addPlayerButton.href = `/players/create?team_id=${selectedTeamId}`;
-        addPlayerButton.textContent = `Nieuwe Speler Toevoegen aan ${selectedTeamName}`;
-        addPlayerButton.style.display = 'block'; // Toon de knop zodra een team is gekozen
 
         fetch(`/get-players-by-team?team_id=${selectedTeamId}`)
             .then(response => response.json())

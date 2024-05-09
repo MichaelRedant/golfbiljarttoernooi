@@ -13,32 +13,36 @@ use Illuminate\Http\Request;
 class GameController extends Controller
 {
     public function index(Request $request)
-{
-    // Ophalen van alle seizoenen voor de dropdown.
-    $seasons = Season::all();
-
-    // Vind het laatste seizoen en haal het id op indien beschikbaar.
-    $latestSeason = Season::latest('id')->first();
-    $currentSeasonId = $latestSeason ? $latestSeason->id : null;
-
-    // Ophalen van games die gesorteerd zijn op datum en gegroepeerd op de datum, rekening houdend met het geselecteerde seizoen.
-    if ($currentSeasonId) {
-        $gamesByDate = Game::with(['homeTeam', 'awayTeam'])
-                           ->where('season_id', $currentSeasonId)
-                           ->orderBy('date', 'asc')
-                           ->get()
-                           ->groupBy('date');
-    } else {
-        // Als er geen seizoenen zijn, zorg ervoor dat er een lege collectie wordt teruggestuurd.
+    {
+        $seasons = Season::all();
+    
+        // Vind het laatste seizoen en haal het id op indien beschikbaar.
+        $latestSeason = Season::latest('id')->first();
+        $currentSeasonId = $request->input('season_id', optional($latestSeason)->id);
+    
         $gamesByDate = collect();
+        if ($currentSeasonId) {
+            $gamesByDate = Game::with(['homeTeam', 'awayTeam'])
+                               ->where('season_id', $currentSeasonId)
+                               ->orderBy('date', 'asc')
+                               ->get()
+                               ->groupBy('date');
+        }
+    
+        return view('games.index', compact('gamesByDate', 'seasons', 'currentSeasonId'));
     }
 
-    // Terugsturen van de data naar de view met de games gegroepeerd op datum, de lijst van seizoenen en het ID van het huidige seizoen.
-    return view('games.index', compact('gamesByDate', 'seasons', 'currentSeasonId'));
+    public function edit(Game $game)
+{
+    $teams = Team::all();  // Zorg dat je de Team model hebt geladen via use App\Models\Team;
+
+    // Gebruik 'authorize' om te controleren of de gebruiker de wedstrijd mag bewerken
+    $this->authorize('update', $game);
+
+    return view('games.edit', compact('game', 'teams'));
 }
 
 
-    
 
     public function calendarData()
     {
@@ -138,13 +142,20 @@ public function editForm(Game $game)
     
 }
 
-public function show(Game $game)
+public function play(Game $game)
 {
-    $game->load('homeTeam', 'awayTeam', 'manches');
+    // Controleer of de gebruiker is geautoriseerd om deze actie uit te voeren
+    $this->authorize('update', $game);
 
-    return view('games.show', compact('game'));
+    // Implementeer de logica om een wedstrijd te spelen
+    return view('games.play', compact('game'));
 }
 
+public function show(Game $game)
+{
+    $game->load('homeTeam', 'awayTeam', 'manches');  // Ensure 'manches' are being loaded
+    return view('games.show', compact('game'));
+}
     protected function updatePlayerScores(Game $game, array $playersData)
     {
         // Voorbereiden van de data voor de pivot tabel

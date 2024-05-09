@@ -7,6 +7,8 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .content-wrapper {
@@ -16,6 +18,15 @@ html, body {
   justify-content: space-between; /* Verdeelt de ruimte tussen en rondom content */
 }
 
+#content {
+  flex: 1;  /* Flexibele container die alle beschikbare ruimte opneemt */
+  display: flex;
+  flex-direction: column;
+}
+
+footer {
+  flex-shrink: 0;  /* Zorgt ervoor dat de footer niet krimpt */
+}
 
 .container {
   max-width: 1200px;

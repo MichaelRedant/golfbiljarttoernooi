@@ -5,9 +5,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Team;
-use App\Models\Division;
 use App\Models\Season;
+use App\Models\Division;
 use Illuminate\Http\Request;
+use App\Services\TeamStatsService;
 
 class TeamController extends Controller
 {
@@ -42,48 +43,28 @@ class TeamController extends Controller
         return redirect()->route('teams.index')->with('success', 'Team created successfully.');
     }
 
-    public function show(Team $team)
-    {
-        $currentSeasonId = Season::latest()->first()->id; // Veronderstel dat je het meest recente seizoen wilt
-    $team->load(['division', 'players', 'gamesHome' => function ($query) use ($currentSeasonId) {
-        $query->where('season_id', $currentSeasonId);
-    }, 'gamesAway' => function ($query) use ($currentSeasonId) {
-        $query->where('season_id', $currentSeasonId);
-    }]);
-    
-        // Verzamel alle games thuis en uit
-        $allGames = $team->gamesHome->merge($team->gamesAway);
-    
-        $gamesWon = $allGames->filter(function ($game) use ($team) {
-            return ($game->home_team_id == $team->id && $game->home_score > $game->away_score) ||
-                   ($game->away_team_id == $team->id && $game->away_score > $game->home_score);
-        })->count();
-    
-        $gamesLost = $allGames->filter(function ($game) use ($team) {
-            return ($game->home_team_id == $team->id && $game->home_score < $game->away_score) ||
-                   ($game->away_team_id == $team->id && $game->away_score < $game->home_score);
-        })->count();
-    
-        $gamesDraw = $allGames->filter(function ($game) use ($team) {
-            return $game->home_score == $game->away_score;
-        })->count();
-    
-        // Veronderstellen dat je 3 punten voor een winst en 1 punt voor een gelijkspel telt
-        $points = $gamesWon * 3 + $gamesDraw * 1;
-    
-        $teamStats = [
-            'games_won' => $gamesWon,
-            'games_lost' => $gamesLost,
-            'games_draw' => $gamesDraw,
-            'points' => $points,
-            // De berekening van 'rank' zou moeten worden geïmplementeerd op een manier die overeenkomt met de ranking logica
-            'rank' => $this->calculateRank($team)
-        ];
-    
-        return view('teams.show', compact('team', 'teamStats'));
-    }
-    
+    public function show(Team $team, Request $request)
+{
+    $currentSeasonId = $request->query('season_id', Season::latest()->first()->id); // Verkrijg het seizoen ID van de query of gebruik het laatste seizoen
+    $seasons = Season::all(); // Haal alle seizoenen op
 
+    // Bereken of haal team statistieken op
+    $teamStats = $team->calculateStatsForSeason($currentSeasonId);
+
+    // Zorg ervoor dat alle statistieken zijn gedefinieerd
+    $defaultStats = [
+        'games_won' => 0,
+        'games_lost' => 0,
+        'games_draw' => 0,
+        'points' => 0
+    ];
+
+    // Combineer default stats met daadwerkelijke stats
+    $teamStats = array_merge($defaultStats, $teamStats);
+
+    return view('teams.show', compact('team', 'teamStats', 'seasons', 'currentSeasonId'));
+}
+    
     protected function calculateRank(Team $team)
 {
     $teams = $team->division->teams()->with(['gamesHome', 'gamesAway'])->get();
@@ -135,9 +116,10 @@ class TeamController extends Controller
         return redirect()->route('teams.index')->with('success', 'Team updated successfully.');
     }
 
-    public function calculateTeamStandings()
+    public function calculateTeamStandings(Request $request)
     {
-        $currentSeasonId = Season::latest()->first()->id; // Veronderstel dat je het meest recente seizoen wilt
+        $currentSeasonId = $request->query('season_id', Season::latest()->first()->id); // Verkrijg seizoen ID uit query parameter of gebruik het laatste seizoen
+        $seasons = Season::all(); // Haal alle seizoenen op voor de dropdown
         $teams = Team::with(['gamesHome' => function ($query) use ($currentSeasonId) {
                         $query->where('season_id', $currentSeasonId)
                               ->whereNotNull('home_score')
@@ -178,7 +160,7 @@ class TeamController extends Controller
             ];
         })->sortByDesc('points')->values()->all();
     
-        return view('teams.standings', ['standings' => $standings]);
+        return view('teams.standings', ['standings' => $standings, 'seasons' => $seasons, 'currentSeasonId' => $currentSeasonId]);
     }
     
 public function getTeamsByDivision(Request $request)
@@ -188,6 +170,28 @@ public function getTeamsByDivision(Request $request)
     return response()->json($teams);
 }
 
+public function moveToDivision(Request $request, Team $team)
+    {
+        $request->validate([
+            'new_division_id' => 'required|exists:divisions,id',  // Zorg ervoor dat de nieuwe divisie bestaat
+        ]);
+
+        // Update het team met de nieuwe divisie ID
+        $team->update(['division_id' => $request->new_division_id]);
+
+        // Redirect terug naar een relevante pagina met een success bericht
+        return back()->with('success', 'Team succesvol verplaatst naar een nieuwe divisie.');
+    }
+
+
+public function removeFromDivision(Request $request, Team $team)
+{
+    // Veronderstellen dat er een 'division_id' attribuut is dat null kan worden gemaakt of aangepast
+    $team->division_id = null; // of stel in op een andere divisie ID
+    $team->save();
+
+    return redirect()->route('divisions.show', $team->division_id)->with('success', 'Team verwijderd uit divisie.');
+}
 
 
 

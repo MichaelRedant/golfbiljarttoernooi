@@ -7,26 +7,29 @@
             <h1>Team Details - {{ $team->name }}</h1>
         </div>
         <div class="card-body">
+            <form action="{{ route('teams.show', $team) }}" method="GET">
+                <div class="form-group">
+                    <label for="season_id">Kies een seizoen:</label>
+                    <select id="season_id" name="season_id" class="form-control" onchange="this.form.submit()">
+                        @foreach ($seasons as $season)
+                            <option value="{{ $season->id }}" {{ $season->id == $currentSeasonId ? 'selected' : '' }}>
+                                {{ $season->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </form>
             <p><strong>Divisie:</strong> {{ $team->division->name }}</p>
-            <p><strong>Aantal Gewonnen:</strong> {{ $teamStats['games_won'] ?? 'Data niet beschikbaar' }}</p>
-            <p><strong>Aantal Verloren:</strong> {{ $teamStats['games_lost'] ?? 'Data niet beschikbaar' }}</p>
-            <p><strong>Aantal Gelijk:</strong> {{ $teamStats['games_draw'] ?? 'Data niet beschikbaar' }}</p>
-            <p><strong>Totaal Punten:</strong> {{ $teamStats['points'] ?? 'Data niet beschikbaar' }}</p>
-            <p><strong>Plaats dit Seizoen:</strong> {{ $teamStats['rank'] ?? 'Data niet beschikbaar' }}</p>
-
-            <h3>Spelers</h3>
-            @if($team->players->isNotEmpty())
-                <ul>
-                    @foreach($team->players as $player)
-                        <li><a href="{{ route('players.show', $player) }}">{{ $player->first_name }} {{ $player->last_name }}</a></li>
-                    @endforeach
-                </ul>
-            @else
-                <p>Er zijn momenteel geen spelers in dit team.</p>
-            @endif
+            <p><strong>Aantal Gewonnen:</strong> {{ $teamStats['games_won'] }}</p>
+            <p><strong>Aantal Verloren:</strong> {{ $teamStats['games_lost'] }}</p>
+            <p><strong>Aantal Gelijk:</strong> {{ $teamStats['games_draw'] }}</p>
+            <p><strong>Totaal Punten:</strong> {{ $teamStats['points'] }}</p>
         </div>
         <div class="card-footer">
-            <a href="{{ route('teams.edit', $team) }}" class="btn btn-secondary">Bewerk {{ $team->name }}</a>
+            @if(auth()->user() && auth()->user()->role === 'admin')
+            <a href="{{ route('teams.edit', $team) }}" class="btn btn-primary">Bewerk {{ $team->name }}</a>
+            @endif
+            <a href="{{ url()->previous() }}" class="btn btn-secondary">Terug</a>
         </div>
     </div>
 </div>

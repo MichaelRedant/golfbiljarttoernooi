@@ -64,49 +64,56 @@ class PlayerController extends Controller
 public function show(Player $player, Request $request)
 {
     $imageUrl = Storage::url('photos/'.$player->photo);
-    $currentSeasonId = $request->input('season_id') ?? Season::latest('id')->first()->id;
     $seasons = Season::all();
+    $currentSeasonId = $request->input('season_id', Season::latest('id')->first()->id);
 
-    // Retrieve games
-    $teamGamesHome = $player->team->homeGames()->where('season_id', $currentSeasonId)->get();
-    $teamGamesAway = $player->team->awayGames()->where('season_id', $currentSeasonId)->get();
+    // Load games for the player's team
+    $teamGamesHome = $player->team->gamesHome()->where('season_id', $currentSeasonId)->whereNotNull('home_score')->whereNotNull('away_score')->get();
+    $teamGamesAway = $player->team->gamesAway()->where('season_id', $currentSeasonId)->whereNotNull('home_score')->whereNotNull('away_score')->get();
     $teamGames = $teamGamesHome->merge($teamGamesAway);
 
-    // Debug output
-    Log::info('Home Games: ' . $teamGamesHome->count());
-    Log::info('Away Games: ' . $teamGamesAway->count());
+    // Calculate team-level statistics
+    $gamesWon = $teamGames->reduce(function ($carry, $game) use ($player) {
+        return $carry + (($game->winner_id == $player->team_id) ? 1 : 0);
+    }, 0);
+    $gamesLost = $teamGames->reduce(function ($carry, $game) use ($player) {
+        return $carry + (($game->loser_id == $player->team_id) ? 1 : 0);
+    }, 0);
+    $gamesDraw = $teamGames->reduce(function ($carry, $game) {
+        return $carry + (($game->home_score === $game->away_score) ? 1 : 0);
+    }, 0);
 
-    $gamesWon = $teamGames->where('winner_id', $player->team_id)->count();
-    $gamesLost = $teamGames->where('loser_id', $player->team_id)->count();
-
-    // Player-specific games
-    $playerGames = $player->games()->whereHas('season', function ($query) use ($currentSeasonId) {
-        $query->where('id', $currentSeasonId);
-    })->get();
-
-    // Count wins and losses
-    $matchesWon = $playerGames->sum(function ($game) use ($player) {
+    // Calculate player-specific match performance
+    $matchesWon = $player->games->sum(function ($game) use ($player) {
         return $game->manches->where('winner_id', $player->id)->count();
     });
-    $matchesLost = $playerGames->sum(function ($game) use ($player) {
+    $matchesLost = $player->games->sum(function ($game) use ($player) {
         return $game->manches->where('loser_id', $player->id)->count();
     });
+        $matchesWon = 0;
+        $matchesLost = 0;
+        foreach ($teamGames as $game) {
+            foreach ($game->manches as $manche) {
+                if ($manche->winner_id == $player->id) {
+                    $matchesWon++;
+                } else {
+                    $matchesLost++;
+                }
+            }
+        }
 
-
-    // Pass all necessary data to the view
-    return view('players.show', compact(
-        'player',
-        'seasons',
-        'currentSeasonId',
-        'gamesWon',
-        'gamesLost',
-        'matchesWon',
-        'matchesLost',
-        'imageUrl'
-    ));
-}
-
-
+        return view('players.show', compact(
+            'player',
+            'seasons',
+            'currentSeasonId',
+            'gamesWon',
+            'gamesLost',
+            'gamesDraw',
+            'matchesWon',
+            'matchesLost',
+            'imageUrl'
+        ));
+    }    
 
 
    public function edit(Player $player)
@@ -158,18 +165,17 @@ public function show(Player $player, Request $request)
         return response()->json($teams);
     }
 
-    public function calculatePlayerStandings($divisionId)
+    public function calculatePlayerStandings($divisionId, Request $request)
 {
-    $currentSeasonId = Season::latest()->first()->id;
+    // Als er een seizoen wordt gespecificeerd in de request, gebruik dat seizoen, anders het laatste seizoen.
+    $currentSeasonId = $request->input('season_id', Season::latest('id')->first()->id);
+    $seasons = Season::all(); // Haal alle seizoenen op voor de dropdown
+
     $players = Player::where('division_id', $divisionId)
                      ->with(['team.gamesHome' => function ($query) use ($currentSeasonId) {
-                         $query->where('season_id', $currentSeasonId)
-                               ->whereNotNull('home_score')
-                               ->whereNotNull('away_score');
+                         $query->where('season_id', $currentSeasonId)->whereNotNull('home_score')->whereNotNull('away_score');
                      }, 'team.gamesAway' => function ($query) use ($currentSeasonId) {
-                         $query->where('season_id', $currentSeasonId)
-                               ->whereNotNull('home_score')
-                               ->whereNotNull('away_score');
+                         $query->where('season_id', $currentSeasonId)->whereNotNull('home_score')->whereNotNull('away_score');
                      }])
                      ->get();
 
@@ -221,7 +227,12 @@ public function show(Player $player, Request $request)
         return $b['points'] <=> $a['points']; // Sort by points, descending
     });
 
-    return view('players.standings', ['standings' => $standings, 'divisionId' => $divisionId]);
+    return view('players.standings', [
+        'standings' => $standings,
+        'divisionId' => $divisionId,
+        'seasons' => $seasons,
+        'currentSeasonId' => $currentSeasonId
+    ]);
 }
 
 
