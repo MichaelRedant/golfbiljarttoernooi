@@ -1,69 +1,65 @@
 @extends('layouts.app')
 
-@section('title', 'Wedstrijdkalender')
-
 @section('content')
-<div class="container mt-4">
-    <h1>Wedstrijdkalender</h1>
-    @if(auth()->check() && auth()->user()->role === 'admin')
-    <!-- Actieknoppen voor admins -->
-    <div class="action-buttons mb-4">
-        <a href="{{ route('seasons.index') }}" class="btn btn-success">Seizoenen</a>
-    </div>
-@endif
-    <!-- Seizoen kiezen -->
-    @if ($seasons->isNotEmpty())
-        <form action="{{ route('games.index') }}" method="GET">
-            <div class="form-group">
-                <label for="season_id">Kies een seizoen:</label>
-                <select id="season_id" name="season_id" class="form-control" onchange="this.form.submit()">
-                    @foreach ($seasons as $season)
-                        <option value="{{ $season->id }}" {{ $season->id == $currentSeasonId ? 'selected' : '' }}>
-                            {{ $season->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-        </form>
-    @else
-        <p>Er zijn momenteel geen seizoenen beschikbaar. Voeg eerst een seizoen toe.</p>
-    @endif
+<div class="container mt-3">
+    <h1>Competitie - {{ $division->name }}</h1>
+    <h2>Volgende Speeldag: {{ $nextMatchday->format('d-m-Y') }}</h2>
 
-    <!-- Kalender weergave -->
-    @if ($gamesByDate->isNotEmpty())
-        @foreach ($gamesByDate as $date => $gamesOnDate)
-            <div class="day">
-                <h2>{{ \Carbon\Carbon::parse($date)->format('d-m-Y') }}</h2>
-                @foreach ($gamesOnDate as $game)
-                    <div class="game card">
-                        <div class="card-body">
-                            <p>
-                                <a href="{{ route('teams.show', $game->homeTeam->id) }}" class="font-weight-bold">{{ $game->homeTeam->name }}</a>
-                                tegen
-                                <a href="{{ route('teams.show', $game->awayTeam->id) }}" class="font-weight-bold">{{ $game->awayTeam->name }}</a>
-                            </p>
-                            <p><span class="font-weight-bold">Uitslag:</span> {{ $game->home_score ?? '' }} : {{ $game->away_score ?? '' }}</p>
-                            @if (!is_null($game->home_score) && !is_null($game->away_score))
-                                <!-- Match is al gespeeld, toon bekijk en bewerk knoppen voor admins -->
-                                <a href="{{ route('games.show', $game->id) }}" class="btn btn-sm btn-outline-secondary">Bekijk Wedstrijd</a>
-                                @if (auth()->check() && auth()->user()->role === 'admin')
-                                    <a href="{{ route('games.edit', $game->id) }}" class="btn btn-sm btn-primary">Bewerk Wedstrijd</a>
-                                @endif
-                            @else
-                                <!-- Match moet nog gespeeld worden, toon speel knop alleen voor admins -->
-                                @if(auth()->user() && auth()->user()->role === 'admin')
-                                    <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-primary">Speel Wedstrijd</a>
-                                @endif
-                            @endif
-                        </div>
+    <!-- Aankomende of recente wedstrijden -->
+    <div class="upcoming-games">
+        @foreach ($upcomingGames as $game)
+            <div class="game-card card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ $game->homeTeam->name }} <span>{{ $game->home_score }} - {{ $game->away_score }}</span> {{ $game->awayTeam->name }}</h5>
+                    <p class="card-text">{{ $game->date->format('d-m-Y') }}</p>
+                </div>
+            </div>
+        @endforeach
+    </div>
+
+    <!-- Team ranking -->
+    <div class="team-ranking mt-4">
+        <h2>Team Klassement</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Team</th>
+                    <th>Gespeld</th>
+                    <th>W</th>
+                    <th>G</th>
+                    <th>V</th>
+                    <th>Pt.</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($standings as $index => $standing)
+                    <tr>
+                        <td>{{ $index + 1 }}</td>
+                        <td><a href="{{ route('teams.show', ['team' => $standing['team_id']]) }}">{{ $standing['team_name'] }}</a></td>
+                        <td>{{ $standing['games_played'] }}</td>
+                        <td>{{ $standing['games_won'] }}</td>
+                        <td>{{ $standing['games_draw'] }}</td>
+                        <td>{{ $standing['games_lost'] }}</td>
+                        <td>{{ $standing['points'] }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Historische speeldagen -->
+    <div class="past-matchdays mt-5">
+        @foreach ($pastMatchdays as $date => $games)
+            <div class="matchday">
+                <h3>{{ $date }}</h3>
+                @foreach ($games as $game)
+                    <div class="past-game">
+                        <span>{{ $game->homeTeam->name }}</span> <strong>{{ $game->home_score }} - {{ $game->away_score }}</strong> <span>{{ $game->awayTeam->name }}</span>
                     </div>
                 @endforeach
             </div>
         @endforeach
-    @else
-        <p>Geen wedstrijden gepland voor dit seizoen.</p>
-    @endif
-
-    
+    </div>
 </div>
 @endsection

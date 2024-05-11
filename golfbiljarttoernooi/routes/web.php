@@ -72,10 +72,6 @@ Route::group(['middleware' => ['auth', 'admin']], function () {
 
 });
 
-Route::group(['middleware' => ['auth', 'superadmin']], function () {
-    // Routes die alleen voor super admins toegankelijk zijn
-});
-
 // Routes voor Divisies
 Route::get('/divisions', [DivisionController::class, 'index'])->name('divisions.index');
 Route::get('/divisions/{division}', [DivisionController::class, 'show'])->name('divisions.show');
@@ -95,9 +91,11 @@ Route::get('/players', [PlayerController::class, 'index'])->name('players.index'
 Route::get('/players/{player}', [PlayerController::class, 'show'])->name('players.show');
 
 // Routes voor Wedstrijden
-Route::get('/games', [GameController::class, 'index'])->name('games.index');
+/* Route::get('/games', [GameController::class, 'index'])->name('games.index'); */
+Route::get('/games/{division_id}', [GameController::class, 'index'])->name('games.index');
 Route::get('/games/{game}/form', [GameController::class, 'editForm'])->name('games.form');
 Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
+
 
 //Route voor Rankings
 Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');

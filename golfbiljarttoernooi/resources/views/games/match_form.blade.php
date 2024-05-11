@@ -153,14 +153,7 @@
         const homeScoreInput = document.getElementById('home_score');
         const awayScoreInput = document.getElementById('away_score');
         const rows = document.querySelectorAll('tbody tr');
-        const form = document.querySelector('form');
-    
-    form.addEventListener('submit', function() {
-        // Schakel alle disabled inputs in zodat ze worden meegestuurd
-        document.querySelectorAll('input[disabled], select[disabled]').forEach(input => {
-            input.disabled = false;
-        });
-    });
+        
     
         function updateResults() {
             let homeWins = 0;
@@ -226,6 +219,8 @@
         });
     
         updateResults(); // Initial update on page load
+
+        
     });
     </script>
     

@@ -8,7 +8,7 @@
         <!-- Navigation cards on the left side -->
         <div class="col-md-3">
             <div class="nav-flex-column">
-                <a href="{{ route('games.index') }}" class="nav-card-link card my-2">Wedstrijdkalender</a>
+                {{-- <a href="{{ route('games.index') }}" class="nav-card-link card my-2">Wedstrijdkalender</a> --}}
                 <a href="{{ route('divisions.index') }}" class="nav-card-link card my-2">Divisies</a>
                 <a href="{{ route('teams.index') }}" class="nav-card-link card my-2">Teams</a>
                 <a href="{{ route('players.index') }}" class="nav-card-link card my-2">Spelers</a>

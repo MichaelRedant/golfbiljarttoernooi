@@ -8,11 +8,12 @@ use App\Models\Team;
 use App\Models\Manche;
 use App\Models\Player;
 use App\Models\Season;
+use App\Models\Division;
 use Illuminate\Http\Request;
 
 class GameController extends Controller
 {
-    public function index(Request $request)
+    /* public function index(Request $request)
     {
         $seasons = Season::all();
     
@@ -40,6 +41,24 @@ class GameController extends Controller
     $this->authorize('update', $game);
 
     return view('games.edit', compact('game', 'teams'));
+} */
+
+public function index(Request $request)
+{
+    $divisionId = $request->input('division_id');
+    $division = Division::find($divisionId);
+    $currentSeasonId = $request->input('season_id', Season::latest('id')->first()->id);
+
+    if (!$division) {
+        return redirect()->route('home')->withErrors('Divisie niet gevonden');
+    }
+
+    $upcomingGames = Game::where('division_id', $divisionId)->where('date', '>=', Carbon::now())->orderBy('date', 'asc')->get();
+    $pastGames = Game::where('division_id', $divisionId)->where('date', '<', Carbon::now())->orderBy('date', 'desc')->get();
+    $standings = $this->calculateStandings($divisionId);  // Zorg ervoor dat deze functie de standen correct berekent
+    $nextMatchday = $upcomingGames->first()->date ?? 'Geen wedstrijden gepland';
+
+    return view('games.index', compact('division', 'currentSeasonId', 'upcomingGames', 'standings', 'pastGames', 'nextMatchday'));
 }
 
 

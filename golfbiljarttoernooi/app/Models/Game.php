@@ -48,4 +48,9 @@ class Game extends Model
     protected $casts = [
         'date' => 'datetime:Y-m-d',
     ];
+
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
+    }
 }

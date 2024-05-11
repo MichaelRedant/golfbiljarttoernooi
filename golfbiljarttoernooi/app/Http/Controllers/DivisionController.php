@@ -24,17 +24,31 @@ class DivisionController extends Controller
     
 public function show(Division $division)
 {
-    // Haal alle divisies op behalve de huidige
-    $divisions = Division::where('id', '!=', $division->id)->get();
-
-    // Stuur een lege collectie naar de view als er geen andere divisies zijn
-    if ($divisions->isEmpty()) {
-        $noOtherDivisions = 'Geen andere divisies beschikbaar.';
-        return view('divisions.show', compact('division', 'divisions', 'noOtherDivisions'));
+    $currentSeason = Season::latest()->first();
+    if (!$currentSeason) {
+        return back()->withErrors('No active season found.');
     }
 
-    return view('divisions.show', compact('division', 'divisions'));
+    $nextGames = $division->games()
+        ->where('season_id', $currentSeason->id)
+        ->where('date', '>=', now())
+        ->orderBy('date')
+        ->limit(5)
+        ->get();
+
+    $pastGames = $division->games()
+        ->where('season_id', $currentSeason->id)
+        ->where('date', '<', now())
+        ->orderBy('date', 'desc')
+        ->limit(5)
+        ->get();
+
+    // Assuming calculateStandings is defined to calculate the standings based on games
+    $standings = $this->calculateStandings($division->id);
+
+    return view('divisions.show', compact('division', 'nextGames', 'pastGames', 'standings'));
 }
+
 
 
 

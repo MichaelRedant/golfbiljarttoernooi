@@ -9,8 +9,19 @@
                 <li class="nav-item active">
                     <a class="nav-link" href="{{ route('home') }}">Home <span class="sr-only">(current)</span></a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('games.index') }}">Wedstrijden</a>
+                <!-- Navbar Dropdown voor Divisies -->
+                <li class="nav-item dropdown">
+                    <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
+                        Divisies
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                        @foreach ($divisions as $division)
+                        <a class="dropdown-item" href="{{ route('divisions.show', $division->id) }}">
+                            {{ $division->name }}
+                        </a>
+                    @endforeach
+                    
+                    </div>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('rankings.index') }}">Rankings</a>
@@ -26,7 +37,6 @@
             <ul class="navbar-nav ms-auto">
                 @auth
                 <li class="nav-item dropdown">
-                    
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         {{ Auth::user()->name }}
                     </a>
