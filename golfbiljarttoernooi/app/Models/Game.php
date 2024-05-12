@@ -53,4 +53,9 @@ class Game extends Model
     {
         return $this->belongsTo(Division::class, 'division_id');
     }
+
+    public function byeTeam()
+{
+    return $this->belongsTo(Team::class, 'bye_team_id');
+}
 }

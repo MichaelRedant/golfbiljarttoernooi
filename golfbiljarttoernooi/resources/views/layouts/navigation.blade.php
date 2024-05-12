@@ -23,15 +23,27 @@
                     
                     </div>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('rankings.index') }}">Rankings</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('teams.index') }}">Teams</a>
+                <li class="nav-item dropdown">
+                    <a id="navbarDropdownClubs" class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
+                        Clubs
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownClubs">
+                        @foreach (\App\Models\Club::all() as $club) <!-- Dynamisch alle clubs laden -->
+                            <a class="dropdown-item" href="{{ route('clubs.show', $club->id) }}">
+                                {{ $club->name }}
+                            </a>
+                        @endforeach
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="{{ route('clubs.index') }}">Alle Clubs</a>
+                    </div>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('players.index') }}">Spelers</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('rankings.index') }}">Rankings</a>
+                </li>
+                
                 
             </ul>
             <ul class="navbar-nav ms-auto">

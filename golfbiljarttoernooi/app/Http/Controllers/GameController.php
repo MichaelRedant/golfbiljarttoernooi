@@ -61,6 +61,20 @@ public function index(Request $request)
     return view('games.index', compact('division', 'currentSeasonId', 'upcomingGames', 'standings', 'pastGames', 'nextMatchday'));
 }
 
+public function create(Request $request)
+{
+    $divisions = Division::all();
+    $teams = Team::all();
+    $seasons = Season::all();  // Retrieve all seasons for dropdown
+
+    // Retrieve division and season IDs from request, fallback to defaults
+    $selectedDivisionId = $request->input('division_id', $divisions->first()->id ?? null);
+    $selectedSeasonId = $request->input('season_id', Season::latest('id')->first()->id);
+
+    // Send selected IDs to the view to pre-select in dropdowns
+    return view('games.create', compact('divisions', 'teams', 'seasons', 'selectedDivisionId', 'selectedSeasonId'));
+}
+
 
 
     public function calendarData()
@@ -77,20 +91,64 @@ public function index(Request $request)
         return response()->json($events);
     }
 
-    public function store(Request $request)
+    public function showDashboard()
 {
-    $data = $request->validate([
-        'home_team_id' => 'required|exists:teams,id',
-        'away_team_id' => 'required|exists:teams,id',
-        // Overige validatie
+    // Haal alle divisies op
+    $divisions = Division::all();
+    // Haal alle seizoenen op voor de dropdown
+    $seasons = Season::all();
+
+    // Haal het laatste (meest recente) seizoen op
+    $currentSeason = Season::latest('id')->first();
+
+    // Geef divisies en het huidige seizoen door aan de dashboard view
+    return view('dashboard', compact('divisions', 'currentSeason', 'seasons'));
+}
+
+public function showGamesForDivisionAndSeason(Request $request, $division_id, $season_id = null)
+{
+    $division = Division::findOrFail($division_id);
+    $seasons = Season::all();
+    
+    // Als geen seizoen_id is gegeven, gebruik het meest recente seizoen
+    $season_id = $season_id ?? Season::latest('id')->first()->id;
+    $season = Season::findOrFail($season_id);
+
+    $games = Game::where('division_id', $division_id)
+                 ->where('season_id', $season_id)
+                 ->where('date', '>=', Carbon::now()) // Toont alleen toekomstige games
+                 ->orderBy('date', 'asc')
+                 ->get();
+
+    return view('games.list', compact('games', 'division', 'season', 'seasons'));
+}
+
+
+public function store(Request $request)
+{
+    $validatedData = $request->validate([
+        'home_team_id' => 'nullable|exists:teams,id',
+        'away_team_id' => 'nullable|exists:teams,id',
+        'bye_team_id' => 'nullable|exists:teams,id',
+        'date' => 'required|date',
+        'division_id' => 'required|exists:divisions,id',
+        'season_id' => 'required|exists:seasons,id'
     ]);
 
-    $game = new Game($data);
-    $game->season_id = Season::latest()->first()->id; // Wijs het meest recente seizoen toe
+    $game = new Game();
+    $game->home_team_id = $validatedData['home_team_id'] ?: null; // Stel in op null als geen team geselecteerd
+    $game->away_team_id = $validatedData['away_team_id'] ?: null; // Stel in op null als geen team geselecteerd
+    $game->bye_team_id = $validatedData['bye_team_id'] ?: null;  // Stel in op null als geen Bye geselecteerd
+    $game->date = $validatedData['date'];
+    $game->division_id = $validatedData['division_id'];
+    $game->season_id = $validatedData['season_id'];
     $game->save();
 
-    return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol toegevoegd!');
+    return redirect()->route('games.index', ['division_id' => $validatedData['division_id']])
+                     ->with('success', 'Wedstrijd succesvol aangemaakt!');
 }
+
+
 
 public function generateMatches()
 {
@@ -151,14 +209,28 @@ public function clearCalendar()
 
 public function editForm(Game $game)
 {
-    $game->load(['homeTeam.players', 'awayTeam.players', 'manches', 'belles']);
+    $game->load([
+        'homeTeam' => function ($query) {
+            $query->with(['club.teams.players']);
+        },
+        'awayTeam' => function ($query) {
+            $query->with(['club.teams.players']);
+        },
+        'manches', 
+        'belles'
+    ]);
 
-    $homeTeamPlayers = $game->homeTeam->players;
-    $awayTeamPlayers = $game->awayTeam->players;
-    
+    // Verzamel alle spelers van teams die tot dezelfde club behoren als het thuisteam
+    $homeTeamPlayers = $game->homeTeam->club->teams->flatMap(function ($team) {
+        return $team->players;
+    });
+
+    // Verzamel alle spelers van teams die tot dezelfde club behoren als het uitteam
+    $awayTeamPlayers = $game->awayTeam->club->teams->flatMap(function ($team) {
+        return $team->players;
+    });
 
     return view('games.match_form', compact('game', 'homeTeamPlayers', 'awayTeamPlayers'));
-    
 }
 
 public function play(Game $game)
@@ -194,53 +266,57 @@ public function show(Game $game)
 
     
     public function update(Request $request, Game $game)
-{
-    $data = $request->validate([
-        'home_team_id' => 'required|exists:teams,id',
-        'away_team_id' => 'required|exists:teams,id',
-        'scores' => 'required|array',
-        'scores.*.home_player' => 'required|exists:players,id',
-        'scores.*.away_player' => 'required|exists:players,id',
-        'scores.*.1M' => 'required|integer',
-        'scores.*.2M' => 'required|integer',
-        'scores.*.Belle' => 'nullable|integer'
-    ]);
-
-    $homeWins = 0;
-    $awayWins = 0;
-
-    foreach ($data['scores'] as $i => $score) {
-        $matchResult = $this->calculateMatchResult($score);
-        if ($matchResult == 1) {
-            $homeWins++;
-        } elseif ($matchResult == 2) {
-            $awayWins++;
+    {
+        $data = $request->validate([
+            'home_team_id' => 'required|exists:teams,id',
+            'away_team_id' => 'required|exists:teams,id',
+            'date' => 'required|date', // Toevoegen van datumvalidatie
+            'scores' => 'required|array',
+            'scores.*.home_player' => 'required|exists:players,id',
+            'scores.*.away_player' => 'required|exists:players,id',
+            'scores.*.1M' => 'required|integer',
+            'scores.*.2M' => 'required|integer',
+            'scores.*.Belle' => 'nullable|integer'
+        ]);
+    
+        $homeWins = 0;
+        $awayWins = 0;
+    
+        foreach ($data['scores'] as $i => $score) {
+            $matchResult = $this->calculateMatchResult($score);
+            if ($matchResult == 1) {
+                $homeWins++;
+            } elseif ($matchResult == 2) {
+                $awayWins++;
+            }
+    
+            Manche::updateOrCreate(
+                [
+                    'game_id' => $game->id,
+                    'player1_id' => $score['home_player'],
+                    'player2_id' => $score['away_player'],
+                ],
+                [
+                    'score1' => $score['1M'],
+                    'score2' => $score['2M'],
+                    'belle_score' => $score['Belle'] ?? null,
+                    'winner_id' => $matchResult == 1 ? $score['home_player'] : ($matchResult == 2 ? $score['away_player'] : null)
+                ]
+            );
         }
-
-        Manche::updateOrCreate(
-            [
-                'game_id' => $game->id,
-                'player1_id' => $score['home_player'],
-                'player2_id' => $score['away_player'],
-            ],
-            [
-                'score1' => $score['1M'],
-                'score2' => $score['2M'],
-                'belle_score' => $score['Belle'] ?? null,
-                'winner_id' => $matchResult == 1 ? $score['home_player'] : ($matchResult == 2 ? $score['away_player'] : null)
-            ]
-        );
+    
+        // Update the game details including the date
+        $game->update([
+            'home_score' => $homeWins,
+            'away_score' => $awayWins,
+            'date' => $data['date'] // Vergeet niet de datum bij te werken
+        ]);
+    
+        $this->updatePlayerStats($game);
+    
+        return redirect()->route('games.show', $game->id)->with('success', 'Game updated successfully.');
     }
-
-    // Update game scores based on the match results
-    $game->home_score = $homeWins;
-    $game->away_score = $awayWins;
-    $game->save();
-
-    $this->updatePlayerStats($game);
-
-    return redirect()->route('games.show', $game->id)->with('success', 'Game updated successfully.');
-}
+    
 
 protected function updatePlayerStats(Game $game)
 {

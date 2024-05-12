@@ -28,14 +28,21 @@
             $nextDate = $upcomingDates->first();
         @endphp
         @if ($nextDate)
-            <div class="card" style="max-width: 400px;">
+            <div class="card" style="max-width: 600px;">
                 <div class="card-header">{{ \Carbon\Carbon::parse($nextDate)->format('d-m-Y') }}</div>
                 <ul class="list-group list-group-flush">
                     @foreach ($gamesByDate[$nextDate] as $game)
                         <li class="list-group-item">
-                            <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
-                            tegen
-                            <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
+                            @if ($game->home_team_id && $game->away_team_id)
+                                <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
+                                tegen
+                                <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
+                            @elseif ($game->bye_team_id)
+                                <i class="fas fa-user-slash"></i>
+                                <strong>{{ optional($game->byeTeam)->name }} heeft een Bye</strong>
+                            @else
+                                Ongeplande tijd
+                            @endif
                             <span class="float-right">{{ $game->home_score ?? 'TBA' }} : {{ $game->away_score ?? 'TBA' }}</span>
                         </li>
                     @endforeach
@@ -47,8 +54,6 @@
     @else
         <p>Geen aankomende wedstrijden gepland voor dit seizoen.</p>
     @endif
-
-   
 
     <h2>Standen</h2>
     <table class="table table-bordered">
@@ -91,8 +96,8 @@
                         @foreach ($gamesOnDate as $game)
                             <tr>
                                 <td>{{ \Carbon\Carbon::parse($date)->format('d-m-Y') }}</td>
-                                <td><a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a></td>
-                                <td><a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a></td>
+                                <td>{{ $game->homeTeam ? $game->homeTeam->name : 'Bye' }}</td>
+                                <td>{{ $game->awayTeam ? $game->awayTeam->name : 'Bye' }}</td>
                                 <td>{{ $game->home_score ?? '' }} : {{ $game->away_score ?? '' }}</td>
                             </tr>
                         @endforeach
@@ -105,5 +110,3 @@
     @endif
 </div>
 @endsection
-
-

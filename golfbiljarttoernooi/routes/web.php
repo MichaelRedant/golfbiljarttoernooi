@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\GameController;
+use App\Http\Controllers\ClubController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,7 +14,9 @@ use App\Http\Controllers\GameController;
 |
 */
 
+use App\Http\Controllers\GameController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\BelleController;
 use App\Http\Controllers\MancheController;
 use App\Http\Controllers\PlayerController;
@@ -23,7 +25,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RankingController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\ReservePlayerController;
-use App\Http\Controllers\UserController;
 
 Route::group(['middleware' => ['auth', 'admin']], function () {
     //Divisions
@@ -34,6 +35,8 @@ Route::group(['middleware' => ['auth', 'admin']], function () {
     Route::get('/divisions/{division}/delete', [DivisionController::class, 'delete'])->name('divisions.delete');
     Route::delete('/divisions/{division}', [DivisionController::class, 'destroy'])->name('divisions.destroy');
     
+
+
 
     //teams
     Route::get('/teams/create', [TeamController::class, 'create'])->name('teams.create');
@@ -66,11 +69,29 @@ Route::group(['middleware' => ['auth', 'admin']], function () {
     Route::post('/games/clear', [GameController::class, 'clearCalendar'])->name('games.clear');
     Route::get('/games/{game}/play', [GameController::class, 'play'])->name('games.play');
     Route::get('/games/{game}/edit', [GameController::class, 'edit'])->name('games.edit');
+    Route::get('/games/create', [GameController::class, 'create'])->name('games.create');
+    Route::post('/games', [GameController::class, 'store'])->name('games.store');
+    Route::get('/games/{division_id}/{season_id}', [GameController::class, 'showGamesForDivisionAndSeason'])
+     ->name('games.for-division-season');
     //rankings
 
     
 
 });
+
+    // Routes voor Clubs
+    Route::middleware(['auth', 'admin'])->group(function () {
+        Route::get('/clubs', [ClubController::class, 'index'])->name('clubs.index');
+        Route::get('/clubs/create', [ClubController::class, 'create'])->name('clubs.create');
+        Route::post('/clubs', [ClubController::class, 'store'])->name('clubs.store');
+        Route::get('/clubs/{club}', [ClubController::class, 'show'])->name('clubs.show');
+        Route::get('/clubs/{club}/edit', [ClubController::class, 'edit'])->name('clubs.edit');
+        Route::put('/clubs/{club}', [ClubController::class, 'update'])->name('clubs.update');
+        Route::delete('/clubs/{club}', [ClubController::class, 'destroy'])->name('clubs.destroy');
+    });
+    
+    Route::get('/clubs', [ClubController::class, 'index'])->name('clubs.index');
+    Route::get('/clubs/{club}', [ClubController::class, 'show'])->name('clubs.show');
 
 // Routes voor Divisies
 Route::get('/divisions', [DivisionController::class, 'index'])->name('divisions.index');
@@ -131,8 +152,9 @@ Route::get('/reserve-players', [ReservePlayerController::class, 'index'])->name(
 
 Route::get('/dashboard', function () {
     return view('dashboard');
+   
 })->middleware(['auth', 'verified'])->name('dashboard');
-
+Route::get('/dashboard', [GameController::class, 'showDashboard'])->middleware(['auth', 'verified'])->name('dashboard');
 Route::middleware('auth')->group(function () {
     //user
 Route::delete('/users/delete', [UserController::class, 'destroy'])->name('users.destroy');

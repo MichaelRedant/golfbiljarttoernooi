@@ -9,7 +9,7 @@ class Team extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'captain_id', 'reserve_id'];
+    protected $fillable = ['name', 'captain_id', 'reserve_id', 'division_id', 'club_id', 'location'];
     public function division()
     {
         return $this->belongsTo(Division::class);
@@ -43,6 +43,12 @@ class Team extends Model
     {
         return $this->homeGames->merge($this->awayGames);
     }
+
+    public function club()
+    {
+        return $this->belongsTo(Club::class);
+    }
+
 
     public function calculateStatsForSeason($seasonId) {
         $gamesHome = $this->gamesHome()->where('season_id', $seasonId)->get();

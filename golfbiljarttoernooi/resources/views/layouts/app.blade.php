@@ -15,6 +15,7 @@
 
     <!-- Scripts (Veronderstel dat Vite of vergelijkbare build tool gebruikt wordt voor assets) -->
     @vite(['css/stijl.css', 'resources/js/app.js'])
+    
 </head>
 <body class="font-sans antialiased">
     <!-- Navigation -->

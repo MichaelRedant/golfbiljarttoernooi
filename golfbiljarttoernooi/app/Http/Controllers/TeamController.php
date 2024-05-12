@@ -4,6 +4,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Club;
 use App\Models\Team;
 use App\Models\Season;
 use App\Models\Division;
@@ -21,27 +22,24 @@ class TeamController extends Controller
     }
 
     public function create()
-    {
-        // Haal alle divisies op uit de database
-    $divisions = Division::all();
+{
+    $divisions = Division::all();  // Assuming you are retrieving all divisions
+    $clubs = Club::all();  // Retrieve all clubs
+    return view('teams.create', compact('divisions', 'clubs'));
+}
 
-    return view('teams.create', compact('divisions'));
-    }
+public function store(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'division_id' => 'required|exists:divisions,id',
+        'location' => 'nullable|string|max:255'
+    ]);
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'division_id' => 'required|exists:divisions,id', // Zorg ervoor dat division_id bestaat in de divisions tabel
-        ]);
+    Team::create($request->all());
 
-        Team::create([
-            'name' => $request->name,
-            'division_id' => $request->division_id,
-        ]);
-
-        return redirect()->route('teams.index')->with('success', 'Team created successfully.');
-    }
+    return redirect()->route('teams.index')->with('success', 'Team successfully created.');
+}
 
     public function show(Team $team, Request $request)
 {
@@ -64,6 +62,8 @@ class TeamController extends Controller
 
     return view('teams.show', compact('team', 'teamStats', 'seasons', 'currentSeasonId'));
 }
+
+
     
     protected function calculateRank(Team $team)
 {
@@ -105,16 +105,17 @@ class TeamController extends Controller
     return view('teams.edit', compact('team', 'divisions', 'players', 'allTeams'));
 }
 
-    public function update(Request $request, Team $team)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-        ]);
+public function update(Request $request, Team $team)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'location' => 'nullable|string|max:255'
+    ]);
 
-        $team->update($request->all());
+    $team->update($request->all());
 
-        return redirect()->route('teams.index')->with('success', 'Team updated successfully.');
-    }
+    return redirect()->route('teams.index')->with('success', 'Team successfully updated.');
+}
 
     public function calculateTeamStandings(Request $request)
     {

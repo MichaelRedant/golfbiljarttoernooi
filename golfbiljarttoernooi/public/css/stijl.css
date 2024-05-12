@@ -465,4 +465,17 @@ body.night-mode .text-justify{
   color: #fff;
 }
 
-  
+/*edit clubs*/
+
+.form-check-input {
+  cursor: pointer;
+}
+
+.form-check-label {
+  margin-left: 0.5rem;
+  cursor: pointer;
+}
+
+.border {
+  border-color: #dee2e6!important; /* Default Bootstrap border color */
+}
