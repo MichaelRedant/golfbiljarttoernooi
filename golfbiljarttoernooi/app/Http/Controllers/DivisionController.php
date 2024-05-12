@@ -3,6 +3,9 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
+use App\Models\Game;
+use App\Models\Team;
 use App\Models\Season;
 use App\Models\Division;
 use Illuminate\Http\Request;
@@ -22,35 +25,86 @@ class DivisionController extends Controller
 }
 
     
-public function show(Division $division)
+public function show(Request $request, Division $division)
 {
-    $currentSeason = Season::latest()->first();
-    if (!$currentSeason) {
-        return back()->withErrors('No active season found.');
+    $currentSeasonId = $request->query('season_id', Season::latest('id')->value('id'));
+    $seasons = Season::all();
+
+    if (!$currentSeasonId) {
+        return back()->withErrors('Geen actief seizoen gevonden.');
     }
 
-    $nextGames = $division->games()
-        ->where('season_id', $currentSeason->id)
-        ->where('date', '>=', now())
-        ->orderBy('date')
-        ->limit(5)
-        ->get();
+    // Ophalen van alle wedstrijden voor de huidige divisie en het geselecteerde seizoen
+    $games = Game::with(['homeTeam', 'awayTeam'])
+                 ->where('division_id', $division->id)
+                 ->where('season_id', $currentSeasonId)
+                 ->orderBy('date', 'asc')
+                 ->get();
 
-    $pastGames = $division->games()
-        ->where('season_id', $currentSeason->id)
-        ->where('date', '<', now())
-        ->orderBy('date', 'desc')
-        ->limit(5)
-        ->get();
+                 $gamesByDate = collect();
+                 if ($currentSeasonId) {
+                     $gamesByDate = Game::with(['homeTeam', 'awayTeam'])
+                                        ->where('season_id', $currentSeasonId)
+                                        ->orderBy('date', 'asc')
+                                        ->get()
+                                        ->groupBy('date');
+                 }
+    // Fetch standings
+    $standings = $this->calculateDivisionStandings($division, $currentSeasonId);
 
-    // Assuming calculateStandings is defined to calculate the standings based on games
-    $standings = $this->calculateStandings($division->id);
-
-    return view('divisions.show', compact('division', 'nextGames', 'pastGames', 'standings'));
+    return view('divisions.show', compact('division', 'gamesByDate', 'games', 'standings', 'seasons', 'currentSeasonId'));
 }
 
 
 
+    private function calculateDivisionStandings(Division $division, $seasonId)
+{
+    $teams = $division->teams()->with([
+        'gamesHome' => function ($query) use ($seasonId) {
+            $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
+        },
+        'gamesAway' => function ($query) use ($seasonId) {
+            $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
+        }
+    ])->get();
+
+    return $teams->map(function ($team) {
+        $gamesWon = 0;
+        $gamesLost = 0;
+        $gamesDraw = 0;
+
+        // Iterate over home games
+        foreach ($team->gamesHome as $game) {
+            if ($game->home_score > $game->away_score) {
+                $gamesWon++;
+            } elseif ($game->home_score == $game->away_score) {
+                $gamesDraw++;
+            } else {
+                $gamesLost++;
+            }
+        }
+
+        // Iterate over away games
+        foreach ($team->gamesAway as $game) {
+            if ($game->away_score > $game->home_score) {
+                $gamesWon++;
+            } elseif ($game->away_score == $game->home_score) {
+                $gamesDraw++;
+            } else {
+                $gamesLost++;
+            }
+        }
+
+        return [
+            'team_id' => $team->id,
+            'team_name' => $team->name,
+            'games_won' => $gamesWon,
+            'games_lost' => $gamesLost,
+            'games_draw' => $gamesDraw,
+            'points' => $gamesWon * 3 + $gamesDraw // 3 points for a win, 1 point for a draw
+        ];
+    })->sortByDesc('points')->values()->all();
+}
 
     public function create()
     {

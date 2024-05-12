@@ -97,5 +97,10 @@ class Team extends Model
 
         return $standings;
     }
+
+    public function games()
+    {
+        return $this->gamesHome()->union($this->gamesAway()->getQuery());
+    }
 }
 

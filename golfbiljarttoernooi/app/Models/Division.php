@@ -19,6 +19,6 @@ class Division extends Model
 
     public function games()
     {
-        return $this->hasMany (Game::class);
+        return $this->hasMany(Game::class, 'division_id');
     }
 }
