@@ -13,27 +13,26 @@ use Illuminate\Http\Request;
 
 class GameController extends Controller
 {
-    /* public function index(Request $request)
-    {
-        $seasons = Season::all();
-    
-        // Vind het laatste seizoen en haal het id op indien beschikbaar.
-        $latestSeason = Season::latest('id')->first();
-        $currentSeasonId = $request->input('season_id', optional($latestSeason)->id);
-    
-        $gamesByDate = collect();
-        if ($currentSeasonId) {
-            $gamesByDate = Game::with(['homeTeam', 'awayTeam'])
-                               ->where('season_id', $currentSeasonId)
-                               ->orderBy('date', 'asc')
-                               ->get()
-                               ->groupBy('date');
-        }
-    
-        return view('games.index', compact('gamesByDate', 'seasons', 'currentSeasonId'));
-    }
+    public function index(Request $request)
+{
+    $seasons = Season::all();
+    $divisions = Division::all(); // Zorg ervoor dat deze lijn aanwezig is
 
-    public function edit(Game $game)
+    $currentSeasonId = $request->input('season_id', Season::latest('id')->first()->id);
+    $divisionId = $request->input('division_id', $divisions->first()->id ?? null); // Zorg voor een standaard waarde als fallback
+
+    $upcomingGames = Game::with(['homeTeam', 'byeTeam'])
+        ->where('division_id', $divisionId)
+        ->where('season_id', $currentSeasonId)
+        ->where('date', '>=', Carbon::now())
+        ->orderBy('date', 'asc')
+        ->get();
+
+    return view('games.index', compact('seasons', 'divisions', 'upcomingGames', 'currentSeasonId'));
+}
+
+
+/*     public function edit(Game $game)
 {
     $teams = Team::all();  // Zorg dat je de Team model hebt geladen via use App\Models\Team;
 
@@ -41,9 +40,9 @@ class GameController extends Controller
     $this->authorize('update', $game);
 
     return view('games.edit', compact('game', 'teams'));
-} */
+}  */
 
-public function index(Request $request)
+/* public function index(Request $request)
 {
     $divisionId = $request->input('division_id');
     $division = Division::find($divisionId);
@@ -53,27 +52,30 @@ public function index(Request $request)
         return redirect()->route('home')->withErrors('Divisie niet gevonden');
     }
 
-    $upcomingGames = Game::where('division_id', $divisionId)->where('date', '>=', Carbon::now())->orderBy('date', 'asc')->get();
+    // Zorg ervoor dat homeTeam en byeTeam geladen worden als ze nodig zijn.
+    $upcomingGames = Game::with(['homeTeam', 'byeTeam'])
+        ->where('division_id', $divisionId)
+        ->where('date', '>=', Carbon::now())
+        ->orderBy('date', 'asc')
+        ->get();
     $pastGames = Game::where('division_id', $divisionId)->where('date', '<', Carbon::now())->orderBy('date', 'desc')->get();
-    $standings = $this->calculateStandings($divisionId);  // Zorg ervoor dat deze functie de standen correct berekent
-    $nextMatchday = $upcomingGames->first()->date ?? 'Geen wedstrijden gepland';
+    $standings = $this->calculateStandings($divisionId);
 
-    return view('games.index', compact('division', 'currentSeasonId', 'upcomingGames', 'standings', 'pastGames', 'nextMatchday'));
+    return view('games.index', compact('division', 'currentSeasonId', 'upcomingGames', 'standings', 'pastGames'));
 }
+ */
 
-public function create(Request $request)
-{
-    $divisions = Division::all();
-    $teams = Team::all();
-    $seasons = Season::all();  // Retrieve all seasons for dropdown
-
-    // Retrieve division and season IDs from request, fallback to defaults
-    $selectedDivisionId = $request->input('division_id', $divisions->first()->id ?? null);
-    $selectedSeasonId = $request->input('season_id', Season::latest('id')->first()->id);
-
-    // Send selected IDs to the view to pre-select in dropdowns
-    return view('games.create', compact('divisions', 'teams', 'seasons', 'selectedDivisionId', 'selectedSeasonId'));
-}
+ public function create(Request $request, $division_id = null, $season_id = null)
+ {
+     $divisions = Division::all();
+     $teams = Team::all();
+     $seasons = Season::all();
+ 
+     $selectedDivisionId = $division_id ?? $divisions->first()->id ?? null;
+     $selectedSeasonId = $season_id ?? Season::latest('id')->first()->id;
+ 
+     return view('games.create', compact('divisions', 'teams', 'seasons', 'selectedDivisionId', 'selectedSeasonId'));
+ }
 
 
 
@@ -185,7 +187,7 @@ public function generateMatches()
 
 
     
-    private function rotateTeams($teams)
+    /* private function rotateTeams($teams)
 {
     $teamsArray = $teams->toArray();
     $firstTeam = array_shift($teamsArray); // Haal het eerste team eruit
@@ -194,7 +196,7 @@ public function generateMatches()
     return collect($teamsArray); // Zet het weer om naar een collectie
 }
 
-    
+     */
 
 public function clearCalendar()
 {
@@ -266,11 +268,28 @@ public function show(Game $game)
 
     
     public function update(Request $request, Game $game)
-    {
+{
+    $request->validate([
+        'date' => 'required|date',
+        'is_bye' => 'sometimes|accepted',
+        'bye_team_id' => 'nullable|exists:teams,id'
+    ]);
+
+    // Update de datum van de wedstrijd altijd
+    $game->date = $request->date;
+
+    if ($request->filled('is_bye')) {
+        // Verwerk de bye-gerelateerde logica
+        $game->home_team_id = null;
+        $game->away_team_id = null;
+        $game->bye_team_id = $request->bye_team_id;
+        $game->home_score = null;
+        $game->away_score = null;
+    } else {
+        // Gebruik de bestaande logica voor scoreberekening
         $data = $request->validate([
             'home_team_id' => 'required|exists:teams,id',
             'away_team_id' => 'required|exists:teams,id',
-            'date' => 'required|date', // Toevoegen van datumvalidatie
             'scores' => 'required|array',
             'scores.*.home_player' => 'required|exists:players,id',
             'scores.*.away_player' => 'required|exists:players,id',
@@ -281,7 +300,7 @@ public function show(Game $game)
     
         $homeWins = 0;
         $awayWins = 0;
-    
+
         foreach ($data['scores'] as $i => $score) {
             $matchResult = $this->calculateMatchResult($score);
             if ($matchResult == 1) {
@@ -289,7 +308,7 @@ public function show(Game $game)
             } elseif ($matchResult == 2) {
                 $awayWins++;
             }
-    
+
             Manche::updateOrCreate(
                 [
                     'game_id' => $game->id,
@@ -304,18 +323,22 @@ public function show(Game $game)
                 ]
             );
         }
-    
-        // Update the game details including the date
-        $game->update([
-            'home_score' => $homeWins,
-            'away_score' => $awayWins,
-            'date' => $data['date'] // Vergeet niet de datum bij te werken
-        ]);
-    
-        $this->updatePlayerStats($game);
-    
-        return redirect()->route('games.show', $game->id)->with('success', 'Game updated successfully.');
+
+        // Update scores
+        $game->home_score = $homeWins;
+        $game->away_score = $awayWins;
+        $game->home_team_id = $request->home_team_id;
+        $game->away_team_id = $request->away_team_id;
+        $game->bye_team_id = null;
     }
+
+    $game->save();
+    $this->updatePlayerStats($game);
+
+    return redirect()->route('games.show', $game->id)->with('success', 'Wedstrijd succesvol bijgewerkt.');
+}
+
+
     
 
 protected function updatePlayerStats(Game $game)
@@ -347,6 +370,15 @@ protected function updatePlayerStats(Game $game)
         $player2->increment('manches_lost', ($manche->score2 < $manche->score1) ? 1 : 0);
     }
 }
+
+public function edit(Game $game)
+{
+    $teams = Team::all();  // Haal alle teams op voor de dropdown selecties.
+    $game->load('homeTeam', 'awayTeam');  // Zorg dat de huidige teams geladen zijn.
+    
+    return view('games.edit', compact('game', 'teams'));
+}
+
 
 
 protected function calculateMatchResult($score)

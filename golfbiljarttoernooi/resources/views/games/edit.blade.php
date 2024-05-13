@@ -1,39 +1,59 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-4">
-    <h1 class="mb-4">Edit Match Details for <a href="{{ route('teams.show', $game->homeTeam->id) }}" style="color: {{ $game->home_score > $game->away_score ? 'green' : 'red' }};">{{ $game->homeTeam->name }}</a> vs <a href="{{ route('teams.show', $game->awayTeam->id) }}" style="color: {{ $game->away_score > $game->home_score ? 'green' : 'red' }};">{{ $game->awayTeam->name }}</a></h1>
-    
+<div class="container">
+    <h1>Bewerk Wedstrijd</h1>
     <form action="{{ route('games.update', $game->id) }}" method="POST">
         @csrf
         @method('PUT')
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th><a href="{{ route('teams.show', $game->homeTeam->id) }}" style="color: {{ $game->home_score > $game->away_score ? 'green' : 'red' }};">{{ $game->homeTeam->name }}</a></th>
-                        <th><a href="{{ route('teams.show', $game->awayTeam->id) }}" style="color: {{ $game->away_score > $game->home_score ? 'green' : 'red' }};">{{ $game->awayTeam->name }}</a></th>
-                        <th>1M</th>
-                        <th>2M</th>
-                        <th>Belle</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($game->manches as $index => $manche)
-                    <tr>
-                        <td>{{ $index + 1 }}</td>
-                        <td><a href="{{ route('players.show', $manche->player1->id) }}">{{ $manche->player1->first_name }} {{ $manche->player1->last_name }}</a></td>
-                        <td><a href="{{ route('players.show', $manche->player2->id) }}">{{ $manche->player2->first_name }} {{ $manche->player2->last_name }}</a></td>
-                        <td><input type="text" name="scores[{{$index}}][1M]" value="{{ $manche->score1 }}" class="form-control"></td>
-                        <td><input type="text" name="scores[{{$index}}][2M]" value="{{ $manche->score2 }}" class="form-control"></td>
-                        <td><input type="text" name="scores[{{$index}}][Belle]" value="{{ $manche->belle_score }}" class="form-control"></td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        <!-- Datum Input -->
+        <div class="mb-3">
+            <label for="date" class="form-label">Datum:</label>
+            <input type="date" class="form-control" id="date" name="date" value="{{ $game->date->toDateString() }}" required>
         </div>
-        <button type="submit" class="btn btn-success">Update Scores</button>
+        <!-- Bye Checkbox -->
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="is_bye" name="is_bye" {{ $game->bye_team_id ? 'checked' : '' }}>
+            <label class="form-check-label" for="is_bye">Is dit een bye?</label>
+        </div>
+        <!-- Bye Team Select -->
+        <div class="mb-3" id="bye_team_select" style="{{ $game->bye_team_id ? '' : 'display: none;' }}">
+            <label for="bye_team_id" class="form-label">Bye Team:</label>
+            <select id="bye_team_id" name="bye_team_id" class="form-control">
+                <option value="">Selecteer een team voor bye</option>
+                @foreach ($teams as $team)
+                <option value="{{ $team->id }}" {{ $team->id == $game->bye_team_id ? 'selected' : '' }}>{{ $team->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <!-- Teams Select -->
+        <div class="mb-3" id="team_selects" style="{{ $game->bye_team_id ? 'display: none;' : '' }}">
+            <label for="home_team_id" class="form-label">Thuis Team:</label>
+            <select id="home_team_id" name="home_team_id" class="form-control">
+                <option value="">Selecteer een team</option>
+                @foreach ($teams as $team)
+                <option value="{{ $team->id }}" {{ $team->id == $game->home_team_id ? 'selected' : '' }}>{{ $team->name }}</option>
+                @endforeach
+            </select>
+            <label for="away_team_id" class="form-label">Uit Team:</label>
+            <select id="away_team_id" name="away_team_id" class="form-control">
+                <option value="">Selecteer een team</option>
+                @foreach ($teams as $team)
+                <option value="{{ $team->id }}" {{ $team->id == $game->away_team_id ? 'selected' : '' }}>{{ $team->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary">Opslaan</button>
+        <a href="{{ route('games.for-division-season', ['division_id' => $game->division_id, 'season_id' => $game->season_id]) }}" class="btn btn-secondary">Terug</a>
+
+
     </form>
 </div>
+<script>
+document.getElementById('is_bye').onchange = function() {
+    document.getElementById('bye_team_select').style.display = this.checked ? '' : 'none';
+    document.getElementById('team_selects').style.display = this.checked ? 'none' : '';
+};
+</script>
 @endsection

@@ -37,13 +37,14 @@
                                 <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
                                 tegen
                                 <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
-                            @elseif ($game->bye_team_id)
+                                <span class="float-right">{{ $game->home_score }} : {{ $game->away_score }}</span>
+                                <i class="fas fa-home ml-4"></i><span class="ml-2">  <small>{{ $game->homeTeam->location }}</small></span>
+                                @elseif ($game->bye_team_id)
                                 <i class="fas fa-user-slash"></i>
                                 <strong>{{ optional($game->byeTeam)->name }} heeft een Bye</strong>
                             @else
                                 Ongeplande tijd
                             @endif
-                            <span class="float-right">{{ $game->home_score ?? 'TBA' }} : {{ $game->away_score ?? 'TBA' }}</span>
                         </li>
                     @endforeach
                 </ul>
@@ -88,6 +89,7 @@
                     <th>Thuis Team</th>
                     <th>Uit Team</th>
                     <th>Uitslag</th>
+                    <th>Actie</th>
                 </tr>
             </thead>
             <tbody>
@@ -96,9 +98,10 @@
                         @foreach ($gamesOnDate as $game)
                             <tr>
                                 <td>{{ \Carbon\Carbon::parse($date)->format('d-m-Y') }}</td>
-                                <td>{{ $game->homeTeam ? $game->homeTeam->name : 'Bye' }}</td>
-                                <td>{{ $game->awayTeam ? $game->awayTeam->name : 'Bye' }}</td>
+                                <td><a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam ? $game->homeTeam->name : 'Bye' }}</a></td>
+                                <td><a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam ? $game->awayTeam->name : 'Bye' }}</a></td>
                                 <td>{{ $game->home_score ?? '' }} : {{ $game->away_score ?? '' }}</td>
+                                <td><a href="{{ route('games.show', $game->id) }}" class="btn btn-primary">Wedstrijd bekijken</a></td>
                             </tr>
                         @endforeach
                     @endif

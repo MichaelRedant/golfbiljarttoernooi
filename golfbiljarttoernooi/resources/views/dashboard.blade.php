@@ -27,7 +27,13 @@
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title">Beheer</h5>
-                    <a href="{{ route('games.create') }}" class="btn btn-outline-secondary d-block mb-2"><i class="fas fa-calendar-plus"></i> Plan Wedstrijd</a>
+                    <a href="{{ route('games.create', [
+    'division_id' => $divisions->first()->id, 
+    'season_id' => $currentSeason->id
+]) }}" class="btn btn-outline-secondary d-block mb-2">
+    <i class="fas fa-calendar-plus"></i> Plan Wedstrijd
+</a>
+
                    @if(isset($divisions) && $divisions->isNotEmpty())
                    @foreach($divisions as $division)
                        <a href="{{ route('games.for-division-season', ['division_id' => $division->id, 'season_id' => $currentSeason->id]) }}" class="btn btn-outline-secondary">

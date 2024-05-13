@@ -1,65 +1,66 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-3">
-    <h1>Competitie - {{ $division->name }}</h1>
-    <h2>Volgende Speeldag: {{ $nextMatchday->format('d-m-Y') }}</h2>
-
-    <!-- Aankomende of recente wedstrijden -->
-    <div class="upcoming-games">
-        @foreach ($upcomingGames as $game)
-            <div class="game-card card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">{{ $game->homeTeam->name }} <span>{{ $game->home_score }} - {{ $game->away_score }}</span> {{ $game->awayTeam->name }}</h5>
-                    <p class="card-text">{{ $game->date->format('d-m-Y') }}</p>
-                </div>
-            </div>
-        @endforeach
-    </div>
-
-    <!-- Team ranking -->
-    <div class="team-ranking mt-4">
-        <h2>Team Klassement</h2>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Team</th>
-                    <th>Gespeld</th>
-                    <th>W</th>
-                    <th>G</th>
-                    <th>V</th>
-                    <th>Pt.</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($standings as $index => $standing)
-                    <tr>
-                        <td>{{ $index + 1 }}</td>
-                        <td><a href="{{ route('teams.show', ['team' => $standing['team_id']]) }}">{{ $standing['team_name'] }}</a></td>
-                        <td>{{ $standing['games_played'] }}</td>
-                        <td>{{ $standing['games_won'] }}</td>
-                        <td>{{ $standing['games_draw'] }}</td>
-                        <td>{{ $standing['games_lost'] }}</td>
-                        <td>{{ $standing['points'] }}</td>
-                    </tr>
+<div class="container">
+    <h1>Wedstrijden Overzicht</h1>
+    
+    <!-- Dropdowns for selecting season and division -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <select id="season-select" class="form-control" onchange="updateGamesList()">
+                @foreach ($seasons as $season)
+                    <option value="{{ $season->id }}">{{ $season->name }}</option>
                 @endforeach
-            </tbody>
-        </table>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <select id="division-select" class="form-control" onchange="updateGamesList()">
+                @foreach ($divisions as $division)
+                    <option value="{{ $division->id }}">{{ $division->name }}</option>
+                @endforeach
+            </select>
+        </div>
     </div>
 
-    <!-- Historische speeldagen -->
-    <div class="past-matchdays mt-5">
-        @foreach ($pastMatchdays as $date => $games)
-            <div class="matchday">
-                <h3>{{ $date }}</h3>
-                @foreach ($games as $game)
-                    <div class="past-game">
-                        <span>{{ $game->homeTeam->name }}</span> <strong>{{ $game->home_score }} - {{ $game->away_score }}</strong> <span>{{ $game->awayTeam->name }}</span>
-                    </div>
-                @endforeach
-            </div>
-        @endforeach
-    </div>
+    <!-- Table for displaying games -->
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Thuis Team</th>
+                <th>Uit Team</th>
+                <th>Uitslag</th>
+            </tr>
+        </thead>
+        <tbody id="games-list">
+            <!-- Games will be loaded here using JavaScript -->
+        </tbody>
+    </table>
 </div>
+
+<script>
+function updateGamesList() {
+    const seasonId = document.getElementById('season-select').value;
+    const divisionId = document.getElementById('division-select').value;
+    
+    // Assuming there's a route named 'games.list' that accepts seasonId and divisionId as query parameters
+    fetch(`/games/list?season_id=${seasonId}&division_id=${divisionId}`)
+        .then(response => response.json())
+        .then(data => {
+            const gamesList = document.getElementById('games-list');
+            gamesList.innerHTML = '';
+            data.forEach(game => {
+                gamesList.innerHTML += `
+                    <tr>
+                        <td>${game.date}</td>
+                        <td>${game.homeTeam ? game.homeTeam.name : 'Bye'}</td>
+                        <td>${game.awayTeam ? game.awayTeam.name : 'Bye'}</td>
+                        <td>${game.played ? `${game.home_score} : ${game.away_score}` : 'Nog te spelen'}</td>
+                    </tr>
+                `;
+            });
+        })
+        .catch(error => console.error('Error loading games:', error));
+}
+</script>
 @endsection

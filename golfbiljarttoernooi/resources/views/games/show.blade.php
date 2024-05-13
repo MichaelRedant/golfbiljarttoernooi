@@ -8,7 +8,7 @@
         <p>Bezoekers: <a href="{{ route('teams.show', $game->awayTeam->id) }}" style="color: {{ $game->away_score > $game->home_score ? 'green' : 'red' }};">{{ $game->awayTeam->name }}</a></p>
         <p>Datum: {{ $game->date->format('d-m-Y') }}</p>
         <p>Wedstrijdscore: <strong>{{ $game->home_score }} - {{ $game->away_score }}</strong></p>
-        <a href="{{ route('games.index') }}" class="btn btn-primary">Terug naar Wedstrijdkalender</a>
+        <a href="{{ route('divisions.show') }}" class="btn btn-primary">Terug naar Wedstrijdkalender</a>
 
         <table class="table">
             <thead>

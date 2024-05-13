@@ -1,4 +1,4 @@
-@extends('layouts.app')
+{{-- @extends('layouts.app')
 
 @section('title', 'Wedstrijdkalender')
 
@@ -67,3 +67,4 @@
     
 </div>
 @endsection
+ --}}

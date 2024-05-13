@@ -62,17 +62,7 @@ Route::group(['middleware' => ['auth', 'admin']], function () {
     Route::get('players/{player}/remove/{team}', [PlayerController::class,'removeFromTeam'])->name('players.remove');
     Route::delete('/players/{player}', [PlayerController::class, 'destroy'])->name('players.destroy');
     //games
-    Route::put('/games/{game}', [GameController::class, 'update'])->name('games.update');
-    Route::delete('/games/{game}', [GameController::class, 'destroy'])->name('games.destroy');
-    Route::get('/games/calendar-data', [GameController::class, 'calendarData'])->name('games.calendar-data');
-    Route::post('/games/generate', [GameController::class, 'generateMatches'])->name('games.generate');
-    Route::post('/games/clear', [GameController::class, 'clearCalendar'])->name('games.clear');
-    Route::get('/games/{game}/play', [GameController::class, 'play'])->name('games.play');
-    Route::get('/games/{game}/edit', [GameController::class, 'edit'])->name('games.edit');
-    Route::get('/games/create', [GameController::class, 'create'])->name('games.create');
-    Route::post('/games', [GameController::class, 'store'])->name('games.store');
-    Route::get('/games/{division_id}/{season_id}', [GameController::class, 'showGamesForDivisionAndSeason'])
-     ->name('games.for-division-season');
+    
     //rankings
 
     
@@ -112,10 +102,23 @@ Route::get('/players', [PlayerController::class, 'index'])->name('players.index'
 Route::get('/players/{player}', [PlayerController::class, 'show'])->name('players.show');
 
 // Routes voor Wedstrijden
-/* Route::get('/games', [GameController::class, 'index'])->name('games.index'); */
-Route::get('/games/{division_id}', [GameController::class, 'index'])->name('games.index');
+Route::get('/games', [GameController::class, 'index'])->name('games.index');
+/* Route::get('/games/{division_id}', [GameController::class, 'index'])->name('games.index'); */
 Route::get('/games/{game}/form', [GameController::class, 'editForm'])->name('games.form');
 Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
+
+Route::put('/games/{game}', [GameController::class, 'update'])->name('games.update');
+    Route::delete('/games/{game}', [GameController::class, 'destroy'])->name('games.destroy');
+    Route::get('/games/calendar-data', [GameController::class, 'calendarData'])->name('games.calendar-data');
+    Route::post('/games/generate', [GameController::class, 'generateMatches'])->name('games.generate');
+    Route::post('/games/clear', [GameController::class, 'clearCalendar'])->name('games.clear');
+    Route::get('/games/{game}/play', [GameController::class, 'play'])->name('games.play');
+    Route::get('/games/{game}/edit', [GameController::class, 'edit'])->name('games.edit');
+/*     Route::get('/games/create', [GameController::class, 'create'])->name('games.create'); */
+Route::get('/games/create/{division_id?}/{season_id?}', [GameController::class, 'create'])->name('games.create');
+    Route::post('/games', [GameController::class, 'store'])->name('games.store');
+    Route::get('/games/{division_id}/{season_id}', [GameController::class, 'showGamesForDivisionAndSeason'])
+     ->name('games.for-division-season');
 
 
 //Route voor Rankings
