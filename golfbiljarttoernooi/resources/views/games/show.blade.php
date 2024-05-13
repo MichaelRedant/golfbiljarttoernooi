@@ -2,13 +2,44 @@
 
 @section('content')
 <div class="container">
-    <h1>Wedstrijddetails voor <a href="{{ route('teams.show', $game->homeTeam->id) }}" style="color: {{ $game->home_score > $game->away_score ? 'green' : 'red' }};">{{ $game->homeTeam->name }}</a> vs <a href="{{ route('teams.show', $game->awayTeam->id) }}" style="color: {{ $game->away_score > $game->home_score ? 'green' : 'red' }};">{{ $game->awayTeam->name }}</a></h1>
+    <h1>Wedstrijddetails voor 
+        <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a> 
+        vs 
+        <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
+    </h1>
     <div>
-        <p>Thuisploeg: <a href="{{ route('teams.show', $game->homeTeam->id) }}" style="color: {{ $game->home_score > $game->away_score ? 'green' : 'red' }};">{{ $game->homeTeam->name }}</a></p>
-        <p>Bezoekers: <a href="{{ route('teams.show', $game->awayTeam->id) }}" style="color: {{ $game->away_score > $game->home_score ? 'green' : 'red' }};">{{ $game->awayTeam->name }}</a></p>
+        <p>Thuisploeg: 
+            <a href="{{ route('teams.show', $game->homeTeam->id) }}">
+                {{ $game->homeTeam->name }}
+                @if($game->home_score > $game->away_score)
+                    <i class="fas fa-trophy" style="color: gold;"></i>
+                @endif
+            </a>
+            <i class="fas fa-arrow-right"></i> 
+            <a href="{{ route('clubs.show', $game->homeTeam->club->id) }}">{{ $game->homeTeam->club->name }}</a>
+            
+        </p>
+        <p>Bezoekers: 
+            <a href="{{ route('teams.show', $game->awayTeam->id) }}">
+                {{ $game->awayTeam->name }}
+                @if($game->away_score > $game->home_score)
+                    <i class="fas fa-trophy" style="color: gold;"></i>
+                @endif
+            </a>
+            <i class="fas fa-arrow-right"></i> 
+            <a href="{{ route('clubs.show', $game->awayTeam->club->id) }}">{{ $game->awayTeam->club->name }}</a>
+        </p>
+        <p>
+            <i class="fas fa-map-marker-alt"></i> {{ $game->homeTeam->location }}
+            
+        </p>
         <p>Datum: {{ $game->date->format('d-m-Y') }}</p>
         <p>Wedstrijdscore: <strong>{{ $game->home_score }} - {{ $game->away_score }}</strong></p>
-        <a href="{{ route('divisions.show') }}" class="btn btn-primary">Terug naar Wedstrijdkalender</a>
+        @if($game->division)
+            <a href="{{ route('divisions.show', ['division' => $game->division->id]) }}" class="btn btn-primary">Terug naar Wedstrijdkalender</a>
+        @else
+            <a href="#" onclick="history.back()" class="btn btn-primary">Terug</a>
+        @endif
 
         <table class="table">
             <thead>
@@ -34,7 +65,6 @@
                 @endforeach
             </tbody>
         </table>
-        
     </div>
 </div>
 @endsection
