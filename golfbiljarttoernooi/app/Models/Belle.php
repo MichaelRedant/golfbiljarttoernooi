@@ -16,6 +16,11 @@ class Belle extends Model
         return $this->belongsTo(Game::class, 'game_id');
     }
 
+    public function player()
+    {
+        return $this->belongsTo(Player::class, 'player_id');
+    }
+
     public function winner()
     {
         return $this->belongsTo(Player::class, 'winner_id');

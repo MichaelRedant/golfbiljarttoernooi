@@ -2,16 +2,28 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Game extends Model
 {
     use HasFactory;
     
     protected $fillable = [
-        'home_team_id', 'away_team_id', 'date', 'season_id', 'home_score', 'away_score', 'forfeit'
+        'home_team_id', 'away_team_id', 'bye_team_id', 'date', 'season_id', 'home_score', 'away_score', 'division_id'
     ];
+
+    
+    protected $casts = [
+        'date' => 'datetime:d-m-Y',
+    ];
+
+    public function setDateAttribute($value)
+    {
+        $this->attributes['date'] = Carbon::parse($value);
+    }
+
 
     public function homeTeam()
     {
@@ -23,11 +35,15 @@ class Game extends Model
         return $this->belongsTo(Team::class, 'away_team_id');
     }
 
+    public function byeTeam()
+    {
+        return $this->belongsTo(Team::class, 'bye_team_id');
+    }
+
     public function manches()
     {
         return $this->hasMany(Manche::class);
     }
-    
 
     public function belles()
     {
@@ -45,17 +61,8 @@ class Game extends Model
         return $this->belongsTo(Season::class);
     }
 
-    protected $casts = [
-        'date' => 'datetime:Y-m-d',
-    ];
-
     public function division()
     {
         return $this->belongsTo(Division::class, 'division_id');
     }
-
-    public function byeTeam()
-{
-    return $this->belongsTo(Team::class, 'bye_team_id');
-}
 }

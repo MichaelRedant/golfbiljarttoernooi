@@ -479,3 +479,18 @@ body.night-mode .text-justify{
 .border {
   border-color: #dee2e6!important; /* Default Bootstrap border color */
 }
+
+/*adressen*/
+.list-group-item a {
+  color: #007bff; /* Bootstrap blauw, voel je vrij om de kleur te wijzigen */
+  font-weight: 500; /* Maakt de tekst iets dikker */
+}
+
+.list-group-item a:hover {
+  color: #0056b3; /* Donkerdere tint blauw voor hover-effect */
+}
+
+/*wide select match form*/
+.wide-select {
+  width: 100%; /* Zorgt voor maximale breedte binnen de container */ /* Voorkomt dat het veld buiten de container treedt */
+}

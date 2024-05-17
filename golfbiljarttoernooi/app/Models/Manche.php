@@ -9,8 +9,16 @@ class Manche extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['game_id', 'player1_id', 'player2_id', 'score1', 'score2', 'winner_id', 'belle_score'];
-
+    protected $fillable = [
+        'game_id', 
+        'player1_id', 
+        'player2_id', 
+        'score1', 
+        'score2', 
+        'belle_score', 
+        'winner_id', 
+        'number'
+    ];
 
     public function game()
     {
@@ -32,4 +40,3 @@ class Manche extends Model
         return $this->belongsTo(Player::class, 'player2_id');
     }
 }
-

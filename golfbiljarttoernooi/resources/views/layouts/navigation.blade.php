@@ -7,44 +7,36 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item active">
-                    <a class="nav-link" href="{{ route('home') }}">Home <span class="sr-only">(current)</span></a>
+                    <a class="nav-link" href="{{ route('home') }}">Home</a>
                 </li>
-                <!-- Navbar Dropdown voor Divisies -->
+                
                 <li class="nav-item dropdown">
-                    <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDivisions" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Divisies
                     </a>
-                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownDivisions">
                         @foreach ($divisions as $division)
                         <a class="dropdown-item" href="{{ route('divisions.show', $division->id) }}">
                             {{ $division->name }}
                         </a>
-                    @endforeach
-                    
-                    </div>
-                </li>
-                <li class="nav-item dropdown">
-                    <a id="navbarDropdownClubs" class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                        Clubs
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownClubs">
-                        @foreach (\App\Models\Club::all() as $club) <!-- Dynamisch alle clubs laden -->
-                            <a class="dropdown-item" href="{{ route('clubs.show', $club->id) }}">
-                                {{ $club->name }}
-                            </a>
                         @endforeach
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" href="{{ route('clubs.index') }}">Alle Clubs</a>
                     </div>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('players.index') }}">Spelers</a>
-                </li>
+
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('rankings.index') }}">Rankings</a>
                 </li>
-                
-                
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownInfo" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Informatie
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownInfo">
+                        <a class="dropdown-item" href="{{ route('clubs.index') }}">Clubs</a>
+                        <a class="dropdown-item" href="{{ route('teams.index') }}">Teams</a>
+                        <a class="dropdown-item" href="{{ route('players.index') }}">Spelers</a>
+                        <a class="dropdown-item" href="{{ route('teams.addresses') }}">Adressen</a>
+                    </div>
+                </li>
             </ul>
             <ul class="navbar-nav ms-auto">
                 @auth
@@ -53,7 +45,7 @@
                         {{ Auth::user()->name }}
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownMenuLink">
-                        <a class="dropdown-item" href="{{ route('dashboard') }}">Profiel</a>
+                        <a class="dropdown-item" href="{{ route('dashboard') }}">Dashboard</a>
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                             Uitloggen

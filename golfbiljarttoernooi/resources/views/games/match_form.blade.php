@@ -7,31 +7,33 @@
     <div class="card my-4">
         <div class="card-body">
             <h5 class="card-title">Wedstrijdinformatie</h5>
-            <p><strong>Thuisploeg:</strong> {{ $game->homeTeam->name }}</p>
-            <p><strong>Bezoekers:</strong> {{ $game->awayTeam->name }}</p>
-            <p><strong>Datum:</strong> {{ $game->date->format('Y-m-d') }}</p>
+            <p><strong>Thuisploeg:</strong> <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a></p>
+            <p><strong>Bezoekers:</strong> <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a></p>
+            <p><strong>Locatie:</strong> {{ $game->homeTeam->location }}</p>
+            <p><strong>Datum:</strong> {{ $game->date->format('d-m-Y') }}</p>
         </div>
     </div>
 
     <form action="{{ route('games.update', $game->id) }}" method="POST">
         @csrf
         @method('PUT')
-    
-        <!-- Hidden fields for team IDs -->
+
         <input type="hidden" name="home_team_id" value="{{ $game->homeTeam->id }}">
         <input type="hidden" name="away_team_id" value="{{ $game->awayTeam->id }}">
+        <input type="hidden" name="date" value="{{ $game->date->format('d-m-Y') }}">
+        <input type="hidden" name="division_id" value="{{ $game->division_id }}">
+        <input type="hidden" name="season_id" value="{{ $game->season_id }}">
 
-    
         <div class="card">
             <div class="card-header">Wedstrijdscore</div>
             <div class="card-body">
                 <div class="form-group">
                     <label>Thuis score:</label>
-                    <input type="text" class="form-control" id="home_score" value="{{ $game->home_score ?? '0' }}" readonly>
+                    <input type="text" class="form-control" id="home_score" name="home_score" value="{{ $game->home_score ?? '0' }}" readonly>
                 </div>
                 <div class="form-group">
                     <label>Uit score:</label>
-                    <input type="text" class="form-control" id="away_score" value="{{ $game->away_score ?? '0' }}" readonly>
+                    <input type="text" class="form-control" id="away_score" name="away_score" value="{{ $game->away_score ?? '0' }}" readonly>
                 </div>
             </div>
         </div>
@@ -43,9 +45,9 @@
                     <div class="col-md-6">
                         <label>Kapitein {{ $game->homeTeam->name }}</label>
                         <select class="form-control" name="home_captain">
-                            @foreach ($game->homeTeam->players as $player)
+                            @foreach ($homeTeamPlayers as $player)
                                 <option value="{{ $player->id }}" {{ $player->id == optional($game->homeTeam->captain)->id ? 'selected' : '' }}>
-                                    {{ $player->first_name }} {{ $player->last_name }}
+                                    {{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}
                                 </option>
                             @endforeach
                         </select>
@@ -53,9 +55,9 @@
                     <div class="col-md-6">
                         <label>Kapitein {{ $game->awayTeam->name }}</label>
                         <select class="form-control" name="away_captain">
-                            @foreach ($game->awayTeam->players as $player)
+                            @foreach ($awayTeamPlayers as $player)
                                 <option value="{{ $player->id }}" {{ $player->id == optional($game->awayTeam->captain)->id ? 'selected' : '' }}>
-                                    {{ $player->first_name }} {{ $player->last_name }}
+                                    {{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}
                                 </option>
                             @endforeach
                         </select>
@@ -63,9 +65,9 @@
                     <div class="col-md-6">
                         <label>Reservespeler {{ $game->homeTeam->name }}</label>
                         <select class="form-control" name="home_reserve">
-                            @foreach ($game->homeTeam->players as $player)
+                            @foreach ($homeTeamPlayers as $player)
                                 <option value="{{ $player->id }}" {{ $player->id == optional($game->homeTeam->reserve)->id ? 'selected' : '' }}>
-                                    {{ $player->first_name }} {{ $player->last_name }}
+                                    {{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}
                                 </option>
                             @endforeach
                         </select>
@@ -73,9 +75,9 @@
                     <div class="col-md-6">
                         <label>Reservespeler {{ $game->awayTeam->name }}</label>
                         <select class="form-control" name="away_reserve">
-                            @foreach ($game->awayTeam->players as $player)
+                            @foreach ($awayTeamPlayers as $player)
                                 <option value="{{ $player->id }}" {{ $player->id == optional($game->awayTeam->reserve)->id ? 'selected' : '' }}>
-                                    {{ $player->first_name }} {{ $player->last_name }}
+                                    {{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}
                                 </option>
                             @endforeach
                         </select>
@@ -83,8 +85,7 @@
                 </div>
             </div>
         </div>
-    
-        <!-- Manches en scores -->
+
         <div class="card">
             <div class="card-header">Spelers en Scores</div>
             <div class="card-body">
@@ -92,8 +93,10 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Spelers Thuisploeg</th>
-                                <th>Spelers Bezoekers</th>
+                                <th>{{ $game->homeTeam->name }}</th>
+                                <th>Team</th>
+                                <th>{{ $game->awayTeam->name }}</th>
+                                <th>Team</th>
                                 <th>1M</th>
                                 <th>2M</th>
                                 <th>Belle</th>
@@ -105,19 +108,21 @@
                             @for ($i = 0; $i < 6; $i++)
                             <tr>
                                 <td>
-                                    <select class="form-control" name="scores[{{ $i }}][home_player]">
-                                        @foreach ($game->homeTeam->players as $player)
-                                        <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }}</option>
+                                    <select class="form-control player-select wide-select" data-player-type="home" data-row-index="{{ $i }}" name="scores[{{ $i }}][home_player]">
+                                        @foreach ($homeTeamPlayers as $player)
+                                        <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}</option>
                                         @endforeach
                                     </select>
                                 </td>
+                                <td class="small" id="home-team-{{ $i }}"></td>
                                 <td>
-                                    <select class="form-control" name="scores[{{ $i }}][away_player]">
-                                        @foreach ($game->awayTeam->players as $player)
-                                        <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }}</option>
+                                    <select class="form-control player-select wide-select" data-player-type="away" data-row-index="{{ $i }}" name="scores[{{ $i }}][away_player]">
+                                        @foreach ($awayTeamPlayers as $player)
+                                        <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}</option>
                                         @endforeach
                                     </select>
                                 </td>
+                                <td class="small" id="away-team-{{ $i }}"></td>
                                 <td>
                                     <input type="number" class="form-control manche" name="scores[{{ $i }}][1M]" required>
                                 </td>
@@ -125,110 +130,131 @@
                                     <input type="number" class="form-control manche" name="scores[{{ $i }}][2M]" required>
                                 </td>
                                 <td>
-                                    <input type="number" class="form-control belle" name="scores[{{ $i }}][Belle]" disabled>
+                                    <input type="number" class="form-control belle" name="scores[{{ $i }}][Belle]" readonly>
                                 </td>
                                 <td>
                                     <input type="text" class="form-control result" readonly>
                                 </td>
                                 <td>
                                     <button type="button" class="btn btn-secondary lockMatch">Afsluiten</button>
-                                    <button type="button" class="btn btn-primary unlockMatch" disabled>Bewerken</button>
+                                    <button type="button" class="btn btn-primary unlockMatch">Bewerken</button>
                                 </td>
                             </tr>
                             @endfor
                         </tbody>
-                    </table
-                    </div>
+                    </table>
+                </div>
             </div>
         </div>
-    
+
         <div class="text-center mt-4 mb-4">
-            <button type="submit" class="btn btn-primary">Wedstrijd opslaan</button>
-        </div
+            <button type="submit" class="btn btn-primary" id="saveButton">Wedstrijd opslaan</button>
+        </div>
     </form>
 </div>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const homeScoreInput = document.getElementById('home_score');
-        const awayScoreInput = document.getElementById('away_score');
-        const rows = document.querySelectorAll('tbody tr');
-        
-    
-        function updateResults() {
-            let homeWins = 0;
-            let awayWins = 0;
-    
-            rows.forEach(row => {
-                const manche1Input = row.querySelector('input[name*="[1M]"]');
-                const manche2Input = row.querySelector('input[name*="[2M]"]');
-                const belleInput = row.querySelector('input[name*="[Belle]"]');
-                const resultInput = row.querySelector('input.result');
-    
-                let homePoints = 0;
-                let awayPoints = 0;
-    
-                if (parseInt(manche1Input.value) === 1) homePoints++;
-                if (parseInt(manche2Input.value) === 2) awayPoints++;
-                if (parseInt(manche1Input.value) === 2) awayPoints++;
-                if (parseInt(manche2Input.value) === 1) homePoints++;
-    
-                // Belle-input inschakelen als er een gelijkspel is na de eerste twee manches
-                if (homePoints === awayPoints) {
-                    belleInput.disabled = false;
-                } else {
-                    belleInput.disabled = true;
-                    belleInput.value = ""; // Reset belle input if not a draw
-                }
-    
-                if (belleInput.value === "1") homePoints++;
-                if (belleInput.value === "2") awayPoints++;
-    
-                resultInput.value = `${homePoints} - ${awayPoints}`;
-    
-                // Bepalen wie de match wint en de wedstrijdscore updaten
-                if (homePoints > awayPoints) homeWins++;
-                if (awayPoints > homePoints) awayWins++;
-            });
-    
-            homeScoreInput.value = homeWins;
-            awayScoreInput.value = awayWins;
-        }
-    
+    const rows = document.querySelectorAll('tbody tr');
+    const homeScoreInput = document.getElementById('home_score');
+    const awayScoreInput = document.getElementById('away_score');
+    const saveButton = document.getElementById('saveButton');
+    const form = document.querySelector('form');
+
+    // Update scores and results dynamically
+    function updateResults() {
+        let homeWins = 0;
+        let awayWins = 0;
+
         rows.forEach(row => {
-            const inputs = row.querySelectorAll('.manche, .belle');
-            inputs.forEach(input => {
-                input.addEventListener('input', function() {
-                    updateResults();
-                });
-            });
-    
-            row.querySelector('.lockMatch').addEventListener('click', function() {
-                const inputs = row.querySelectorAll('input, select');
-                inputs.forEach(input => input.disabled = true);
-                this.disabled = true;
-                row.querySelector('.unlockMatch').disabled = false;
-            });
-    
-            row.querySelector('.unlockMatch').addEventListener('click', function() {
-                const inputs = row.querySelectorAll('input, select:not(.result)');
-                inputs.forEach(input => input.disabled = false);
-                this.disabled = true;
-                row.querySelector('.lockMatch').disabled = false;
-            });
+            const manche1Input = row.querySelector('input[name*="[1M]"]');
+            const manche2Input = row.querySelector('input[name*="[2M]"]');
+            const belleInput = row.querySelector('input[name*="[Belle]"]');
+            const resultInput = row.querySelector('input.result');
+
+            let homePoints = 0;
+            let awayPoints = 0;
+
+            if (parseInt(manche1Input.value) === 1) homePoints++;
+            if (parseInt(manche2Input.value) === 2) awayPoints++;
+            if (parseInt(manche1Input.value) === 2) awayPoints++;
+            if (parseInt(manche2Input.value) === 1) homePoints++;
+
+            if (homePoints === awayPoints) {
+                belleInput.removeAttribute('readonly');
+            } else {
+                belleInput.setAttribute('readonly', true);
+                belleInput.value = ""; // Reset belle input if not a draw
+            }
+
+            if (belleInput.value === "1") homePoints++;
+            if (belleInput.value === "2") awayPoints++;
+
+            resultInput.value = `${homePoints} - ${awayPoints}`;
+
+            if (homePoints > awayPoints) homeWins++;
+            if (awayPoints > homePoints) awayWins++;
         });
-    
-        updateResults(); // Initial update on page load
 
-        
+        homeScoreInput.value = homeWins;
+        awayScoreInput.value = awayWins;
+        checkAllMatchesLocked();
+    }
+
+    // Enable "Save" button if all matches are locked
+    function checkAllMatchesLocked() {
+        let allLocked = true;
+        rows.forEach(row => {
+            const lockButton = row.querySelector('.lockMatch');
+            if (!lockButton.disabled) {
+                allLocked = false;
+            }
+        });
+        saveButton.disabled = !allLocked;
+    }
+
+    // Lock and unlock match rows
+    rows.forEach(row => {
+        const inputs = row.querySelectorAll('.manche, .belle');
+        inputs.forEach(input => {
+            input.addEventListener('input', updateResults);
+        });
+
+        row.querySelector('.lockMatch').addEventListener('click', function() {
+            const inputs = row.querySelectorAll('input, select');
+            inputs.forEach(input => input.disabled = true);
+            this.disabled = true;
+            row.querySelector('.unlockMatch').disabled = false;
+            checkAllMatchesLocked();
+        });
+
+        row.querySelector('.unlockMatch').addEventListener('click', function() {
+            const inputs = row.querySelectorAll('input, select:not(.result)');
+            inputs.forEach(input => input.disabled = false);
+            this.disabled = true;
+            row.querySelector('.lockMatch').disabled = false;
+        });
     });
-    </script>
-    
-    
-    
-    
-    
-    
+
+    // Enable form submission of disabled inputs
+    document.querySelector('form').addEventListener('submit', function() {
+    document.querySelectorAll('input[disabled], select[disabled]').forEach(input => {
+        input.disabled = false;
+    });
+});
 
 
+    document.querySelectorAll('.player-select').forEach(select => {
+        select.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const teamName = selectedOption.text.split(' - ')[1] || 'Geen team gevonden';
+            const playerType = this.dataset.playerType;
+            const rowIndex = this.dataset.rowIndex;
+            document.getElementById(`${playerType}-team-${rowIndex}`).textContent = teamName;
+        });
+    });
+
+    updateResults(); // Initial update on page load
+});
+
+</script>
 @endsection

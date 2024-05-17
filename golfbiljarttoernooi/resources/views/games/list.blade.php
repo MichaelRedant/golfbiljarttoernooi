@@ -18,15 +18,15 @@
 
     <!-- Button to create a new game -->
     <div class="mb-4">
-        <a href="{{ route('games.create', ['division_id' => $division->id, 'season_id' => $season->id]) }}" class="btn btn-success">Nieuwe Wedstrijd Toevoegen</a>
-
-
+        <a href="{{ route('games.create', ['division_id' => $division->id, 'season_id' => $season->id]) }}" class="btn btn-success">
+            <i class="fas fa-plus-circle"></i> Nieuwe Wedstrijd Toevoegen
+        </a>
     </div>
 
     @if($games->isEmpty())
         <p>Geen geplande wedstrijden gevonden voor het geselecteerde seizoen.</p>
     @else
-        <table class="table">
+        <table class="table table-striped">
             <thead>
                 <tr>
                     <th>Datum</th>
@@ -58,11 +58,25 @@
                         @endif
                     </td>
                     <td>
-                        <a href="{{ route('games.edit', $game->id) }}" class="btn btn-sm btn-primary">Bewerk wedstrijdkalender</a>
-                        <!-- Button to play a game, assuming there is a game to play -->
-                        @if(!$game->bye_team_id)
-                            <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-secondary">Wedstrijd Spelen</a>
+                        <a href="{{ route('games.edit', $game->id) }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-edit"></i> Bewerk wedstrijdkalender
+                        </a>
+                        @if(!$game->played)
+                            <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-play-circle"></i> Wedstrijd Spelen
+                            </a>
+                        @else
+                            <a href="{{ route('games.edit', $game->id) }}" class="btn btn-sm btn-info">
+                                <i class="fas fa-pencil-alt"></i> Wedstrijd Bewerken
+                            </a>
                         @endif
+                        <form action="{{ route('games.destroy', $game->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Weet je zeker dat je deze wedstrijd wilt verwijderen?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash-alt"></i> Verwijder
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 @endforeach
