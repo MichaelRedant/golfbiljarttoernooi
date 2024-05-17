@@ -40,28 +40,29 @@ class TeamController extends Controller
     }
 
     public function show(Team $team, Request $request)
-    {
-        $currentSeasonId = $request->query('season_id', Season::latest()->first()->id);
-        $seasons = Season::all();
+{
+    $currentSeasonId = $request->query('season_id', Season::latest()->first()->id);
+    $seasons = Season::all();
 
-        $teamStats = $team->calculateStatsForSeason($currentSeasonId);
+    $teamStats = $team->calculateStatsForSeason($currentSeasonId);
 
-        $defaultStats = [
-            'games_won' => 0,
-            'games_lost' => 0,
-            'games_draw' => 0,
-            'points' => 0
-        ];
+    $defaultStats = [
+        'games_won' => 0,
+        'games_lost' => 0,
+        'games_draw' => 0,
+        'points' => 0
+    ];
 
-        $teamStats = array_merge($defaultStats, $teamStats);
+    $teamStats = array_merge($defaultStats, $teamStats);
 
-        $standings = $this->calculateDivisionStandings($team->division, $currentSeasonId);
+    $standings = $this->calculateDivisionStandings($team->division, $currentSeasonId);
 
-        // Find the specific team's standing
-        $currentTeamStanding = collect($standings)->firstWhere('team_id', $team->id);
+    $currentTeamStanding = collect($standings)->firstWhere('team_id', $team->id);
 
-        return view('teams.show', compact('team', 'teamStats', 'seasons', 'currentSeasonId', 'standings', 'currentTeamStanding'));
-    }
+    $players = $team->players; // Fetch players of the team
+
+    return view('teams.show', compact('team', 'teamStats', 'seasons', 'currentSeasonId', 'standings', 'currentTeamStanding', 'players'));
+}
 
 
     public function addresses()

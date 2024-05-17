@@ -30,6 +30,7 @@
             <div>
                 <p><strong><i class="fas fa-trophy"></i> Gewonnen Matchen:</strong> {{ $matchesWon }}</p>
                 <p><strong><i class="fas fa-thumbs-down"></i> Verloren Matchen:</strong> {{ $matchesLost }}</p>
+                <p><strong><i class="fas fa-list-ol"></i> Plaats Dit Seizoen:</strong> {{ $playerRank }}</p>
             </div>
             @if(auth()->user() && (auth()->user()->role === 'admin' || auth()->user()->role === 'speler'))
                 <a href="{{ route('players.edit', $player->id) }}" class="btn btn-primary"><i class="fas fa-edit"></i> Bewerk Speler</a>
@@ -46,6 +47,7 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
+                        <th>Plaats Dit Seizoen</th>
                         <th>Naam</th>
                         <th>Team</th>
                         <th>Gewonnen</th>
@@ -54,8 +56,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($standings as $standing)
+                    @foreach ($standings as $index => $standing)
                         <tr class="{{ $standing['player_id'] == $player->id ? 'table-success' : '' }}">
+                            <td>{{ $index + 1 }}</td>
                             <td><a href="{{ route('players.show', $standing['player_id']) }}">{{ $standing['player_name'] }}</a></td>
                             <td><a href="{{ route('teams.show', $standing['team_id']) }}">{{ $standing['team_name'] }}</a></td>
                             <td>{{ $standing['matches_won'] }}</td>

@@ -99,6 +99,9 @@ public function show(Player $player, Request $request)
     // Calculate standings for the player's division and season
     $standings = $this->calculatePlayerStandings($player->division_id, $currentSeasonId);
 
+    // Find player's rank
+    $playerRank = array_search($player->id, array_column($standings, 'player_id')) + 1;
+
     return view('players.show', compact(
         'player',
         'seasons',
@@ -109,10 +112,10 @@ public function show(Player $player, Request $request)
         'matchesWon',
         'matchesLost',
         'imageUrl',
-        'standings'
+        'standings',
+        'playerRank'
     ));
 }
-
 
    public function edit(Player $player)
 {
@@ -228,15 +231,21 @@ public function show(Player $player, Request $request)
 public function getPlayersByTeam(Request $request)
 {
     $teamId = $request->query('team_id');
-    $players = Player::with('games', 'games.manches')
+    $players = Player::with('team', 'team.gamesHome', 'team.gamesAway')
                       ->where('team_id', $teamId)
                       ->get();
 
-    $playersData = $players->map(function ($player) {
+    $divisionId = $players->first()->team->division_id;
+    $standings = $this->calculatePlayerStandings($divisionId, $request);
+
+    $playersData = $players->map(function ($player) use ($standings) {
+        $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
         return [
             'id' => $player->id,
             'name' => $player->first_name . ' ' . $player->last_name,
-            'games_played' => $player->games->count(),
+            'team_name' => $player->team->name,
+            'team_id' => $player->team->id,
+            'rank' => $rank,
         ];
     });
 
@@ -255,23 +264,27 @@ public function playersBySeason($divisionId, $seasonId)
 public function searchPlayers(Request $request)
 {
     $query = $request->query('query');
-    $players = Player::where('first_name', 'LIKE', "%{$query}%")
+    $players = Player::with('team')
+                     ->where('first_name', 'LIKE', "%{$query}%")
                      ->orWhere('last_name', 'LIKE', "%{$query}%")
                      ->get();
 
-    $playersData = $players->map(function ($player) {
+    $divisionId = $players->first()->team->division_id ?? null;
+    $standings = $divisionId ? $this->calculatePlayerStandings($divisionId, $request) : [];
+
+    $playersData = $players->map(function ($player) use ($standings) {
+        $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
         return [
             'id' => $player->id,
             'name' => $player->first_name . ' ' . $player->last_name,
-            'team_name' => optional($player->team)->name,
-            'team_id' => optional($player->team)->id,
+            'team_name' => $player->team->name,
+            'team_id' => $player->team->id,
+            'rank' => $rank,
         ];
     });
 
     return response()->json($playersData);
 }
-
-
 
 public function removeFromTeam(Player $player, Team $team)
 {

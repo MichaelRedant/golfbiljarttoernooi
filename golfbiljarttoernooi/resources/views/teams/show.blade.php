@@ -26,6 +26,13 @@
             <p><strong><i class="fas fa-thumbs-down"></i> Aantal Verloren:</strong> {{ $currentTeamStanding['games_lost'] }}</p>
             <p><strong><i class="fas fa-handshake"></i> Aantal Gelijk:</strong> {{ $currentTeamStanding['games_draw'] }}</p>
             <p><strong><i class="fas fa-star"></i> Totaal Punten:</strong> {{ $currentTeamStanding['points'] }}</p>
+            <p><strong><i class="fas fa-medal"></i> Plaats dit seizoen:</strong> 
+                @foreach ($standings as $index => $standing)
+                    @if($standing['team_id'] == $team->id)
+                        {{ $index + 1 }}
+                    @endif
+                @endforeach
+            </p>
         </div>
         <div class="card-footer d-flex justify-content-between">
             @if(auth()->user() && auth()->user()->role === 'admin')
@@ -47,7 +54,7 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th>#</th>
+                        <th style="width: 5%;">#</th>
                         <th>Naam</th>
                         <th>Gewonnen</th>
                         <th>Verloren</th>
@@ -59,11 +66,35 @@
                     @foreach ($standings as $index => $standing)
                         <tr @if($standing['team_id'] == $team->id) class="table-success" @endif>
                             <td>{{ $index + 1 }}</td>
-                            <td>{{ $standing['team_name'] }}</td>
+                            <td><a href="{{ route('teams.show', $standing['team_id']) }}">{{ $standing['team_name'] }}</a></td>
                             <td>{{ $standing['games_won'] }}</td>
                             <td>{{ $standing['games_lost'] }}</td>
                             <td>{{ $standing['games_draw'] }}</td>
                             <td>{{ $standing['points'] }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h2><i class="fas fa-users"></i> Spelerslijst</h2>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Naam</th>
+                        <th>Team</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($players as $player)
+                        <tr>
+                            <td><a href="{{ route('players.show', $player->id) }}">{{ $player->first_name }} {{ $player->last_name }}</a></td>
+                            <td>{{ $team->name }}</td>
                         </tr>
                     @endforeach
                 </tbody>

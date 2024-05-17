@@ -59,7 +59,9 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(players => {
                 let rows = players.map(player => `
                     <tr>
+                        <td>${player.rank}</td>
                         <td><a href="/players/${player.id}">${player.name}</a></td>
+                        <td><a href="/teams/${player.team_id}">${player.team_name}</a></td>
                     </tr>
                 `).join('');
 
@@ -67,7 +69,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th><i class="fas fa-user"></i> Naam</th>
+                                <th>Plaats Dit Seizoen</th>
+                                <th>Naam</th>
+                                <th>Team</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -86,8 +90,9 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(players => {
                 let rows = players.map(player => `
                     <tr>
+                        <td>${player.rank}</td>
                         <td><a href="/players/${player.id}">${player.name}</a></td>
-                        <td><a href="/teams/${player.team_id}">${player.team_name || ''}</a></td>
+                        <td><a href="/teams/${player.team_id}">${player.team_name}</a></td>
                     </tr>
                 `).join('');
 
@@ -95,8 +100,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th><i class="fas fa-user"></i> Naam</th>
-                                <th><i class="fas fa-users"></i> Team</th>
+                                <th>Plaats Dit Seizoen</th>
+                                <th>Naam</th>
+                                <th>Team</th>
                             </tr>
                         </thead>
                         <tbody>
