@@ -2,47 +2,67 @@
 
 @section('content')
     <div class="container mt-4">
-        <h1>Divisies</h1>
+        <h1><i class="fas fa-layer-group"></i> Divisies</h1>
         
         @if(auth()->user() && auth()->user()->role === 'admin')
-            <a href="{{ route('divisions.create') }}" class="btn btn-primary mb-2">Nieuwe Divisie Toevoegen</a>
+            <a href="{{ route('divisions.create') }}" class="btn btn-primary mb-2">
+                <i class="fas fa-plus"></i> Nieuwe Divisie Toevoegen
+            </a>
         @endif
 
         @if ($divisions->isEmpty())
             <p>Er zijn geen divisies beschikbaar.</p>
         @else
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th class="text-left">ID</th>
-                            <th class="text-left">Naam</th>
-                            <th class="text-left">Acties</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($divisions as $division)
-                            <tr>
-                                <td>{{ $division->id }}</td>
-                                <td>{{ $division->name }}</td>
-                                <td>
-                                    <a href="{{ route('divisions.show', $division) }}" class="btn btn-info btn-sm">Bekijken</a>
+            <div class="accordion" id="divisionAccordion">
+                @foreach ($divisions as $division)
+                    <div class="card">
+                        <div class="card-header" id="heading{{ $division->id }}">
+                            <h2 class="mb-0 d-flex justify-content-between align-items-center">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse{{ $division->id }}" aria-expanded="false" aria-controls="collapse{{ $division->id }}">
+                                    {{ $division->name }} <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div>
+                                    <a href="{{ route('divisions.show', $division) }}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-eye"></i> Bekijken
+                                    </a>
                                     @if(auth()->user() && auth()->user()->role === 'admin')
-                                        <a href="{{ route('divisions.edit', $division) }}" class="btn btn-warning btn-sm">Bewerken</a>
+                                        <a href="{{ route('divisions.edit', $division) }}" class="btn btn-warning btn-sm">
+                                            <i class="fas fa-edit"></i> Bewerken
+                                        </a>
                                         <button class="btn btn-danger btn-sm" onclick="event.preventDefault(); if(confirm('Weet je zeker dat je deze divisie wilt verwijderen?')) document.getElementById('delete-division-{{ $division->id }}').submit();">
-                                            Verwijderen
+                                            <i class="fas fa-trash-alt"></i> Verwijderen
                                         </button>
                                         <form id="delete-division-{{ $division->id }}" action="{{ route('divisions.destroy', $division) }}" method="POST" style="display: none;">
                                             @csrf
                                             @method('DELETE')
                                         </form>
                                     @endif
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                                </div>
+                            </h2>
+                        </div>
+
+                        <div id="collapse{{ $division->id }}" class="collapse" aria-labelledby="heading{{ $division->id }}" data-parent="#divisionAccordion">
+                            <div class="card-body">
+                                <h5><i class="fas fa-users"></i> Teams in deze Divisie</h5>
+                                <ul class="list-group">
+                                    @foreach ($division->teams as $team)
+                                        <li class="list-group-item">
+                                            <a href="{{ route('teams.show', $team) }}">{{ $team->name }}</a>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
             </div>
         @endif
     </div>
 @endsection
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Initialize all collapse elements
+    $('.collapse').collapse({ toggle: false });
+});
+</script>

@@ -14,8 +14,7 @@ class DivisionController extends Controller
 {
     public function index()
 {
-    $divisions = Division::with('teams')->get(); // Laadt alleen teams zonder seizoensfilter
-
+    $divisions = Division::with('teams')->get(); // Load divisions with teams
     return view('divisions.index', compact('divisions'));
 }
 
@@ -124,17 +123,26 @@ public function show(Request $request, Division $division)
 
     public function edit(Division $division)
     {
-        return view('divisions.edit', ['division' => $division]);
+        $teams = Team::with('club')->get(); // Load all teams with their clubs
+        return view('divisions.edit', compact('division', 'teams'));
     }
+
 
     public function update(Request $request, Division $division)
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'teams' => 'array', // Validate that 'teams' is an array
+            'teams.*' => 'exists:teams,id', // Validate that each 'team' exists in the teams table
         ]);
 
-        $division->update($request->all());
-        return redirect()->route('divisions.index');
+        $division->update([
+            'name' => $request->input('name'),
+        ]);
+
+        $division->teams()->sync($request->input('teams', [])); // Sync the selected teams with the division
+
+        return redirect()->route('divisions.index')->with('success', 'Divisie succesvol bijgewerkt.');
     }
 
     public function delete(Division $division)
