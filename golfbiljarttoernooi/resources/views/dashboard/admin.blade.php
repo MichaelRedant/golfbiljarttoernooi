@@ -1,4 +1,3 @@
-{{-- resources/views/dashboard.blade.php --}}
 @extends('layouts.app')
 
 @section('header')
@@ -14,11 +13,6 @@
             <div class="card mb-4 shadow-sm">
                 <div class="card-body text-center">
                     <h5 class="card-title">Welkom {{ auth()->user()->name }}</h5>
-                    @if (auth()->user()->profile_photo_path)
-                        <img src="{{ Storage::url(auth()->user()->profile_photo_path) }}" alt="Profile Photo" class="img-thumbnail mb-3">
-                    @else
-                        <img src="{{ asset('default-profile.png') }}" alt="Default Profile Photo" class="img-thumbnail mb-3">
-                    @endif
                     <a href="{{ route('profile.edit', auth()->user()) }}" class="btn btn-primary">
                         <i class="fas fa-user-edit"></i> Bewerk Profiel
                     </a>
@@ -29,7 +23,8 @@
         <div class="col-md-4">
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title">Beheer</h5>
+                    <h5 class="card-title"><i class="fas fa-calendar-alt"></i> Wedstrijden</h5>
+                    
                     <a href="{{ route('games.create', ['division_id' => $divisions->first()->id, 'season_id' => $currentSeason->id]) }}" class="btn btn-outline-secondary d-block mb-2">
                         <i class="fas fa-calendar-plus"></i> Plan Wedstrijd
                     </a>
@@ -40,22 +35,6 @@
                             </a>
                         @endforeach
                     @endif
-                    <div class="dropdown-divider"></div>
-                    <a href="{{ route('players.create') }}" class="btn btn-outline-secondary d-block mb-2">
-                        <i class="fas fa-user-plus"></i> Nieuwe Speler
-                    </a>
-                    <a href="{{ route('teams.create') }}" class="btn btn-outline-secondary d-block mb-2">
-                        <i class="fas fa-users-cog"></i> Nieuw Team
-                    </a>
-                    <a href="{{ route('divisions.create') }}" class="btn btn-outline-secondary d-block mb-2">
-                        <i class="fas fa-layer-group"></i> Nieuwe Divisie
-                    </a>
-                    <a href="{{ route('seasons.create') }}" class="btn btn-outline-secondary d-block mb-2">
-                        <i class="fas fa-calendar-alt"></i> Nieuw Seizoen
-                    </a>
-                    <a href="{{ route('rankings.index') }}" class="btn btn-outline-success d-block">
-                        <i class="fas fa-list-ol"></i> Rankings
-                    </a>
                 </div>
             </div>
         </div>
@@ -63,9 +42,33 @@
         <div class="col-md-4">
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title">Acties</h5>
-                    <a href="{{ route('rankings.index') }}" class="btn btn-outline-success d-block mb-2">
-                        <i class="fas fa-list-ol"></i> Rankings
+                    <h5 class="card-title"><i class="fas fa-users"></i> Gebruikersbeheer</h5>
+                    <a href="{{ route('users.index') }}" class="btn btn-outline-primary d-block mb-2">
+                        <i class="fas fa-users"></i> Bekijk Gebruikers
+                    </a>
+                    <a href="{{ route('users.create') }}" class="btn btn-outline-secondary d-block mb-2">
+                        <i class="fas fa-user-plus"></i> Nieuwe Gebruiker
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- New Section for Quick Edit Access -->
+        <div class="col-md-4">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-tools"></i> Snel Bewerken</h5>
+                    <a href="{{ route('teams.index') }}" class="btn btn-outline-primary d-block mb-2">
+                        <i class="fas fa-edit"></i> Bewerken Teams
+                    </a>
+                    <a href="{{ route('players.index') }}" class="btn btn-outline-secondary d-block mb-2">
+                        <i class="fas fa-edit"></i> Bewerken Spelers
+                    </a>
+                    <a href="{{ route('divisions.index') }}" class="btn btn-outline-primary d-block mb-2">
+                        <i class="fas fa-edit"></i> Bewerken Divisies
+                    </a>
+                    <a href="{{ route('seasons.index') }}" class="btn btn-outline-secondary d-block mb-2">
+                        <i class="fas fa-edit"></i> Bewerken Seizoenen
                     </a>
                 </div>
             </div>

@@ -8,6 +8,7 @@
         <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
     </h1>
     <div>
+        <a href="{{ route('clubs.show', $game->homeTeam->club->id) }}">{{ $game->homeTeam->club->name }}</a>
         <p>Thuisploeg: 
             <a href="{{ route('teams.show', $game->homeTeam->id) }}">
                 {{ $game->homeTeam->name }}
@@ -15,10 +16,10 @@
                     <i class="fas fa-trophy" style="color: gold;"></i>
                 @endif
             </a>
-            <i class="fas fa-arrow-right"></i> 
-            <a href="{{ route('clubs.show', $game->homeTeam->club->id) }}">{{ $game->homeTeam->club->name }}</a>
+            
             
         </p>
+        <a href="{{ route('clubs.show', $game->awayTeam->club->id) }}">{{ $game->awayTeam->club->name }}</a>
         <p>Bezoekers: 
             <a href="{{ route('teams.show', $game->awayTeam->id) }}">
                 {{ $game->awayTeam->name }}
@@ -26,14 +27,13 @@
                     <i class="fas fa-trophy" style="color: gold;"></i>
                 @endif
             </a>
-            <i class="fas fa-arrow-right"></i> 
-            <a href="{{ route('clubs.show', $game->awayTeam->club->id) }}">{{ $game->awayTeam->club->name }}</a>
+            
+           
         </p>
         <p>
             <i class="fas fa-map-marker-alt"></i> {{ $game->homeTeam->location }}
-            
         </p>
-        <p>Datum: {{ $game->date->format('d-m-Y') }}</p>
+        <p>Datum: {{ \Carbon\Carbon::parse($game->date)->format('d-m-Y') }}</p>
         <p>Wedstrijdscore: <strong>{{ $game->home_score }} - {{ $game->away_score }}</strong></p>
         @if($game->division)
             <a href="{{ route('divisions.show', ['division' => $game->division->id]) }}" class="btn btn-primary">Terug naar Wedstrijdkalender</a>

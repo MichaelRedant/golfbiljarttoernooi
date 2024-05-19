@@ -40,14 +40,15 @@ public function show(Request $request, Division $division)
                  ->orderBy('date', 'asc')
                  ->get();
 
-                 $gamesByDate = collect();
-                 if ($currentSeasonId) {
-                     $gamesByDate = Game::with(['homeTeam', 'awayTeam'])
-                                        ->where('season_id', $currentSeasonId)
-                                        ->orderBy('date', 'asc')
-                                        ->get()
-                                        ->groupBy('date');
-                 }
+    $gamesByDate = collect();
+    if ($currentSeasonId) {
+        $gamesByDate = Game::with(['homeTeam', 'awayTeam'])
+                            ->where('season_id', $currentSeasonId)
+                            ->orderBy('date', 'asc')
+                            ->get()
+                            ->groupBy('date');
+    }
+
     // Fetch standings
     $standings = $this->calculateDivisionStandings($division, $currentSeasonId);
 
@@ -104,6 +105,7 @@ public function show(Request $request, Division $division)
         ];
     })->sortByDesc('points')->values()->all();
 }
+
 
     public function create()
     {

@@ -21,43 +21,43 @@
 
     <h2>Volgende Wedstrijddag</h2>
     @if ($gamesByDate->isNotEmpty())
-    @php
-        $upcomingDates = $gamesByDate->keys()->filter(function ($date) {
-            return \Carbon\Carbon::parse($date) >= \Carbon\Carbon::today();
-        });
-        $nextDate = $upcomingDates->first();
-    @endphp
-    @if ($nextDate)
-        <div class="card" style="max-width: 600px;">
-            <div class="card-header">{{ \Carbon\Carbon::parse($nextDate)->format('d-m-Y') }}</div>
-            <ul class="list-group list-group-flush">
-                @foreach ($gamesByDate[$nextDate] as $game)
-                    <li class="list-group-item">
-                        @if ($game->home_team_id && $game->away_team_id)
-                            <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
-                            tegen
-                            <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
-                            <span class="float-end">{{ $game->home_score }} : {{ $game->away_score }}</span>
-                            <i class="fas fa-home ml-4"></i><span class="ml-2"><small>{{ $game->homeTeam->location }}</small></span>
-                            @if(auth()->user() && auth()->user()->role === 'admin')
-                                <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-success float-end ms-2" style="background-color: #28a745; border-color: #28a745;"><i class="fas fa-play"></i> Start Wedstrijd</a>
+        @php
+            $upcomingDates = $gamesByDate->keys()->filter(function ($date) {
+                return \Carbon\Carbon::parse($date) >= \Carbon\Carbon::today();
+            });
+            $nextDate = $upcomingDates->first();
+        @endphp
+        @if ($nextDate)
+            <div class="card" style="max-width: 600px;">
+                <div class="card-header">{{ \Carbon\Carbon::parse($nextDate)->format('d-m-Y') }}</div>
+                <ul class="list-group list-group-flush">
+                    @foreach ($gamesByDate[$nextDate] as $game)
+                        <li class="list-group-item">
+                            @if ($game->home_team_id && $game->away_team_id)
+                                <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
+                                tegen
+                                <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
+                                <span class="float-end">{{ $game->home_score }} : {{ $game->away_score }}</span>
+                                <i class="fas fa-home ml-4"></i><span class="ml-2"><small>{{ $game->homeTeam->location }}</small></span>
+                                @if(auth()->check() && (auth()->user()->isAdmin() || (auth()->user()->isTeam() && auth()->user()->team_id == $game->home_team_id)))
+                                    <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-success float-end ms-2" style="background-color: #28a745; border-color: #28a745;"><i class="fas fa-play"></i> Start Wedstrijd</a>
+                                @endif
+                            @elseif ($game->bye_team_id)
+                                <i class="fas fa-user-slash"></i>
+                                <strong>{{ optional($game->byeTeam)->name }} heeft een Bye</strong>
+                            @else
+                                Ongeplande tijd
                             @endif
-                        @elseif ($game->bye_team_id)
-                            <i class="fas fa-user-slash"></i>
-                            <strong>{{ optional($game->byeTeam)->name }} heeft een Bye</strong>
-                        @else
-                            Ongeplande tijd
-                        @endif
-                    </li>
-                @endforeach
-            </ul>
-        </div>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @else
+            <p>Geen aankomende wedstrijden gepland voor dit seizoen.</p>
+        @endif
     @else
         <p>Geen aankomende wedstrijden gepland voor dit seizoen.</p>
     @endif
-@else
-    <p>Geen aankomende wedstrijden gepland voor dit seizoen.</p>
-@endif
 
     <h2>Standen</h2>
     <table class="table table-bordered table-striped">
@@ -96,7 +96,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($gamesByDate as $date => $gamesOnDate)
+                @foreach ($gamesByDate->sortKeysDesc() as $date => $gamesOnDate)
                     @if (\Carbon\Carbon::parse($date) < \Carbon\Carbon::today())
                         @foreach ($gamesOnDate as $game)
                             <tr>

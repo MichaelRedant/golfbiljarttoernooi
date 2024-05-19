@@ -12,12 +12,65 @@ use Illuminate\Support\Facades\Log;
 
 class PlayerController extends Controller
 {
-    public function index()
-    {
-        $players = Player::all();
-        $divisions = Division::all(); // Haal alle divisies op
-        return view('players.index', compact('players', 'divisions'));
+    public function index(Request $request)
+{
+    $query = $request->input('query');
+    $divisionId = $request->input('division_id');
+    $teamId = $request->input('team_id');
+
+    $divisions = Division::all(); // Fetch all divisions
+    $teams = collect(); // Initialize teams as an empty collection
+    $players = collect(); // Initialize players as an empty collection
+
+    if ($divisionId) {
+        $teams = Team::where('division_id', $divisionId)->get();
     }
+
+    if ($teamId) {
+        $players = Player::with('team')
+                         ->where('team_id', $teamId)
+                         ->get();
+
+        $divisionId = $players->first()->team->division_id ?? null;
+        $currentSeasonId = Season::latest('id')->first()->id;
+        $standings = $divisionId ? $this->calculatePlayerStandings($divisionId, $currentSeasonId) : [];
+
+        $players = $players->map(function ($player) use ($standings) {
+            $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
+            return (object) [
+                'id' => $player->id,
+                'name' => $player->first_name . ' ' . $player->last_name,
+                'team_name' => $player->team->name,
+                'team_id' => $player->team->id,
+                'rank' => $rank,
+            ];
+        });
+    }
+
+    if ($query) {
+        $players = Player::with('team')
+                         ->where('first_name', 'LIKE', "%{$query}%")
+                         ->orWhere('last_name', 'LIKE', "%{$query}%")
+                         ->get();
+
+        $divisionId = $players->first()->team->division_id ?? null;
+        $currentSeasonId = Season::latest('id')->first()->id;
+        $standings = $divisionId ? $this->calculatePlayerStandings($divisionId, $currentSeasonId) : [];
+
+        $players = $players->map(function ($player) use ($standings) {
+            $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
+            return (object) [
+                'id' => $player->id,
+                'name' => $player->first_name . ' ' . $player->last_name,
+                'team_name' => $player->team->name,
+                'team_id' => $player->team->id,
+                'rank' => $rank,
+            ];
+        });
+    }
+
+    return view('players.index', compact('players', 'divisions', 'teams'));
+}
 
     public function create()
     {
@@ -161,10 +214,20 @@ public function show(Player $player, Request $request)
     }
 
     public function getTeams(Request $request)
-    {
-        $teams = Team::where('division_id', $request->division_id)->get();
+{
+    try {
+        $divisionId = $request->division_id;
+        Log::info('Fetching teams for division ID: ' . $divisionId);
+        
+        $teams = Team::where('division_id', $divisionId)->get();
         return response()->json($teams);
+    } catch (\Exception $e) {
+        Log::error('Error fetching teams: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to fetch teams'], 500);
     }
+}
+
+
 
     protected function calculatePlayerStandings($divisionId, $currentSeasonId)
 {
@@ -230,27 +293,40 @@ public function show(Player $player, Request $request)
 
 public function getPlayersByTeam(Request $request)
 {
-    $teamId = $request->query('team_id');
-    $players = Player::with('team', 'team.gamesHome', 'team.gamesAway')
-                      ->where('team_id', $teamId)
-                      ->get();
+    try {
+        $teamId = $request->query('team_id');
+        Log::info('Fetching players for team ID: ' . $teamId);
 
-    $divisionId = $players->first()->team->division_id;
-    $standings = $this->calculatePlayerStandings($divisionId, $request);
+        $players = Player::with('team', 'team.gamesHome', 'team.gamesAway')
+                        ->where('team_id', $teamId)
+                        ->get();
 
-    $playersData = $players->map(function ($player) use ($standings) {
-        $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
-        return [
-            'id' => $player->id,
-            'name' => $player->first_name . ' ' . $player->last_name,
-            'team_name' => $player->team->name,
-            'team_id' => $player->team->id,
-            'rank' => $rank,
-        ];
-    });
+        if ($players->isEmpty()) {
+            return response()->json([], 200);
+        }
 
-    return response()->json($playersData);
+        $divisionId = $players->first()->team->division_id;
+        $standings = $this->calculatePlayerStandings($divisionId, $request->season_id);
+
+        $playersData = $players->map(function ($player) use ($standings) {
+            $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
+            return [
+                'id' => $player->id,
+                'name' => $player->first_name . ' ' . $player->last_name,
+                'team_name' => $player->team->name,
+                'team_id' => $player->team->id,
+                'rank' => $rank,
+            ];
+        });
+
+        return response()->json($playersData);
+    } catch (\Exception $e) {
+        Log::error('Error fetching players by team: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to fetch players'], 500);
+    }
 }
+
+
 
 public function playersBySeason($divisionId, $seasonId)
 {
@@ -264,27 +340,59 @@ public function playersBySeason($divisionId, $seasonId)
 public function searchPlayers(Request $request)
 {
     $query = $request->query('query');
-    $players = Player::with('team')
-                     ->where('first_name', 'LIKE', "%{$query}%")
-                     ->orWhere('last_name', 'LIKE', "%{$query}%")
-                     ->get();
 
-    $divisionId = $players->first()->team->division_id ?? null;
-    $standings = $divisionId ? $this->calculatePlayerStandings($divisionId, $request) : [];
+    if (empty($query)) {
+        return response()->json([]);
+    }
 
-    $playersData = $players->map(function ($player) use ($standings) {
-        $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
-        return [
-            'id' => $player->id,
-            'name' => $player->first_name . ' ' . $player->last_name,
-            'team_name' => $player->team->name,
-            'team_id' => $player->team->id,
-            'rank' => $rank,
-        ];
-    });
+    try {
+        $players = Player::with('team')
+                         ->where('first_name', 'LIKE', "%{$query}%")
+                         ->orWhere('last_name', 'LIKE', "%{$query}%")
+                         ->get();
 
-    return response()->json($playersData);
+        if ($players->isEmpty()) {
+            return response()->json([]);
+        }
+
+        $divisionId = $players->first()->team->division_id ?? null;
+        $currentSeasonId = Season::latest('id')->first()->id;
+        $standings = $divisionId ? $this->calculatePlayerStandings($divisionId, $currentSeasonId) : [];
+
+        $playersData = $players->map(function ($player) use ($standings) {
+            $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
+            return [
+                'id' => $player->id,
+                'name' => $player->first_name . ' ' . $player->last_name,
+                'team_name' => $player->team->name,
+                'team_id' => $player->team->id,
+                'rank' => $rank,
+            ];
+        });
+
+        return response()->json($playersData);
+    } catch (\Exception $e) {
+        Log::error('Error searching players: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to search players'], 500);
+    }
 }
+
+
+public function getTeamsByDivision($divisionId)
+{
+    try {
+        Log::info('Fetching teams for division ID: ' . $divisionId);
+        
+        $teams = Team::where('division_id', $divisionId)->get();
+        return response()->json($teams);
+    } catch (\Exception $e) {
+        Log::error('Error fetching teams: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to fetch teams'], 500);
+    }
+}
+
+
+
 
 public function removeFromTeam(Player $player, Team $team)
 {

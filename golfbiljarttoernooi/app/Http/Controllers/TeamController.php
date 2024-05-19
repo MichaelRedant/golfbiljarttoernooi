@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Club;
 use App\Models\Team;
+use App\Models\Player;
 use App\Models\Season;
 use App\Models\Division;
 use Illuminate\Http\Request;
@@ -13,12 +14,28 @@ class TeamController extends Controller
 {
     public function index(Request $request)
     {
-        $divisions = Division::all();
-        $selectedDivisionId = $request->input('division');
-        $teams = ($selectedDivisionId) ? Division::find($selectedDivisionId)->teams : collect();
-        return view('teams.index', compact('divisions', 'teams'));
-    }
+        $search = $request->input('search');
+        $divisionId = $request->input('division');
 
+        $teams = Team::query();
+
+        if ($search) {
+            $teams = $teams->where('name', 'LIKE', '%' . $search . '%');
+        }
+
+        if ($divisionId) {
+            $teams = $teams->where('division_id', $divisionId);
+            $division = Division::find($divisionId);
+            $divisionName = $division ? $division->name : 'Geselecteerde divisie';
+        } else {
+            $divisionName = 'Alle divisies';
+        }
+
+        $teams = $teams->get();
+        $divisions = Division::all();
+
+        return view('teams.index', compact('teams', 'divisions', 'divisionName'));
+    }
     public function create()
     {
         $divisions = Division::all();
@@ -108,9 +125,9 @@ class TeamController extends Controller
     {
         $divisions = Division::all();
         $players = $team->players;
-        $allTeams = Team::all();
+        $allPlayers = Player::with('team')->get();
 
-        return view('teams.edit', compact('team', 'divisions', 'players', 'allTeams'));
+        return view('teams.edit', compact('team', 'divisions', 'players', 'allPlayers'));
     }
 
     public function update(Request $request, Team $team)
@@ -123,6 +140,23 @@ class TeamController extends Controller
         $team->update($request->all());
 
         return redirect()->route('teams.index')->with('success', 'Team successfully updated.');
+    }
+
+    public function assignToTeam(Request $request, Team $team)
+    {
+        $player = Player::findOrFail($request->player_id);
+        $player->team_id = $team->id;
+        $player->save();
+
+        return redirect()->route('teams.edit', $team)->with('success', 'Speler succesvol toegevoegd aan het team.');
+    }
+
+    public function removeFromTeam(Team $team, Player $player)
+    {
+        $player->team_id = null;
+        $player->save();
+
+        return redirect()->route('teams.edit', $team)->with('success', 'Speler succesvol verwijderd uit het team.');
     }
 
      public function calculateTeamStandings($divisionId, $currentSeasonId)

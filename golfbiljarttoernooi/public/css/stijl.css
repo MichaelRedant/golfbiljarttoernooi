@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
 html, body {
   height: 100%;
   margin: 0;
@@ -12,20 +11,20 @@ html, body {
 }
 
 .content-wrapper {
-  min-height: 100vh;  /* 100% van de viewport hoogte */
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: space-between; /* Verdeelt de ruimte tussen en rondom content */
+  justify-content: space-between;
 }
 
 #content {
-  flex: 1;  /* Flexibele container die alle beschikbare ruimte opneemt */
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
 
 footer {
-  flex-shrink: 0;  /* Zorgt ervoor dat de footer niet krimpt */
+  flex-shrink: 0;
 }
 
 .container {
@@ -49,10 +48,6 @@ footer {
   transition: transform 0.3s ease;
 }
 
-.card:hover {
-  transform: translateY(-5px);
-}
-
 .nav-card-link {
   display: block;
   padding: 20px;
@@ -60,10 +55,6 @@ footer {
   text-decoration: none;
   color: #333;
   font-weight: bold;
-}
-
-.nav-card-link:hover {
-  color: #007bff;
 }
 
 @media (max-width: 768px) {
@@ -76,13 +67,10 @@ footer {
   }
 }
 
-/* Overige stijlen */
-
 .action-buttons button {
   margin-right: 10px;
 }
 
-/* Stijlen voor de kalenderkaarten */
 .card {
   margin-bottom: 1rem;
   background-color: #ffffff;
@@ -106,12 +94,13 @@ footer {
   color: #ffffff;
 }
 
-/* Aanpassingen voor de actieknoppen */
 .btn-primary {
   background-color: #007bff;
   border: none;
   border-radius: 20px;
   padding: 0.375rem 0.75rem;
+  color: #fff;
+  text-decoration: none;
 }
 
 .btn-danger {
@@ -119,36 +108,29 @@ footer {
   border: none;
   border-radius: 20px;
   padding: 0.375rem 0.75rem;
+  color: #fff;
+  text-decoration: none;
 }
 
 .btn-primary:hover, .btn-danger:hover {
   opacity: 0.8;
 }
 
-/* Kaartstijlen voor divisies */
 .division-card {
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   transition: box-shadow 0.3s;
   border-radius: 15px;
 }
 
-.division-card:hover {
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-}
-
-/* Knopstijlen */
 .btn-primary, .btn-secondary {
-  border-radius: 50px; /* Ronde pill-knoppen */
+  border-radius: 50px;
 }
 
 .btn-primary:hover, .btn-secondary:hover {
-  transform: scale(1.05); /* Licht vergroten bij hover */
+  transform: scale(1.05);
   opacity: 0.9;
 }
 
-/*home stijl */
-
-/* Navigation card styling */
 .nav-flex-column .nav-card-link {
   display: block;
   padding: 20px;
@@ -165,7 +147,6 @@ footer {
   transition: background-color 0.3s ease;
 }
 
-/* Content section styling */
 .container-fluid {
   padding-top: 20px;
 }
@@ -183,7 +164,6 @@ h1.text-center {
   margin-bottom: 25px;
 }
 
-/* Player Card CSS */
 .player-card {
   background-color: #fff;
   border-radius: 15px;
@@ -193,8 +173,6 @@ h1.text-center {
 }
 
 .player-card-header {
-  /* background: url('/path/to/your/background-image.png') no-repeat center center; */
-  /* background-size: cover; */
   color: #000000;
   text-align: center;
   padding: 20px;
@@ -205,7 +183,7 @@ h1.text-center {
   height: 120px;
   border-radius: 50%;
   border: 5px solid #fff;
-  margin-top: -60px; /* Adjust as needed to fit the design */
+  margin-top: -60px;
 }
 
 .player-name {
@@ -215,7 +193,7 @@ h1.text-center {
 
 .player-nickname {
   font-size: 1em;
-  color: #ffd700; /* Or any other color */
+  color: #ffd700;
 }
 
 .player-card-body {
@@ -227,7 +205,6 @@ h1.text-center {
   margin-bottom: 10px;
 }
 
-/* Style for link to the team page */
 .player-card a {
   color: #007bff;
   text-decoration: none;
@@ -237,36 +214,29 @@ h1.text-center {
   text-decoration: underline;
 }
 
-
-/* CSS for video container and video */
-
 .nav-cards, .video-container {
-  flex-grow: 1; /* Laat de secties groeien en de beschikbare ruimte vullen */
-  overflow: auto; /* Voegt scroll toe binnen de sectie als de inhoud groter is dan de sectie */
+  flex-grow: 1;
+  overflow: auto;
 }
 
 .video-container {
   margin-top: 40px;
   margin-bottom: 20px;
   padding: 10px;
-  background-color: #fff; /* White background */
-  border-radius: 20px; /* Rounded corners */
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Subtle shadow */
+  background-color: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   text-align: center;
 }
 
 .home-video {
-  width: 100%; /* Responsive video width */
-  border-radius: 15px; /* Rounded corners for the video */
-  outline: none; /* Remove focus outline */
+  width: 100%;
+  border-radius: 15px;
+  outline: none;
 }
 
-
-/* footer stijl */
-
-/* Footer styling */
 .footer {
-  margin-top: auto;  /* Duwt automatisch de footer naar beneden */
+  margin-top: auto;
   background: #eaeaea;
   color: white;
   text-align: center;
@@ -274,7 +244,7 @@ h1.text-center {
 }
 
 .footer-logo {
-  max-width: 100px; /* Pas de grootte aan naar wens */
+  max-width: 100px;
 }
 
 .footer-text {
@@ -293,86 +263,12 @@ h1.text-center {
 }
 
 .player-avatar {
-  width: 100px;  /* of elke andere grootte */
-  height: 100px; /* moet hetzelfde zijn als de breedte voor een cirkel */
-  border-radius: 50%; /* maakt de afbeelding cirkelvormig */
-  object-fit: cover; /* zorgt ervoor dat de afbeelding goed past zonder te vervormen */
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
-
-
-/* De switch - de doos rond de slider */
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 60px;
-    height: 34px;
-  }
-  
-  /* Verberg standaard checkbox */
-  .switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-   
-  /* De slider */
-  .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    -webkit-transition: .4s;
-    transition: .4s;
-  }
-  
-  .slider:before {
-    position: absolute;
-    content: "";
-    height: 26px;
-    width: 26px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    -webkit-transition: .4s;
-    transition: .4s;
-  }
-  
-  input:checked + .slider {
-    background-color: #2196F3;
-  }
-  
-  input:focus + .slider {
-    box-shadow: 0 0 1px #2196F3;
-  }
-  
-  input:checked + .slider:before {
-    -webkit-transform: translateX(26px);
-    -ms-transform: translateX(26px);
-    transform: translateX(26px);
-  }
-  
-  /* Afgeronde sliders */
-  .slider.round {
-    border-radius: 34px;
-  }
-  
-  .slider.round:before {
-    border-radius: 50%;
-  }
-
-  .vr {
-    border-left: 1px solid #ddd;
-    height: 40px;
-}
-
-
-  /* Basis Night Mode stijlen */
-
-/* Schakelaar voor donkere modus */
 .switch {
   position: relative;
   display: inline-block;
@@ -381,7 +277,7 @@ h1.text-center {
   vertical-align: middle;
 }
 
-.switch input { 
+.switch input {
   opacity: 0;
   width: 0;
   height: 0;
@@ -419,7 +315,6 @@ input:checked + .slider:before {
   transform: translateX(14px);
 }
 
-/* Iconen */
 .fa-sun, .fa-moon {
   padding: 0 5px;
 }
@@ -428,8 +323,6 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
 }
-
-
 
 body.night-mode {
   background-color: #333;
@@ -461,11 +354,9 @@ body.night-mode .btn-primary:hover {
   border-color: #555;
 }
 
-body.night-mode .text-justify{
+body.night-mode .text-justify {
   color: #fff;
 }
-
-/*edit clubs*/
 
 .form-check-input {
   cursor: pointer;
@@ -477,20 +368,18 @@ body.night-mode .text-justify{
 }
 
 .border {
-  border-color: #dee2e6!important; /* Default Bootstrap border color */
+  border-color: #dee2e6!important;
 }
 
-/*adressen*/
 .list-group-item a {
-  color: #007bff; /* Bootstrap blauw, voel je vrij om de kleur te wijzigen */
-  font-weight: 500; /* Maakt de tekst iets dikker */
+  color: #007bff;
+  font-weight: 500;
 }
 
 .list-group-item a:hover {
-  color: #0056b3; /* Donkerdere tint blauw voor hover-effect */
+  color: #0056b3;
 }
 
-/*wide select match form*/
 .wide-select {
-  width: 100%; /* Zorgt voor maximale breedte binnen de container */ /* Voorkomt dat het veld buiten de container treedt */
+  width: 100%;
 }
