@@ -71,6 +71,6 @@
     @else
         <p>Geen teams gevonden.</p>
     @endif
-
+  
 </div>
 @endsection
