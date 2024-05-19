@@ -1,6 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    .highlight-row {
+        background-color: #28a745 !important; /* Bootstrap success color */
+        color: white !important;
+    }
+    </style>
 <div class="container">
     <div class="card mb-4">
         <div class="card-header">
@@ -64,7 +70,7 @@
                 </thead>
                 <tbody>
                     @foreach ($standings as $index => $standing)
-                        <tr @if($standing['team_id'] == $team->id) class="table-success" @endif>
+                        <tr @if($standing['team_id'] == $team->id) class="highlight-row" @endif>
                             <td>{{ $index + 1 }}</td>
                             <td><a href="{{ route('teams.show', $standing['team_id']) }}">{{ $standing['team_name'] }}</a></td>
                             <td>{{ $standing['games_won'] }}</td>

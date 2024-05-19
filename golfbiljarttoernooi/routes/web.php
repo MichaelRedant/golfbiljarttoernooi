@@ -20,7 +20,7 @@ Route::get('/divisions/{divisionId}/teams', [PlayerController::class, 'getTeamsB
 Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
 Route::get('/teams/{team}', [TeamController::class, 'show'])->name('teams.show');
 Route::get('/team-addresses', [TeamController::class, 'addresses'])->name('teams.addresses');
-
+Route::get('/team-standings/{divisionId}', [TeamController::class, 'calculateTeamStandings'])->name('teams.standings');
 
 // Publicly accessible players routes
 Route::get('/players', [PlayerController::class, 'index'])->name('players.index');
@@ -29,10 +29,10 @@ Route::get('/get-teams', [PlayerController::class, 'getTeams'])->name('get-teams
 Route::get('/get-players-by-team', [PlayerController::class, 'getPlayersByTeam'])->name('get-players-by-team');
 Route::get('/search-players', [PlayerController::class, 'searchPlayers'])->name('search.players');
 
-
 // Publicly accessible route for viewing game details
 Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
-
+Route::post('/games/{game}/forfeit', [GameController::class, 'forfeitRequest'])->name('games.forfeit')->middleware('ensureTeamIsAuthorized');
+Route::post('/games/{game}/confirm-forfeit', [GameController::class, 'confirmForfeit'])->name('games.confirm-forfeit');
 
 // Rankings routes
 Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');
@@ -40,6 +40,12 @@ Route::get('/rankings/{division}/teams', [RankingController::class, 'teamRanking
 Route::get('/rankings/{division}/players', [RankingController::class, 'playerRankings'])->name('rankings.players');
 Route::get('/team-standings', [TeamController::class, 'calculateTeamStandings'])->name('teams.standings');
 Route::get('/divisions/{divisionId}/standings', [PlayerController::class, 'calculatePlayerStandings'])->name('players.standings');
+
+// Publicly accessible route for live scores
+Route::get('/live-scores', [GameController::class, 'showLiveScores'])->name('live-scores');
+Route::put('/games/{game}/update-live-score', [GameController::class, 'updateLiveScore'])->name('games.updateLiveScore');
+Route::get('/games/fetchLiveScores', [GameController::class, 'fetchLiveScores'])->name('games.fetchLiveScores');
+Route::get('/scores/stream', [GameController::class, 'streamScores'])->name('scores.stream');
 
 // Home route
 Route::get('/', function () {
@@ -82,6 +88,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/teams/{team}/move', [TeamController::class, 'moveToDivision'])->name('teams.move');
     Route::post('teams/{team}/assign', [TeamController::class, 'assignToTeam'])->name('players.assignToTeam');
     Route::delete('teams/{team}/remove/{player}', [TeamController::class, 'removeFromTeam'])->name('players.removeFromTeam');
+
     // Season routes
     Route::resource('seasons', SeasonController::class)->except(['show']);
 

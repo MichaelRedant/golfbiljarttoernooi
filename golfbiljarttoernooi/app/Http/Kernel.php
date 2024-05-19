@@ -67,6 +67,7 @@ class Kernel extends HttpKernel
     ];
 
     protected $routeMiddleware = [
+        'ensureTeamIsAuthorized' => \App\Http\Middleware\EnsureTeamIsAuthorized::class,
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'superadmin' => \App\Http\Middleware\SuperAdminMiddleware::class,
         // bestaande middlewares...

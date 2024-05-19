@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\Division;
+use App\Models\Game;
+use Carbon\Carbon;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 
@@ -25,6 +27,11 @@ class AppServiceProvider extends ServiceProvider
             $divisions = Division::all(); // Haal alle divisies op
             $view->with('divisions', $divisions);
         });
-    }
 
+        View::composer('*', function ($view) {
+            $today = Carbon::today();
+            $hasLiveMatches = Game::whereDate('date', $today)->exists();
+            $view->with('hasLiveMatches', $hasLiveMatches);
+        });
+    }
 }

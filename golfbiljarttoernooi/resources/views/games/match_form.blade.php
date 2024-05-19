@@ -14,7 +14,7 @@
         </div>
     </div>
 
-    <form action="{{ route('games.update', $game->id) }}" method="POST">
+    <form id="matchForm" action="{{ route('games.update', $game->id) }}" method="POST">
         @csrf
         @method('PUT')
 
@@ -23,7 +23,14 @@
         <input type="hidden" name="date" value="{{ $game->date->format('d-m-Y') }}">
         <input type="hidden" name="division_id" value="{{ $game->division_id }}">
         <input type="hidden" name="season_id" value="{{ $game->season_id }}">
-
+        <div class="form-group">
+            <label for="forfeit_team">Forfeit by:</label>
+            <select class="form-control" id="forfeit_team" name="forfeit_team">
+                <option value="">Select team</option>
+                <option value="home">{{ $game->homeTeam->name }}</option>
+                <option value="away">{{ $game->awayTeam->name }}</option>
+            </select>
+        </div>
         <div class="card">
             <div class="card-header">Wedstrijdscore</div>
             <div class="card-body">
@@ -136,7 +143,7 @@
                                     <input type="text" class="form-control result" readonly>
                                 </td>
                                 <td>
-                                    <button type="button" class="btn btn-secondary lockMatch">Afsluiten</button>
+                                    <button type="button" class="btn btn-secondary lockMatch" onclick="updateLiveScore({{ $game->id }})">Afsluiten</button>
                                     <button type="button" class="btn btn-primary unlockMatch">Bewerken</button>
                                 </td>
                             </tr>
@@ -158,9 +165,19 @@
     const homeScoreInput = document.getElementById('home_score');
     const awayScoreInput = document.getElementById('away_score');
     const saveButton = document.getElementById('saveButton');
-    const form = document.querySelector('form');
+    const forfeitTeamSelect = document.getElementById('forfeit_team');
 
-    // Update scores and results dynamically
+    forfeitTeamSelect.addEventListener('change', function() {
+        if (this.value === 'home') {
+            homeScoreInput.value = 0;
+            awayScoreInput.value = 3;
+        } else if (this.value === 'away') {
+            homeScoreInput.value = 3;
+            awayScoreInput.value = 0;
+        }
+        saveButton.disabled = false; // Enable the save button when forfeit team is selected
+    });
+
     function updateResults() {
         let homeWins = 0;
         let awayWins = 0;
@@ -197,10 +214,10 @@
 
         homeScoreInput.value = homeWins;
         awayScoreInput.value = awayWins;
+        console.log(`Home Score: ${homeWins}, Away Score: ${awayWins}`); // Log current scores
         checkAllMatchesLocked();
     }
 
-    // Enable "Save" button if all matches are locked
     function checkAllMatchesLocked() {
         let allLocked = true;
         rows.forEach(row => {
@@ -212,7 +229,6 @@
         saveButton.disabled = !allLocked;
     }
 
-    // Lock and unlock match rows
     rows.forEach(row => {
         const inputs = row.querySelectorAll('.manche, .belle');
         inputs.forEach(input => {
@@ -224,6 +240,7 @@
             inputs.forEach(input => input.disabled = true);
             this.disabled = true;
             row.querySelector('.unlockMatch').disabled = false;
+            updateLiveScore({{ $game->id }});
             checkAllMatchesLocked();
         });
 
@@ -235,13 +252,11 @@
         });
     });
 
-    // Enable form submission of disabled inputs
     document.querySelector('form').addEventListener('submit', function() {
-    document.querySelectorAll('input[disabled], select[disabled]').forEach(input => {
-        input.disabled = false;
+        document.querySelectorAll('input[disabled], select[disabled]').forEach(input => {
+            input.disabled = false;
+        });
     });
-});
-
 
     document.querySelectorAll('.player-select').forEach(select => {
         select.addEventListener('change', function() {
@@ -253,8 +268,34 @@
         });
     });
 
-    updateResults(); // Initial update on page load
-});
+    function updateLiveScore(gameId) {
+        const homeScore = document.getElementById('home_score').value;
+        const awayScore = document.getElementById('away_score').value;
 
-</script>
-@endsection
+        console.log(`Updating live score for game ID: ${gameId} with home score: ${homeScore} and away score: ${awayScore}`); // Log before sending request
+
+        fetch(`/games/${gameId}/update-live-score`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ home_score: homeScore, away_score: awayScore })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Live score updated successfully');
+            } else {
+                console.error('Failed to update live score');
+            }
+        })
+        .catch(error => console.error('Error updating live score:', error));
+    }
+
+    updateResults();
+});
+    </script>
+    @endsection
+    
+    

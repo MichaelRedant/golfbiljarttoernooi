@@ -7,14 +7,12 @@
 
         <title>{{ config('app.name', 'Golfbiljart') }}</title>
 <!-- Fonts en Styles -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito">
     <link href="{{ asset('css/stijl.css') }}" rel="stylesheet">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="{{ asset('css/stijl.css') }}" rel="stylesheet">
 
-
-    <!-- Scripts (Veronderstel dat Vite of vergelijkbare build tool gebruikt wordt voor assets) -->
-    @vite(['css/stijl.css', 'resources/js/app.js'])
     
 </head>
 <body class="font-sans antialiased">
@@ -48,21 +46,30 @@
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const nightModeToggle = document.getElementById('nightModeToggle');
-    const isNightMode = localStorage.getItem('nightMode') === 'true';
-
-    // Stel de toggle in op basis van opgeslagen voorkeur
-    nightModeToggle.checked = isNightMode;
-    document.body.classList.toggle('night-mode', isNightMode);
-
-    // Luister naar veranderingen in de toggle
-    nightModeToggle.addEventListener('change', function() {
-        document.body.classList.toggle('night-mode', this.checked);
-        // Bewaar de voorkeur in localStorage
-        localStorage.setItem('nightMode', this.checked);
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
     });
-});
 </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const nightModeToggle = document.getElementById('nightModeToggle');
+        const isNightMode = localStorage.getItem('nightMode') === 'true';
+    
+        // Set the toggle based on saved preference
+        nightModeToggle.checked = isNightMode;
+        document.body.classList.toggle('night-mode', isNightMode);
+    
+        // Listen for changes in the toggle
+        nightModeToggle.addEventListener('change', function() {
+            document.body.classList.toggle('night-mode', this.checked);
+            // Save the preference in localStorage
+            localStorage.setItem('nightMode', this.checked);
+        });
+    });
+    </script>
+    
     </body>
 </html>

@@ -9,7 +9,6 @@
                 <li class="nav-item active">
                     <a class="nav-link" href="{{ route('home') }}">Home</a>
                 </li>
-                
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDivisions" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Divisies
@@ -22,9 +21,11 @@
                         @endforeach
                     </div>
                 </li>
-
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('rankings.index') }}">Rankings</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ $hasLiveMatches ? 'text-primary' : '' }}" href="{{ route('live-scores') }}">Live</a>
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownInfo" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -57,31 +58,46 @@
                 </li>
                 <div class="vr mx-3"></div>
                 <div class="navbar-text">
-                <i class="fas fa-sun" style="color:#e5e500;"></i>
-            <label class="switch">
-              <input type="checkbox" id="nightModeToggle">
-              <span class="slider round"></span>
-            </label>
-           
-            <i class="fas fa-moon" style="color: black;"></i>
+                    <i class="fas fa-sun" style="color:#e5e500;"></i>
+                    <label class="switch">
+                        <input type="checkbox" id="nightModeToggle">
+                        <span class="slider round"></span>
+                    </label>
+                    <i class="fas fa-moon" style="color: black;"></i>
+                </div>
                 @endauth
                 @guest
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('login') }}">Login</a>
                 </li>
-                
                 <div class="vr mx-3"></div>
                 <div class="navbar-text">
-                <i class="fas fa-sun" style="color:#e5e500;"></i>
-            <label class="switch">
-              <input type="checkbox" id="nightModeToggle">
-              <span class="slider round"></span>
-            </label>
-           
-            <i class="fas fa-moon" style="color: black;"></i>
-        </div>
+                    <i class="fas fa-sun" style="color:#e5e500;"></i>
+                    <label class="switch">
+                        <input type="checkbox" id="nightModeToggle">
+                        <span class="slider round"></span>
+                    </label>
+                    <i class="fas fa-moon" style="color: black;"></i>
+                </div>
                 @endguest
             </ul>
         </div>
     </div>
 </nav>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const nightModeToggle = document.getElementById('nightModeToggle');
+        const isNightMode = localStorage.getItem('nightMode') === 'true';
+    
+        // Set the toggle based on saved preference
+        nightModeToggle.checked = isNightMode;
+        document.body.classList.toggle('night-mode', isNightMode);
+    
+        // Listen for changes in the toggle
+        nightModeToggle.addEventListener('change', function() {
+            document.body.classList.toggle('night-mode', this.checked);
+            // Save the preference in localStorage
+            localStorage.setItem('nightMode', this.checked);
+        });
+    });
+    </script>

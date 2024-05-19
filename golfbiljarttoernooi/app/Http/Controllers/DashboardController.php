@@ -1,30 +1,42 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Game;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Season;
 use App\Models\Division;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
-    public function index()
-{
-    $user = auth()->user();
-    $divisions = Division::all();
-    $currentSeason = Season::latest('id')->first();
+    public function index(Request $request)
+    {
+        $user = Auth::user();
+        $divisions = Division::all();
+        $seasons = Season::all();
+        $currentSeasonId = $request->query('season_id', Season::latest('id')->value('id'));
+        $currentSeason = Season::findOrFail($currentSeasonId);
 
-    if ($user->isAdmin()) {
-        return view('dashboard.admin', compact('divisions', 'currentSeason'));
-    } elseif ($user->isTeam()) {
-        $team = $user->team;
-        return view('dashboard.team', compact('team', 'currentSeason'));
-    } else {
-        return view('dashboard.default');
+        if ($user->isAdmin()) {
+            return view('dashboard.admin', compact('divisions', 'currentSeason'));
+        } elseif ($user->isTeam()) {
+            $team = $user->team;
+            $teamRanking = $this->getTeamRanking($team->id, $currentSeason->id);
+            $upcomingGames = Game::where('date', '>', now())
+                                ->where(function($query) use ($team) {
+                                    $query->where('home_team_id', $team->id)
+                                          ->orWhere('away_team_id', $team->id);
+                                })->get();
+
+            return view('dashboard.team', compact('team', 'currentSeason', 'seasons', 'teamRanking', 'upcomingGames', 'currentSeasonId'));
+        } else {
+            return view('dashboard.default');
+        }
     }
-}
+
     private function getTeamRanking($teamId, $seasonId)
     {
         $team = Team::with(['gamesHome' => function ($query) use ($seasonId) {

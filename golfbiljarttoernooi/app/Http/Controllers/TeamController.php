@@ -159,7 +159,7 @@ class TeamController extends Controller
         return redirect()->route('teams.edit', $team)->with('success', 'Speler succesvol verwijderd uit het team.');
     }
 
-     public function calculateTeamStandings($divisionId, $currentSeasonId)
+    public function calculateTeamStandings($divisionId, $currentSeasonId)
     {
         $teams = Team::where('division_id', $divisionId)
             ->with(['gamesHome' => function ($query) use ($currentSeasonId) {
@@ -195,6 +195,7 @@ class TeamController extends Controller
 
         return $standings;
     }
+    
 
     private function calculateDivisionStandings(Division $division, $seasonId)
     {
@@ -242,6 +243,8 @@ class TeamController extends Controller
             ];
         })->sortByDesc('points')->values()->all();
     }
+
+
 
 
     public function getTeamsByDivision(Request $request)

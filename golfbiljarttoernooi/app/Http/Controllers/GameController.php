@@ -9,6 +9,7 @@ use App\Models\Player;
 use App\Models\Season;
 use App\Models\Team;
 use Carbon\Carbon;
+use App\Events\ScoreUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -156,41 +157,41 @@ public function edit(Game $game)
 
 
 public function update(Request $request, Game $game)
-{
-    Log::info('Update method called');
-    Log::info('Request data: ', $request->all());
+    {
+        Log::info('Update method called');
+        Log::info('Request data: ', $request->all());
 
-    $validatedData = $request->validate([
-        'home_team_id' => 'required|exists:teams,id',
-        'away_team_id' => 'required|exists:teams,id',
-        'date' => 'required|date',
-        'season_id' => 'required|exists:seasons,id',
-        'home_score' => 'required|integer',
-        'away_score' => 'required|integer',
-        'home_captain' => 'nullable|exists:players,id',
-        'away_captain' => 'nullable|exists:players,id',
-        'home_reserve' => 'nullable|exists:players,id',
-        'away_reserve' => 'nullable|exists:players,id',
-    ]);
+        $validatedData = $request->validate([
+            'home_team_id' => 'required|exists:teams,id',
+            'away_team_id' => 'required|exists:teams,id',
+            'date' => 'required|date',
+            'season_id' => 'required|exists:seasons,id',
+            'home_score' => 'required|integer',
+            'away_score' => 'required|integer',
+            'home_captain' => 'nullable|exists:players,id',
+            'away_captain' => 'nullable|exists:players,id',
+            'home_reserve' => 'nullable|exists:players,id',
+            'away_reserve' => 'nullable|exists:players,id',
+            'forfeit_team' => 'nullable|in:home,away',
+        ]);
 
-    $homeTeam = Team::find($validatedData['home_team_id']);
-    $awayTeam = Team::find($validatedData['away_team_id']);
+        if ($request->filled('forfeit_team')) {
+            $validatedData['forfeit_by'] = $validatedData['forfeit_team'];
+            $validatedData['forfeit_confirmed'] = true;
 
-    if ($homeTeam && $awayTeam) {
-        $divisionId = $homeTeam->division_id == $awayTeam->division_id ? $homeTeam->division_id : null;
-        if (!$divisionId) {
-            return back()->withErrors(['msg' => 'Teams must be in the same division']);
+            if ($validatedData['forfeit_team'] == 'home') {
+                $validatedData['home_score'] = 0;
+                $validatedData['away_score'] = 3;  // assuming 3 as default win score
+            } elseif ($validatedData['forfeit_team'] == 'away') {
+                $validatedData['home_score'] = 3;
+                $validatedData['away_score'] = 0;
+            }
         }
-    } else {
-        return back()->withErrors(['msg' => 'Invalid teams']);
+
+        $game->update($validatedData);
+
+        return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol bijgewerkt!');
     }
-
-    $validatedData['division_id'] = $divisionId;
-
-    $game->update($validatedData);
-
-    return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol bijgewerkt!');
-}
 
 
 protected function calculateMatchResult(array $scoreData)
@@ -282,6 +283,92 @@ public function show(Request $request, Division $division, Game $game)
     return view('games.show', compact('game'));
 }
 
+public function showLiveScores()
+{
+    $today = Carbon::today();
+    $matches = Game::with(['homeTeam', 'awayTeam'])
+                    ->whereDate('date', $today)
+                    ->get();
+
+    return view('live-scores', compact('matches'));
+}
+
+public function updateLiveScore(Request $request, Game $game)
+    {
+        Log::info('updateLiveScore called for game ID: ' . $game->id);
+        $validatedData = $request->validate([
+            'home_score' => 'required|integer',
+            'away_score' => 'required|integer',
+        ]);
+
+        Log::info('Validated data:', $validatedData);
+
+        $game->update([
+            'home_score' => $validatedData['home_score'],
+            'away_score' => $validatedData['away_score'],
+        ]);
+
+        event(new ScoreUpdated([
+            'match_id' => $game->id,
+            'home_score' => $game->home_score,
+            'away_score' => $game->away_score,
+        ]));
+
+        Log::info('Game updated:', $game->toArray());
+
+        return response()->json(['success' => true]);
+    }
+
+    public function fetchLiveScores()
+{
+    $matches = Game::with(['homeTeam', 'awayTeam'])->get();
+
+    return response()->json([
+        'matches' => $matches->map(function ($match) {
+            return [
+                'match_id' => $match->id,
+                'home_score' => $match->home_score,
+                'away_score' => $match->away_score,
+                'updated_at' => $match->updated_at->setTimezone('Europe/Brussels')->format('H:i:s'),
+            ];
+        }),
+    ]);
+}
+
+public function forfeitRequest(Request $request, Game $game)
+{
+    $user = auth()->user();
+    $teamId = $user->team_id;
+
+    if ($user->role === 'admin' || $teamId === $game->home_team_id || $teamId === $game->away_team_id) {
+        if ($teamId === $game->home_team_id || $user->role === 'admin') {
+            $game->update([
+                'forfeit_by' => 'home',
+                'forfeit_confirmed' => true,
+                'home_score' => 0,
+                'away_score' => $game->away_score,
+            ]);
+        } elseif ($teamId === $game->away_team_id) {
+            $game->update([
+                'forfeit_by' => 'away',
+                'forfeit_confirmed' => false,
+            ]);
+            // Notify home team for confirmation
+        }
+        return redirect()->route('games.show', $game->id)->with('success', 'Forfeit request submitted.');
+    }
+    return redirect()->route('games.show', $game->id)->withErrors(['msg' => 'You are not authorized to forfeit this game.']);
+}
+
+public function confirmForfeit(Request $request, Game $game)
+{
+    $user = auth()->user();
+    if ($user->role === 'admin' || $user->team_id === $game->home_team_id) {
+        $game->update(['forfeit_confirmed' => true, 'away_score' => 0]);
+        return redirect()->route('games.show', $game->id)->with('success', 'Forfeit confirmed.');
+    }
+    return redirect()->route('games.show', $game->id)->withErrors(['msg' => 'You are not authorized to confirm this forfeit.']);
+}
 
 public function calendarData()
 {

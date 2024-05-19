@@ -6,13 +6,12 @@
 
     <div class="card">
         <div class="card-body">
-            <!-- Dropdown voor seizoen selectie -->
-            <form action="{{ route('teams.standings') }}" method="GET" class="mb-4">
+            <form action="{{ route('rankings.teams', ['division' => $division->id]) }}" method="GET" class="mb-4">
                 <div class="form-group">
                     <label for="season_id"><i class="fas fa-calendar-alt"></i> Kies een seizoen:</label>
                     <select id="season_id" name="season_id" class="form-control" onchange="this.form.submit()">
                         @foreach ($seasons as $season)
-                            <option value="{{ $season->id }}" {{ $season->id == $currentSeasonId ? 'selected' : '' }}>
+                            <option value="{{ $season->id }}" {{ $season->id == $seasonId ? 'selected' : '' }}>
                                 {{ $season->name }}
                             </option>
                         @endforeach
