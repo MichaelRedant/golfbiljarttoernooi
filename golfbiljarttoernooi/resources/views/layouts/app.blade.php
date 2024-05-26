@@ -69,7 +69,9 @@
             localStorage.setItem('nightMode', this.checked);
         });
     });
-    </script>
+</script>
+
+    
     
     </body>
 </html>

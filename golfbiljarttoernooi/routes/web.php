@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
     ClubController, GameController, TeamController, UserController, BelleController,
@@ -7,41 +6,36 @@ use App\Http\Controllers\{
     RankingController, DivisionController, ReservePlayerController, DashboardController
 };
 
-// Publicly accessible clubs routes
+// Publicly accessible routes
 Route::get('/clubs', [ClubController::class, 'index'])->name('clubs.index');
 Route::get('/clubs/{club}', [ClubController::class, 'show'])->name('clubs.show');
 
-// Publicly accessible divisions routes
 Route::get('/divisions', [DivisionController::class, 'index'])->name('divisions.index');
 Route::get('/divisions/{division}', [DivisionController::class, 'show'])->name('divisions.show');
 Route::get('/divisions/{divisionId}/teams', [PlayerController::class, 'getTeamsByDivision']);
 
-// Publicly accessible teams routes
 Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
 Route::get('/teams/{team}', [TeamController::class, 'show'])->name('teams.show');
 Route::get('/team-addresses', [TeamController::class, 'addresses'])->name('teams.addresses');
 Route::get('/team-standings/{divisionId}', [TeamController::class, 'calculateTeamStandings'])->name('teams.standings');
 
-// Publicly accessible players routes
 Route::get('/players', [PlayerController::class, 'index'])->name('players.index');
 Route::get('/players/{player}', [PlayerController::class, 'show'])->name('players.show');
 Route::get('/get-teams', [PlayerController::class, 'getTeams'])->name('get-teams');
 Route::get('/get-players-by-team', [PlayerController::class, 'getPlayersByTeam'])->name('get-players-by-team');
 Route::get('/search-players', [PlayerController::class, 'searchPlayers'])->name('search.players');
 
-// Publicly accessible route for viewing game details
+
 Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
 Route::post('/games/{game}/forfeit', [GameController::class, 'forfeitRequest'])->name('games.forfeit')->middleware('ensureTeamIsAuthorized');
 Route::post('/games/{game}/confirm-forfeit', [GameController::class, 'confirmForfeit'])->name('games.confirm-forfeit');
 
-// Rankings routes
 Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');
 Route::get('/rankings/{division}/teams', [RankingController::class, 'teamRankings'])->name('rankings.teams');
 Route::get('/rankings/{division}/players', [RankingController::class, 'playerRankings'])->name('rankings.players');
 Route::get('/team-standings', [TeamController::class, 'calculateTeamStandings'])->name('teams.standings');
 Route::get('/divisions/{divisionId}/standings', [PlayerController::class, 'calculatePlayerStandings'])->name('players.standings');
 
-// Publicly accessible route for live scores
 Route::get('/live-scores', [GameController::class, 'showLiveScores'])->name('live-scores');
 Route::put('/games/{game}/update-live-score', [GameController::class, 'updateLiveScore'])->name('games.updateLiveScore');
 Route::get('/games/fetchLiveScores', [GameController::class, 'fetchLiveScores'])->name('games.fetchLiveScores');
@@ -58,7 +52,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Game routes
-    Route::resource('games', GameController::class);
     Route::get('games/for-division-season/{division_id}/{season_id}', [GameController::class, 'showGamesForDivisionAndSeason'])->name('games.for-division-season');
     Route::get('games/for-team-season/{team_id}/{season_id}', [GameController::class, 'showGamesForTeamAndSeason'])->name('games.for-team-season');
     Route::get('/games/{game}/form', [GameController::class, 'editForm'])->name('games.form');
@@ -79,27 +72,33 @@ Route::middleware(['auth'])->group(function () {
 // Admin routes
 Route::middleware(['auth', 'admin'])->group(function () {
     // Division routes
-    Route::resource('divisions', DivisionController::class)->except(['index', 'show']);
+    Route::resource('divisions', DivisionController::class)->except(['index', 'show','create']);
+    Route::post('divisions', [DivisionController::class, 'store'])->name('divisions.store');
+    Route::get('division/create', [DivisionController::class, 'create'])->name('divisions.create');
 
     // Team routes
-    Route::resource('teams', TeamController::class)->except(['index', 'show']);
+    Route::resource('teams', TeamController::class)->except(['index', 'show','create']);
     Route::post('players/{player}/move-to-team', [TeamController::class, 'moveToTeam'])->name('players.moveToTeam');
     Route::post('/teams/{team}/remove', [TeamController::class, 'removeFromDivision'])->name('teams.remove');
     Route::post('/teams/{team}/move', [TeamController::class, 'moveToDivision'])->name('teams.move');
     Route::post('teams/{team}/assign', [TeamController::class, 'assignToTeam'])->name('players.assignToTeam');
     Route::delete('teams/{team}/remove/{player}', [TeamController::class, 'removeFromTeam'])->name('players.removeFromTeam');
-
+    Route::post('teams', [TeamController::class, 'store'])->name('teams.store');
+    Route::get('team/create', [TeamController::class, 'create'])->name('teams.create');
     // Season routes
     Route::resource('seasons', SeasonController::class)->except(['show']);
 
     // Player routes
-    Route::resource('players', PlayerController::class)->except(['index', 'show']);
+    Route::resource('players', PlayerController::class)->except(['index', 'show','create']);
     Route::get('players/{player}/remove/{team}', [PlayerController::class, 'removeFromTeam'])->name('players.remove');
     Route::get('/search-players', [PlayerController::class, 'searchPlayers']);
-
+    Route::post('players', [PlayerController::class, 'store'])->name('players.store');
+    Route::get('/player/create', [PlayerController::class, 'create'])->name('players.create');
     // Club routes
-    Route::resource('clubs', ClubController::class)->except(['index', 'show']);
-
+    Route::resource('clubs', ClubController::class)->except(['index', 'show','create']);
+    Route::post('clubs', [ClubController::class, 'store'])->name('clubs.store');
+    Route::get('/club/create', [ClubController::class, 'create'])->name('clubs.create');
+    
     // User management routes
     Route::resource('users', UserController::class)->except(['show']);
 });
@@ -119,3 +118,4 @@ Route::get('/reserve-players', [ReservePlayerController::class, 'index'])->name(
 
 // Include authentication routes
 require __DIR__ . '/auth.php';
+

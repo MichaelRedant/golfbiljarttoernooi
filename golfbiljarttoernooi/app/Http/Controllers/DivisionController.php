@@ -25,36 +25,28 @@ class DivisionController extends Controller
 
     
 public function show(Request $request, Division $division)
-{
-    $currentSeasonId = $request->query('season_id', Season::latest('id')->value('id'));
-    $seasons = Season::all();
+    {
+        $currentSeasonId = $request->query('season_id', Season::latest('id')->value('id'));
+        $seasons = Season::all();
 
-    if (!$currentSeasonId) {
-        return back()->withErrors('Geen actief seizoen gevonden.');
+        if (!$currentSeasonId) {
+            return back()->withErrors('Geen actief seizoen gevonden.');
+        }
+
+        // Fetch all games for the current division and selected season
+        $games = Game::with(['homeTeam', 'awayTeam'])
+                     ->where('division_id', $division->id)
+                     ->where('season_id', $currentSeasonId)
+                     ->orderBy('date', 'asc')
+                     ->get();
+
+        $gamesByDate = $games->groupBy('date');
+
+        // Fetch standings
+        $standings = $this->calculateDivisionStandings($division, $currentSeasonId);
+
+        return view('divisions.show', compact('division', 'gamesByDate', 'games', 'standings', 'seasons', 'currentSeasonId'));
     }
-
-    // Ophalen van alle wedstrijden voor de huidige divisie en het geselecteerde seizoen
-    $games = Game::with(['homeTeam', 'awayTeam'])
-                 ->where('division_id', $division->id)
-                 ->where('season_id', $currentSeasonId)
-                 ->orderBy('date', 'asc')
-                 ->get();
-
-    $gamesByDate = collect();
-    if ($currentSeasonId) {
-        $gamesByDate = Game::with(['homeTeam', 'awayTeam'])
-                            ->where('season_id', $currentSeasonId)
-                            ->orderBy('date', 'asc')
-                            ->get()
-                            ->groupBy('date');
-    }
-
-    // Fetch standings
-    $standings = $this->calculateDivisionStandings($division, $currentSeasonId);
-
-    return view('divisions.show', compact('division', 'gamesByDate', 'games', 'standings', 'seasons', 'currentSeasonId'));
-}
-
 
 
     private function calculateDivisionStandings(Division $division, $seasonId)
@@ -107,20 +99,26 @@ public function show(Request $request, Division $division)
 }
 
 
-    public function create()
-    {
-        return view('divisions.create');
+public function create()
+{
+    $teams = Team::all();
+    return view('divisions.create', compact('teams'));
+}
+
+public function store(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+    ]);
+
+    $division = Division::create($request->all());
+
+    if ($request->has('teams')) {
+        $division->teams()->sync($request->teams);
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-        ]);
-
-        Division::create($request->all());
-        return redirect()->route('divisions.index');
-    }
+    return redirect()->route('divisions.index')->with('success', 'Divisie succesvol toegevoegd.');
+}
     
 
     public function edit(Division $division)

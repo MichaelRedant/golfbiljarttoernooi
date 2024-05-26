@@ -1,39 +1,143 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <h1>Create a New Team</h1>
-
-    <!-- Form for creating a new team -->
-    <form action="{{ route('teams.store') }}" method="POST">
-        @csrf <!-- Cross-Site Request Forgery Protection -->
-        <div class="form-group">
-            <label for="name">Team Name:</label>
-            <input type="text" name="name" class="form-control" id="name" required>
+<div class="container mt-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Nieuw Team Toevoegen</h3>
         </div>
-        <div class="form-group">
-            <label for="division_id">Division:</label>
-            <select name="division_id" class="form-control" id="division_id" required>
-                @foreach ($divisions as $division)
-                    <option value="{{ $division->id }}">{{ $division->name }}</option>
-                @endforeach
-            </select>
+        <div class="card-body">
+            <form action="{{ route('teams.store') }}" method="POST">
+                @csrf
+                <div class="mb-3">
+                    <label for="name" class="form-label">Teamnaam</label>
+                    <input type="text" name="name" class="form-control" id="name" placeholder="Teamnaam" required>
+                </div>
+                <div class="mb-3">
+                    <label for="club_id" class="form-label">Club</label>
+                    <select name="club_id" class="form-select" id="club_id" required>
+                        <option value="">Selecteer een club</option>
+                        @foreach ($clubs as $club)
+                            <option value="{{ $club->id }}">{{ $club->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="division_id" class="form-label">Divisie</label>
+                    <select name="division_id" class="form-select" id="division_id" required>
+                        <option value="">Selecteer een divisie</option>
+                        @foreach ($divisions as $division)
+                            <option value="{{ $division->id }}">{{ $division->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="players" class="form-label">Spelers</label>
+                    <div class="dual-listbox">
+                        <div class="dual-listbox-column">
+                            <h5>Beschikbare Spelers</h5>
+                            <ul id="available-players" class="list-group">
+                                @foreach ($players->groupBy('team.name') as $teamName => $playersGroup)
+                                    <li class="list-group-item team-header">{{ $teamName ?? 'Geen team' }}</li>
+                                    @foreach ($playersGroup as $player)
+                                        <li class="list-group-item" data-id="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }}</li>
+                                    @endforeach
+                                @endforeach
+                            </ul>
+                        </div>
+                        <div class="dual-listbox-controls">
+                            <button type="button" id="move-right" class="btn btn-primary">&gt;</button>
+                            <button type="button" id="move-left" class="btn btn-primary">&lt;</button>
+                        </div>
+                        <div class="dual-listbox-column">
+                            <h5>Geselecteerde Spelers</h5>
+                            <ul id="selected-players" class="list-group"></ul>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" name="players" id="selected-players-input">
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">Opslaan</button>
+                </div>
+            </form>
         </div>
-        <div class="form-group">
-            <label for="club_id">Club:</label>
-            <select name="club_id" class="form-control" id="club_id">
-                <option value="">Select Club</option> <!-- Option for no club selected -->
-                @foreach ($clubs as $club)
-                    <option value="{{ $club->id }}">{{ $club->name }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="location">Locatie:</label>
-            <input type="text" name="location" class="form-control" id="location">
-        </div>
-        
-        <button type="submit" class="btn btn-primary">Save</button>
-    </form>
+    </div>
 </div>
+
+<style>
+    .dual-listbox {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .dual-listbox-column {
+        flex: 1;
+        padding: 10px;
+    }
+    .dual-listbox-controls {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .list-group {
+        height: 200px;
+        overflow-y: auto;
+    }
+    .list-group-item {
+        cursor: pointer;
+    }
+    .list-group-item.selected {
+        background-color: #007bff;
+        color: white;
+    }
+    .team-header {
+        background-color: #f8f9fa;
+        font-weight: bold;
+        cursor: default;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const availablePlayers = document.getElementById('available-players');
+        const selectedPlayers = document.getElementById('selected-players');
+        const selectedPlayersInput = document.getElementById('selected-players-input');
+
+        availablePlayers.addEventListener('click', function (e) {
+            if (e.target && e.target.nodeName == "LI" && !e.target.classList.contains('team-header')) {
+                e.target.classList.toggle('selected');
+            }
+        });
+
+        selectedPlayers.addEventListener('click', function (e) {
+            if (e.target && e.target.nodeName == "LI") {
+                e.target.classList.toggle('selected');
+            }
+        });
+
+        document.getElementById('move-right').addEventListener('click', function () {
+            moveItems(availablePlayers, selectedPlayers);
+        });
+
+        document.getElementById('move-left').addEventListener('click', function () {
+            moveItems(selectedPlayers, availablePlayers);
+        });
+
+        function moveItems(from, to) {
+            Array.from(from.querySelectorAll('.selected')).forEach(function (item) {
+                item.classList.remove('selected');
+                to.appendChild(item);
+            });
+            updateSelectedPlayersInput();
+        }
+
+        function updateSelectedPlayersInput() {
+            const selectedIds = Array.from(selectedPlayers.querySelectorAll('li')).map(function (item) {
+                return item.getAttribute('data-id');
+            });
+            selectedPlayersInput.value = selectedIds.join(',');
+        }
+    });
+</script>
 @endsection

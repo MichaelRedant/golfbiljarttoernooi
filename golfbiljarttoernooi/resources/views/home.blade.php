@@ -3,7 +3,7 @@
 @section('title', 'Home')
 
 @section('content')
-<div class="container-fluid">
+<div class="container mt-4">
     <div class="row">
         <!-- Navigation cards on the left side -->
         <div class="col-md-3">

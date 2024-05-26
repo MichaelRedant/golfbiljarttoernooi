@@ -38,6 +38,13 @@
                         <a class="dropdown-item" href="{{ route('teams.addresses') }}">Adressen</a>
                     </div>
                 </li>
+                @auth
+                    @if(Auth::user()->role == 'admin')
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('dashboard') }}">Admin Dashboard</a>
+                        </li>
+                    @endif
+                @endauth
             </ul>
             <ul class="navbar-nav ms-auto">
                 @auth
@@ -47,6 +54,13 @@
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownMenuLink">
                         <a class="dropdown-item" href="{{ route('dashboard') }}">Dashboard</a>
+                        @if(Auth::user()->role == 'admin')
+                            <a class="dropdown-item" href="{{ route('players.create') }}">Nieuwe Speler Toevoegen</a>
+                            <a class="dropdown-item" href="{{ route('teams.create') }}">Nieuw Team Toevoegen</a>
+                            <a class="dropdown-item" href="{{ route('divisions.create') }}">Nieuwe Divisie Toevoegen</a>
+                            <a class="dropdown-item" href="{{ route('clubs.create') }}">Nieuwe Club Toevoegen</a>
+                            <a class="dropdown-item" href="{{ route('seasons.create') }}">Nieuw Seizoen Toevoegen</a>
+                        @endif
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                             Uitloggen
@@ -57,9 +71,9 @@
                     </div>
                 </li>
                 <div class="vr mx-3"></div>
-                <div class="navbar-text">
+                <div class="navbar-text d-flex align-items-center">
                     <i class="fas fa-sun" style="color:#e5e500;"></i>
-                    <label class="switch">
+                    <label class="switch mx-2">
                         <input type="checkbox" id="nightModeToggle">
                         <span class="slider round"></span>
                     </label>
@@ -71,9 +85,9 @@
                     <a class="nav-link" href="{{ route('login') }}">Login</a>
                 </li>
                 <div class="vr mx-3"></div>
-                <div class="navbar-text">
+                <div class="navbar-text d-flex align-items-center">
                     <i class="fas fa-sun" style="color:#e5e500;"></i>
-                    <label class="switch">
+                    <label class="switch mx-2">
                         <input type="checkbox" id="nightModeToggle">
                         <span class="slider round"></span>
                     </label>
@@ -100,4 +114,4 @@
             localStorage.setItem('nightMode', this.checked);
         });
     });
-    </script>
+</script>

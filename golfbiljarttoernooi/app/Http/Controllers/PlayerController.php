@@ -72,12 +72,12 @@ class PlayerController extends Controller
     return view('players.index', compact('players', 'divisions', 'teams'));
 }
 
-    public function create()
-    {
-        $divisions = Division::all();
-        $teams = Team::all(); 
-        return view('players.create', compact('divisions', 'teams'));
-    }
+public function create()
+{
+    $divisions = Division::all();
+    $teams = Team::all();
+    return view('players.create', compact('divisions', 'teams'));
+}
 
     public function store(Request $request)
 {

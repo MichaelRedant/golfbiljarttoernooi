@@ -37,24 +37,25 @@ class TeamController extends Controller
         return view('teams.index', compact('teams', 'divisions', 'divisionName'));
     }
     public function create()
-    {
-        $divisions = Division::all();
-        $clubs = Club::all();
-        return view('teams.create', compact('divisions', 'clubs'));
-    }
+{
+    $divisions = Division::all();
+    $clubs = Club::all();
+    $players = Player::all();
+    return view('teams.create', compact('divisions', 'clubs', 'players'));
+}
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'division_id' => 'required|exists:divisions,id',
-            'location' => 'nullable|string|max:255'
-        ]);
+public function store(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'club_id' => 'required|exists:clubs,id',
+        'division_id' => 'required|exists:divisions,id',
+    ]);
 
-        Team::create($request->all());
+    $team = Team::create($request->all());
 
-        return redirect()->route('teams.index')->with('success', 'Team successfully created.');
-    }
+    return redirect()->route('teams.edit', $team)->with('success', 'Team succesvol toegevoegd.');
+}
 
     public function show(Team $team, Request $request)
 {

@@ -13,7 +13,6 @@
             <div class="card mb-4 shadow-sm">
                 <div class="card-body text-center">
                     <h5 class="card-title">Welkom {{ auth()->user()->name }}</h5>
-                   
                 </div>
             </div>
         </div>
@@ -22,10 +21,10 @@
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title"><i class="fas fa-calendar-alt"></i> Wedstrijden</h5>
-                    <a href="{{ route('games.create', ['division_id' => $divisions->first()->id, 'season_id' => $currentSeason->id]) }}" class="btn btn-outline-secondary d-block mb-2">
-                        <i class="fas fa-calendar-plus"></i> Plan Wedstrijd
-                    </a>
                     @if(isset($divisions) && $divisions->isNotEmpty())
+                        <a href="{{ route('games.create', ['division_id' => $divisions->first()->id, 'season_id' => $currentSeason->id]) }}" class="btn btn-outline-secondary d-block mb-2">
+                            <i class="fas fa-calendar-plus"></i> Plan Wedstrijd
+                        </a>
                         @foreach($divisions as $division)
                             <a href="{{ route('games.for-division-season', ['division_id' => $division->id, 'season_id' => $currentSeason->id]) }}" class="btn btn-outline-secondary d-block mb-2">
                                 <i class="fas fa-eye"></i> Bekijk Wedstrijden van {{ $division->name }}
@@ -63,6 +62,9 @@
                     <a href="{{ route('divisions.create') }}" class="btn btn-outline-primary d-block mb-2">
                         <i class="fas fa-plus"></i> Divisie Aanmaken
                     </a>
+                    <a href="{{ route('clubs.create') }}" class="btn btn-outline-primary d-block mb-2">
+                        <i class="fas fa-plus"></i> Club Aanmaken
+                    </a>
                     <a href="{{ route('seasons.create') }}" class="btn btn-outline-secondary d-block mb-2">
                         <i class="fas fa-plus"></i> Seizoen Aanmaken
                     </a>
@@ -74,7 +76,6 @@
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title"><i class="fas fa-edit"></i> Bewerken</h5>
-                    
                     <a href="{{ route('players.index') }}" class="btn btn-outline-secondary d-block mb-2">
                         <i class="fas fa-edit"></i> Spelers bewerken
                     </a>

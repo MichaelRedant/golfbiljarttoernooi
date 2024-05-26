@@ -23,7 +23,7 @@
                 <td>{{ $season->name }}</td>
                 <td>
                     <a href="{{ route('seasons.edit', $season) }}" class="btn btn-info">Bewerken</a>
-                    <a href="{{ route('games.generate', ['season_id' => $season->id]) }}" class="btn btn-success">Genereer Wedstrijden</a>
+                   
                     <form action="{{ route('seasons.destroy', $season) }}" method="POST" style="display:inline;">
                         @csrf
                         @method('DELETE')
