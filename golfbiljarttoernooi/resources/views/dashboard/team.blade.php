@@ -1,4 +1,3 @@
-{{-- resources/views/dashboard/team.blade.php --}}
 @extends('layouts.app')
 
 @section('header')
@@ -13,11 +12,12 @@
         <div class="col-12 text-center mb-4">
             <h1>Welkom {{ auth()->user()->name }}</h1>
         </div>
+
         <div class="col-md-6 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title"><i class="fas fa-list-ol"></i> Team Ranking</h5>
-                    <form action="{{ route('dashboard') }}" method="GET" class="mb-3">
+                    <form action="{{ route('dashboard.team') }}" method="GET" class="mb-3">
                         <div class="form-group">
                             <label for="season_id">Selecteer Seizoen:</label>
                             <select name="season_id" id="season_id" class="form-control" onchange="this.form.submit()">
@@ -69,6 +69,28 @@
                 </div>
             </div>
         </div>
+
+        @if(auth()->user()->team_id == $game->away_team_id || auth()->user()->role == 'admin')
+            <div class="col-md-12 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-check"></i> Wachtende Goedkeuringen</h5>
+                        @if($pendingGames->isEmpty())
+                            <p>Geen wedstrijden wachten op goedkeuring.</p>
+                        @else
+                            <ul class="list-group">
+                                @foreach($pendingGames as $pendingGame)
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        {{ $pendingGame->homeTeam->name }} vs {{ $pendingGame->awayTeam->name }}
+                                        <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Goedkeuren</a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 </div>
 @endsection

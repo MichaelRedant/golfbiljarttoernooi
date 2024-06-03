@@ -50,6 +50,7 @@ Route::get('/', function () {
 Route::middleware(['auth'])->group(function () {
     // Dashboard route
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/team', [DashboardController::class, 'teamDashboard'])->name('dashboard.team');
 
     // Game routes
     Route::get('games/for-division-season/{division_id}/{season_id}', [GameController::class, 'showGamesForDivisionAndSeason'])->name('games.for-division-season');
@@ -63,7 +64,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/games/clear', [GameController::class, 'clearCalendar'])->name('games.clear');
     Route::get('/games/{game}/play', [GameController::class, 'play'])->name('games.play');
     Route::get('/games/create/{division_id?}/{season_id?}', [GameController::class, 'create'])->name('games.create');
+    Route::get('/games/{game}/request-approval', [GameController::class, 'requestApproval'])->name('games.requestApproval');
+    Route::post('/games/{game}/approve', [GameController::class, 'approve'])->name('games.approve');
 
+    Route::get('/games', [GameController::class, 'index'])->name('games.index');
     // User profile routes
     Route::get('/profile/edit', [UserController::class, 'edit'])->name('profile.edit');
     Route::put('/profile/update', [UserController::class, 'update'])->name('profile.update');
@@ -87,6 +91,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('team/create', [TeamController::class, 'create'])->name('teams.create');
     // Season routes
     Route::resource('seasons', SeasonController::class)->except(['show']);
+
+    //Game routes
+    Route::post('/games/bulk-approve', [GameController::class, 'bulkApprove'])->name('games.bulkApprove');
+
 
     // Player routes
     Route::resource('players', PlayerController::class)->except(['index', 'show','create']);

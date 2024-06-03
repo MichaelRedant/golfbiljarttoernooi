@@ -11,7 +11,8 @@ class Game extends Model
     use HasFactory;
     
     protected $fillable = [
-        'home_team_id', 'away_team_id', 'bye_team_id', 'date', 'season_id', 'home_score', 'away_score', 'division_id', 'forfeit_by', 'forfeit_confirmed'
+        'home_team_id', 'away_team_id', 'bye_team_id', 'date', 'season_id', 'home_score', 'away_score', 'division_id', 'forfeit_by','home_team_approved',
+        'away_team_approved', 'forfeit_confirmed'
     ];
 
     protected $casts = [

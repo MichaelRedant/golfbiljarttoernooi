@@ -23,6 +23,7 @@
         <input type="hidden" name="date" value="{{ $game->date->format('d-m-Y') }}">
         <input type="hidden" name="division_id" value="{{ $game->division_id }}">
         <input type="hidden" name="season_id" value="{{ $game->season_id }}">
+
         <div class="form-group">
             <label for="forfeit_team">Forfeit by:</label>
             <select class="form-control" id="forfeit_team" name="forfeit_team">
@@ -31,6 +32,7 @@
                 <option value="away">{{ $game->awayTeam->name }}</option>
             </select>
         </div>
+
         <div class="card">
             <div class="card-header">Wedstrijdscore</div>
             <div class="card-body">
@@ -155,7 +157,19 @@
         </div>
 
         <div class="text-center mt-4 mb-4">
-            <button type="submit" class="btn btn-primary" id="saveButton">Wedstrijd opslaan</button>
+            @if(auth()->user()->team_id == $game->away_team_id || auth()->user()->role == 'admin')
+                <form action="{{ route('games.approve', $game) }}" method="POST" style="display:inline;">
+                    @csrf
+                    <button type="submit" class="btn btn-success">Goedkeuren</button>
+                </form>
+            @endif
+            <div class="text-center mt-4 mb-4">
+                @if(auth()->user()->team_id == $game->away_team_id || auth()->user()->role == 'admin')
+                    <a href="{{ route('games.requestApproval', $game->id) }}" class="btn btn-warning">Goedkeuring aanvragen</a>
+                @endif
+                <button type="submit" class="btn btn-primary" id="saveButton">Wedstrijd opslaan</button>
+            </div>
+            
         </div>
     </form>
 </div>

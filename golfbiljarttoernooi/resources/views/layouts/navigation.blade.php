@@ -60,6 +60,7 @@
                             <a class="dropdown-item" href="{{ route('divisions.create') }}">Nieuwe Divisie Toevoegen</a>
                             <a class="dropdown-item" href="{{ route('clubs.create') }}">Nieuwe Club Toevoegen</a>
                             <a class="dropdown-item" href="{{ route('seasons.create') }}">Nieuw Seizoen Toevoegen</a>
+                            <a class="dropdown-item" href="{{ route('games.create', ['division_id' => $divisions->first()->id ?? null, 'season_id' => $currentSeason->id ?? null]) }}">Nieuwe Wedstrijd</a> <!-- Corrected this line -->
                         @endif
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">

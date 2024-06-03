@@ -1,19 +1,16 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Golfbiljart') }}</title>
-<!-- Fonts en Styles -->
+    <title>{{ config('app.name', 'Golfbiljart') }}</title>
+    <!-- Fonts en Styles -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito">
     <link href="{{ asset('css/stijl.css') }}" rel="stylesheet">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <link href="{{ asset('css/stijl.css') }}" rel="stylesheet">
-
-    
 </head>
 <body class="font-sans antialiased">
     <!-- Navigation -->
@@ -28,8 +25,11 @@
         </header>
     @endif
 
+    <!-- Flash Messages -->
+    @include('partials.flash-messages')
+
     <!-- Page Content -->
-    <main>
+    <main class="content-wrapper">
         @yield('content')
     </main>
 
@@ -40,38 +40,33 @@
         </div>
     </footer>
 
-<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-<!-- Include all compiled plugins (below), or include individual files as needed -->
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    $.ajaxSetup({
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        }
-    });
-</script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const nightModeToggle = document.getElementById('nightModeToggle');
-        const isNightMode = localStorage.getItem('nightMode') === 'true';
-    
-        // Set the toggle based on saved preference
-        nightModeToggle.checked = isNightMode;
-        document.body.classList.toggle('night-mode', isNightMode);
-    
-        // Listen for changes in the toggle
-        nightModeToggle.addEventListener('change', function() {
-            document.body.classList.toggle('night-mode', this.checked);
-            // Save the preference in localStorage
-            localStorage.setItem('nightMode', this.checked);
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
         });
-    });
-</script>
 
-    
-    
-    </body>
+        document.addEventListener('DOMContentLoaded', function() {
+            const nightModeToggle = document.getElementById('nightModeToggle');
+            const isNightMode = localStorage.getItem('nightMode') === 'true';
+
+            // Set the toggle based on saved preference
+            nightModeToggle.checked = isNightMode;
+            document.body.classList.toggle('night-mode', isNightMode);
+
+            // Listen for changes in the toggle
+            nightModeToggle.addEventListener('change', function() {
+                document.body.classList.toggle('night-mode', this.checked);
+                // Save the preference in localStorage
+                localStorage.setItem('nightMode', this.checked);
+            });
+        });
+    </script>
+</body>
 </html>

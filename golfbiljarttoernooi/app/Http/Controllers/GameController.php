@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Division;
+use Carbon\Carbon;
 use App\Models\Game;
+use App\Models\Team;
 use App\Models\Manche;
 use App\Models\Player;
 use App\Models\Season;
-use App\Models\Team;
-use Carbon\Carbon;
+use App\Models\Division;
 use App\Events\ScoreUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Notifications\GameApprovalNotification;
 
 class GameController extends Controller
 {
@@ -134,9 +135,15 @@ public function store(Request $request)
             'home_score' => $homeWins,
             'away_score' => $awayWins,
         ]);
+
+        // Notify the away team for approval
+        $awayTeamCaptain = $game->awayTeam->players()->where('role', 'captain')->first();
+        if ($awayTeamCaptain) {
+            $awayTeamCaptain->notify(new GameApprovalNotification($game));
+        }
     }
 
-    return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol aangemaakt!');
+    return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol aangemaakt! Wachtend op goedkeuring.');
 }
 
 
@@ -157,41 +164,71 @@ public function edit(Game $game)
 
 
 public function update(Request $request, Game $game)
-    {
-        Log::info('Update method called');
-        Log::info('Request data: ', $request->all());
+{
+    Log::info('Update method called');
+    Log::info('Request data: ', $request->all());
 
-        $validatedData = $request->validate([
-            'home_team_id' => 'required|exists:teams,id',
-            'away_team_id' => 'required|exists:teams,id',
-            'date' => 'required|date',
-            'season_id' => 'required|exists:seasons,id',
-            'home_score' => 'required|integer',
-            'away_score' => 'required|integer',
-            'home_captain' => 'nullable|exists:players,id',
-            'away_captain' => 'nullable|exists:players,id',
-            'home_reserve' => 'nullable|exists:players,id',
-            'away_reserve' => 'nullable|exists:players,id',
-            'forfeit_team' => 'nullable|in:home,away',
-        ]);
+    $validatedData = $request->validate([
+        'home_team_id' => 'required|exists:teams,id',
+        'away_team_id' => 'required|exists:teams,id',
+        'date' => 'required|date',
+        'season_id' => 'required|exists:seasons,id',
+        'home_score' => 'required|integer',
+        'away_score' => 'required|integer',
+        'home_captain' => 'nullable|exists:players,id',
+        'away_captain' => 'nullable|exists:players,id',
+        'home_reserve' => 'nullable|exists:players,id',
+        'away_reserve' => 'nullable|exists:players,id',
+        'forfeit_team' => 'nullable|in:home,away',
+    ]);
 
-        if ($request->filled('forfeit_team')) {
-            $validatedData['forfeit_by'] = $validatedData['forfeit_team'];
-            $validatedData['forfeit_confirmed'] = true;
+    if ($request->filled('forfeit_team')) {
+        $validatedData['forfeit_by'] = $validatedData['forfeit_team'];
+        $validatedData['forfeit_confirmed'] = true;
 
-            if ($validatedData['forfeit_team'] == 'home') {
-                $validatedData['home_score'] = 0;
-                $validatedData['away_score'] = 3;  // assuming 3 as default win score
-            } elseif ($validatedData['forfeit_team'] == 'away') {
-                $validatedData['home_score'] = 3;
-                $validatedData['away_score'] = 0;
-            }
+        if ($validatedData['forfeit_team'] == 'home') {
+            $validatedData['home_score'] = 0;
+            $validatedData['away_score'] = 3;  // assuming 3 as default win score
+        } elseif ($validatedData['forfeit_team'] == 'away') {
+            $validatedData['home_score'] = 3;
+            $validatedData['away_score'] = 0;
         }
-
-        $game->update($validatedData);
-
-        return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol bijgewerkt!');
     }
+
+    $game->update($validatedData);
+
+    return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol bijgewerkt!');
+}
+
+public function requestApproval(Game $game)
+{
+    if (auth()->user()->team_id == $game->away_team_id || auth()->user()->role == 'admin') {
+        return view('games.approval', compact('game'));
+    }
+    return redirect()->route('games.index')->withErrors(['msg' => 'You are not authorized to approve this game.']);
+}
+
+public function approve(Request $request, Game $game)
+{
+    $user = auth()->user();
+    if ($user->team_id == $game->away_team_id || $user->role == 'admin') {
+        $game->update(['away_team_approved' => true]);
+        return redirect()->route('dashboard')->with('success', 'Wedstrijd succesvol goedgekeurd!');
+    }
+    return redirect()->route('games.index')->withErrors(['msg' => 'You are not authorized to approve this game.']);
+}
+
+public function bulkApprove(Request $request)
+{
+    $gameIds = $request->input('game_ids', []);
+
+    if (!empty($gameIds)) {
+        Game::whereIn('id', $gameIds)->update(['away_team_approved' => true]);
+        return redirect()->route('dashboard')->with('success', 'Geselecteerde wedstrijden zijn goedgekeurd.');
+    }
+
+    return redirect()->route('dashboard')->with('error', 'Geen wedstrijden geselecteerd voor goedkeuring.');
+}
 
 
 protected function calculateMatchResult(array $scoreData)
