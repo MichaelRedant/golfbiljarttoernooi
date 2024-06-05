@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+:root { 
   --background-color: #ffffff;
   --text-color: #333333;
   --card-background: #f8f9fa;
