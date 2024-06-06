@@ -60,7 +60,7 @@
                             <a class="dropdown-item" href="{{ route('divisions.create') }}">Nieuwe Divisie Toevoegen</a>
                             <a class="dropdown-item" href="{{ route('clubs.create') }}">Nieuwe Club Toevoegen</a>
                             <a class="dropdown-item" href="{{ route('seasons.create') }}">Nieuw Seizoen Toevoegen</a>
-                            <a class="dropdown-item" href="{{ route('games.create', ['division_id' => $divisions->first()->id ?? null, 'season_id' => $currentSeason->id ?? null]) }}">Nieuwe Wedstrijd</a> <!-- Corrected this line -->
+                            <a class="dropdown-item" href="{{ route('games.create', ['division_id' => $divisions->first()->id ?? null, 'season_id' => $currentSeason->id ?? null]) }}">Nieuwe Wedstrijd</a>
                         @endif
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
@@ -71,29 +71,11 @@
                         </form>
                     </div>
                 </li>
-                <div class="vr mx-3"></div>
-                <div class="navbar-text d-flex align-items-center">
-                    <i class="fas fa-sun" style="color:#e5e500;"></i>
-                    <label class="switch mx-2">
-                        <input type="checkbox" id="nightModeToggle">
-                        <span class="slider round"></span>
-                    </label>
-                    <i class="fas fa-moon" style="color: black;"></i>
-                </div>
                 @endauth
                 @guest
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('login') }}">Login</a>
                 </li>
-                <div class="vr mx-3"></div>
-                <div class="navbar-text d-flex align-items-center">
-                    <i class="fas fa-sun" style="color:#e5e500;"></i>
-                    <label class="switch mx-2">
-                        <input type="checkbox" id="nightModeToggle">
-                        <span class="slider round"></span>
-                    </label>
-                    <i class="fas fa-moon" style="color: black;"></i>
-                </div>
                 @endguest
             </ul>
         </div>
@@ -101,18 +83,24 @@
 </nav>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const nightModeToggle = document.getElementById('nightModeToggle');
-        const isNightMode = localStorage.getItem('nightMode') === 'true';
-    
-        // Set the toggle based on saved preference
-        nightModeToggle.checked = isNightMode;
-        document.body.classList.toggle('night-mode', isNightMode);
-    
-        // Listen for changes in the toggle
-        nightModeToggle.addEventListener('change', function() {
-            document.body.classList.toggle('night-mode', this.checked);
-            // Save the preference in localStorage
-            localStorage.setItem('nightMode', this.checked);
+        // Verwijder de nachtmodus functie
+        document.querySelectorAll('.nav-item.dropdown').forEach(function(dropdown) {
+            dropdown.addEventListener('mouseover', function() {
+                const dropdownMenu = this.querySelector('.dropdown-menu');
+                const dropdownToggle = this.querySelector('.dropdown-toggle');
+                if (!dropdownToggle.classList.contains('show')) {
+                    dropdownToggle.classList.add('show');
+                    dropdownMenu.classList.add('show');
+                }
+            });
+            dropdown.addEventListener('mouseleave', function() {
+                const dropdownMenu = this.querySelector('.dropdown-menu');
+                const dropdownToggle = this.querySelector('.dropdown-toggle');
+                if (dropdownToggle.classList.contains('show')) {
+                    dropdownToggle.classList.remove('show');
+                    dropdownMenu.classList.remove('show');
+                }
+            });
         });
     });
 </script>

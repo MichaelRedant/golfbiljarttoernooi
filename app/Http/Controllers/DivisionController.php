@@ -121,29 +121,28 @@ public function store(Request $request)
 }
     
 
-    public function edit(Division $division)
-    {
-        $teams = Team::with('club')->get(); // Load all teams with their clubs
-        return view('divisions.edit', compact('division', 'teams'));
-    }
+public function edit(Division $division)
+{
+    $teams = Team::with('club')->get(); // Load all teams with their clubs
+    return view('divisions.edit', compact('division', 'teams'));
+}
 
+public function update(Request $request, Division $division)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'teams' => 'array', // Validate that 'teams' is an array
+        'teams.*' => 'exists:teams,id', // Validate that each 'team' exists in the teams table
+    ]);
 
-    public function update(Request $request, Division $division)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'teams' => 'array', // Validate that 'teams' is an array
-            'teams.*' => 'exists:teams,id', // Validate that each 'team' exists in the teams table
-        ]);
+    $division->update([
+        'name' => $request->input('name'),
+    ]);
 
-        $division->update([
-            'name' => $request->input('name'),
-        ]);
+    $division->teams()->sync($request->input('teams', [])); // Sync the selected teams with the division
 
-        $division->teams()->sync($request->input('teams', [])); // Sync the selected teams with the division
-
-        return redirect()->route('divisions.index')->with('success', 'Divisie succesvol bijgewerkt.');
-    }
+    return redirect()->route('divisions.index')->with('success', 'Divisie succesvol bijgewerkt.');
+}
 
     public function delete(Division $division)
     {

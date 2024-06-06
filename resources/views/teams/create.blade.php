@@ -31,30 +31,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label for="players" class="form-label">Spelers</label>
-                    <div class="dual-listbox">
-                        <div class="dual-listbox-column">
-                            <h5>Beschikbare Spelers</h5>
-                            <ul id="available-players" class="list-group">
-                                @foreach ($players->groupBy('team.name') as $teamName => $playersGroup)
-                                    <li class="list-group-item team-header">{{ $teamName ?? 'Geen team' }}</li>
-                                    @foreach ($playersGroup as $player)
-                                        <li class="list-group-item" data-id="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }}</li>
-                                    @endforeach
-                                @endforeach
-                            </ul>
-                        </div>
-                        <div class="dual-listbox-controls">
-                            <button type="button" id="move-right" class="btn btn-primary">&gt;</button>
-                            <button type="button" id="move-left" class="btn btn-primary">&lt;</button>
-                        </div>
-                        <div class="dual-listbox-column">
-                            <h5>Geselecteerde Spelers</h5>
-                            <ul id="selected-players" class="list-group"></ul>
-                        </div>
-                    </div>
-                </div>
+               
                 <input type="hidden" name="players" id="selected-players-input">
                 <div class="d-grid">
                     <button type="submit" class="btn btn-primary">Opslaan</button>

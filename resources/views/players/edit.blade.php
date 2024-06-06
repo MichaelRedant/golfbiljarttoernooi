@@ -4,7 +4,7 @@
 <div class="container mt-4">
     <h1 class="mb-3"><i class="fas fa-user-edit"></i> Bewerk {{ $player->first_name }} {{ $player->last_name }}</h1>
 
-    <form action="{{ route('players.update', $player) }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ route('players.update', $player) }}" method="POST">
         @csrf
         @method('PUT')
 
@@ -34,14 +34,6 @@
                     <option value="{{ $division->id }}" {{ (old('division_id', $player->division_id) == $division->id) ? 'selected' : '' }}>{{ $division->name }}</option>
                 @endforeach
             </select>
-        </div>
-
-        <div class="form-group mb-3">
-            <label for="photo"><i class="fas fa-camera"></i> Foto:</label>
-            <input type="file" name="photo" class="form-control" id="photo">
-            @if($player->photo)
-                <img src="{{ asset('storage/photos/' . $player->photo) }}" width="100" alt="Speler foto" class="mt-2">
-            @endif
         </div>
 
         <div class="d-flex justify-content-between">

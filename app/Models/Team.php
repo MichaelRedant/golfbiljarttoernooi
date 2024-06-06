@@ -10,10 +10,12 @@ class Team extends Model
     use HasFactory;
 
     protected $fillable = ['name', 'captain_id', 'reserve_id', 'division_id', 'club_id', 'location'];
+
     public function division()
     {
         return $this->belongsTo(Division::class);
     }
+    
     public function gamesHome()
     {
         return $this->hasMany(Game::class, 'home_team_id');
@@ -48,7 +50,6 @@ class Team extends Model
     {
         return $this->belongsTo(Club::class);
     }
-
 
     public function calculateStatsForSeason($seasonId) {
         $gamesHome = $this->gamesHome()->where('season_id', $seasonId)->get();
@@ -109,4 +110,5 @@ class Team extends Model
         return $this->gamesHome()->union($this->gamesAway()->getQuery());
     }
 }
+
 

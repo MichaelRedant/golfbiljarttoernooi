@@ -62,7 +62,7 @@ footer {
   border-radius: 15px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   overflow: hidden;
-  transition: transform 0.3s ease;
+  /* Verwijder de transition eigenschap om beweging bij hover te voorkomen */
 }
 
 .nav-card-link {
@@ -379,4 +379,29 @@ a:hover {
 .highlight-row {
     background-color: #28a745 !important;
     color: white !important;
+}
+
+/* Knoppen container stijl */
+.button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centreert de knoppen horizontaal */
+  gap: 15px; /* Ruimte tussen de knoppen */
+  margin-top: 20px;
+}
+
+/* Gestylede en geanimeerde knoppen */
+.animated-btn {
+  background-color: #007bff;
+  color: #000000; /* Donkere tekstkleur */
+  border: none;
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.animated-btn:hover {
+  background-color: #0056b3;
+  transform: scale(1.05);
+  color: #ffffff; /* Witte tekstkleur bij hover */
 }

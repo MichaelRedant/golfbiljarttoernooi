@@ -18,7 +18,7 @@
 
     <!-- Page Heading -->
     @if (isset($header))
-        <header class="bg-white dark:bg-gray-800 shadow">
+        <header class="bg-white shadow">
             <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                 {{ $header }}
             </div>
@@ -50,22 +50,6 @@
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             }
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const nightModeToggle = document.getElementById('nightModeToggle');
-            const isNightMode = localStorage.getItem('nightMode') === 'true';
-
-            // Set the toggle based on saved preference
-            nightModeToggle.checked = isNightMode;
-            document.body.classList.toggle('night-mode', isNightMode);
-
-            // Listen for changes in the toggle
-            nightModeToggle.addEventListener('change', function() {
-                document.body.classList.toggle('night-mode', this.checked);
-                // Save the preference in localStorage
-                localStorage.setItem('nightMode', this.checked);
-            });
         });
     </script>
 </body>

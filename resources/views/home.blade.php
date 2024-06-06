@@ -4,18 +4,7 @@
 
 @section('content')
 <div class="container mt-4">
-    <div class="row">
-        <!-- Navigation cards on the left side -->
-        <div class="col-md-3">
-            <div class="nav-flex-column">
-                <a href="{{ route('divisions.index') }}" class="nav-card-link card my-2">Divisies</a>
-                <a href="{{ route('teams.index') }}" class="nav-card-link card my-2">Teams</a>
-                <a href="{{ route('players.index') }}" class="nav-card-link card my-2">Spelers</a>
-                <a href="{{ route('rankings.index') }}" class="nav-card-link card my-2">Rankings</a>
-                <a href="{{ route('clubs.index') }}" class="nav-card-link card my-2">Clubs</a>
-                <a href="{{ route('live-scores') }}" class="nav-card-link card my-2">Live Wedstrijden</a>
-            </div>
-        </div>
+    <div class="row justify-content-center">
         <!-- Content section about Golfbiljart -->
         <div class="col-md-9">
             <h1 class="text-center my-4">Welkom bij onze Golfbiljart Applicatie</h1>
@@ -25,6 +14,19 @@
             <p class="text-justify">
                 Verken onze wedstrijdkalender om de aankomende evenementen te zien, duik in de details van verschillende divisies, of bekijk de prestaties van teams en spelers door onze uitgebreide rankings. Of je nu een speler, coach of gewoon een fan bent, onze app biedt iets voor iedereen.
             </p>
+            
+            <!-- Verplaats de knoppen naar een centrale positie en voeg marges toe -->
+            <div class="row justify-content-center my-4">
+                <div class="col-md-8 d-flex flex-wrap justify-content-center gap-3">
+                    <a href="{{ route('divisions.index') }}" class="btn btn-primary animated-btn">Divisies</a>
+                    <a href="{{ route('teams.index') }}" class="btn btn-primary animated-btn">Teams</a>
+                    <a href="{{ route('players.index') }}" class="btn btn-primary animated-btn">Spelers</a>
+                    <a href="{{ route('rankings.index') }}" class="btn btn-primary animated-btn">Rankings</a>
+                    <a href="{{ route('clubs.index') }}" class="btn btn-primary animated-btn">Clubs</a>
+                    <a href="{{ route('live-scores') }}" class="btn btn-primary animated-btn">Live Wedstrijden</a>
+                </div>
+            </div>
+            
             <div class="card mb-4">
                 <div class="card-header">
                     <h2 class="card-title">Wat is Golfbiljart?</h2>

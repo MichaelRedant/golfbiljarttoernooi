@@ -6,7 +6,7 @@
         background-color: #28a745 !important; /* Bootstrap success color */
         color: white !important;
     }
-    </style>
+</style>
 <div class="container">
     <div class="card mb-4">
         <div class="card-header">
@@ -27,11 +27,15 @@
                     </select>
                 </div>
             </form>
-            <p><strong><i class="fas fa-layer-group"></i> Divisie:</strong> {{ $team->division->name }}</p>
-            <p><strong><i class="fas fa-trophy"></i> Aantal Gewonnen:</strong> {{ $currentTeamStanding['games_won'] }}</p>
-            <p><strong><i class="fas fa-thumbs-down"></i> Aantal Verloren:</strong> {{ $currentTeamStanding['games_lost'] }}</p>
-            <p><strong><i class="fas fa-handshake"></i> Aantal Gelijk:</strong> {{ $currentTeamStanding['games_draw'] }}</p>
-            <p><strong><i class="fas fa-star"></i> Totaal Punten:</strong> {{ $currentTeamStanding['points'] }}</p>
+            @if ($team->division)
+                <p><strong><i class="fas fa-layer-group"></i> Divisie:</strong> {{ $team->division->name }}</p>
+            @else
+                <p><strong><i class="fas fa-layer-group"></i> Divisie:</strong> Geen divisie</p>
+            @endif
+            <p><strong><i class="fas fa-trophy"></i> Aantal Gewonnen:</strong> {{ $currentTeamStanding['games_won'] ?? 'N/A' }}</p>
+            <p><strong><i class="fas fa-thumbs-down"></i> Aantal Verloren:</strong> {{ $currentTeamStanding['games_lost'] ?? 'N/A' }}</p>
+            <p><strong><i class="fas fa-handshake"></i> Aantal Gelijk:</strong> {{ $currentTeamStanding['games_draw'] ?? 'N/A' }}</p>
+            <p><strong><i class="fas fa-star"></i> Totaal Punten:</strong> {{ $currentTeamStanding['points'] ?? 'N/A' }}</p>
             <p><strong><i class="fas fa-medal"></i> Plaats dit seizoen:</strong> 
                 @foreach ($standings as $index => $standing)
                     @if($standing['team_id'] == $team->id)

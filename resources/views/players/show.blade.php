@@ -4,11 +4,6 @@
 <div class="container mt-4">
     <div class="card">
         <div class="card-header d-flex align-items-center">
-            @if($player->photo)
-                <img src="{{ asset('storage/photos/' . $player->photo) }}" alt="Speler Foto" class="rounded-circle mr-3" style="width: 100px; height: 100px;">
-            @else
-                <img src="{{ asset('images/placeholder-avatar.png') }}" alt="Geen foto beschikbaar" class="rounded-circle mr-3" style="width: 100px; height: 100px;">
-            @endif
             <h1 class="h4 mb-0">{{ $player->first_name }} {{ $player->last_name }}</h1>
         </div>
         <div class="card-body">
