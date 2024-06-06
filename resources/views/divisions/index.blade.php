@@ -18,7 +18,7 @@
                     <div class="card">
                         <div class="card-header" id="heading{{ $division->id }}">
                             <h2 class="mb-0 d-flex justify-content-between align-items-center">
-                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse{{ $division->id }}" aria-expanded="false" aria-controls="collapse{{ $division->id }}">
+                                <button class="btn btn-link text-dark custom-link" type="button" data-toggle="collapse" data-target="#collapse{{ $division->id }}" aria-expanded="false" aria-controls="collapse{{ $division->id }}">
                                     {{ $division->name }} <i class="fas fa-chevron-down"></i>
                                 </button>
                                 <div>
@@ -58,6 +58,19 @@
             </div>
         @endif
     </div>
+@endsection
+
+@section('styles')
+<style>
+    .custom-link {
+        color: inherit;
+        text-decoration: none;
+    }
+    .custom-link:hover {
+        color: inherit;
+        text-decoration: none;
+    }
+</style>
 @endsection
 
 <script>

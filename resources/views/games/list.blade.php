@@ -1,9 +1,15 @@
-<!-- resources/views/games/for-division-season.blade.php -->
+<!-- resources/views/games/list.blade.php -->
 
 @extends('layouts.app')
 
 @section('content')
 <div class="container mt-4">
+    @if (session('error'))
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <h1>Wedstrijden voor Divisie: {{ $division->name }} - Seizoen: {{ $season->name }}</h1>
 
     <!-- Dropdown for season selection -->
@@ -41,41 +47,39 @@
                                 <div>
                                     @if ($game->homeTeam)
                                         <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
-                                    @elseif ($game->bye_team_id)
-                                        Bye - {{ $game->byeTeam->name }}
                                     @else
-                                        No Home Team
+                                        Bye - {{ $game->byeTeam ? $game->byeTeam->name : 'No Home Team' }}
                                     @endif
                                     vs
                                     @if ($game->awayTeam)
                                         <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
-                                    @elseif ($game->bye_team_id)
-                                        <!-- No output needed for away team in case of bye -->
                                     @else
-                                        No Away Team
+                                        Bye - {{ $game->byeTeam ? $game->byeTeam->name : 'No Away Team' }}
                                     @endif
                                 </div>
-                                <div>
-                                    @if (!$game->played)
-                                        <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-secondary">
-                                            <i class="fas fa-play-circle"></i> Wedstrijd Spelen
+                                @if ($game->homeTeam && $game->awayTeam)
+                                    <div>
+                                        @if (!$game->played)
+                                            <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-secondary">
+                                                <i class="fas fa-play-circle"></i> Wedstrijd Spelen
+                                            </a>
+                                        @else
+                                            <a href="{{ route('games.edit', $game->id) }}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-pencil-alt"></i> Wedstrijd Bewerken
+                                            </a>
+                                        @endif
+                                        <a href="{{ route('games.show', $game->id) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Bekijk
                                         </a>
-                                    @else
-                                        <a href="{{ route('games.edit', $game->id) }}" class="btn btn-sm btn-info">
-                                            <i class="fas fa-pencil-alt"></i> Wedstrijd Bewerken
-                                        </a>
-                                    @endif
-                                    <a href="{{ route('games.show', $game->id) }}" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-eye"></i> Bekijk
-                                    </a>
-                                    <form action="{{ route('games.destroy', $game->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Weet je zeker dat je deze wedstrijd wilt verwijderen?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            <i class="fas fa-trash-alt"></i> Verwijder
-                                        </button>
-                                    </form>
-                                </div>
+                                        <form action="{{ route('games.destroy', $game->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Weet je zeker dat je deze wedstrijd wilt verwijderen?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash-alt"></i> Verwijder
+                                            </button>
+                                        </form>
+                                    </div>
+                                @endif
                             </div>
                         </li>
                     @endforeach
@@ -102,10 +106,26 @@
                 @foreach ($pastGames as $game)
                     <tr>
                         <td>{{ \Carbon\Carbon::parse($game->date)->format('d-m-Y') }}</td>
-                        <td><a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam ? $game->homeTeam->name : 'Bye' }}</a></td>
-                        <td><a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam ? $game->awayTeam->name : 'Bye' }}</a></td>
+                        <td>
+                            @if ($game->homeTeam)
+                                <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
+                            @else
+                                Bye
+                            @endif
+                        </td>
+                        <td>
+                            @if ($game->awayTeam)
+                                <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
+                            @else
+                                Bye
+                            @endif
+                        </td>
                         <td>{{ $game->home_score ?? '' }} : {{ $game->away_score ?? '' }}</td>
-                        <td><a href="{{ route('games.show', $game->id) }}" class="btn btn-primary"><i class="fas fa-eye"></i> Wedstrijd bekijken</a></td>
+                        @if ($game->homeTeam && $game->awayTeam)
+                            <td><a href="{{ route('games.show', $game->id) }}" class="btn btn-primary"><i class="fas fa-eye"></i> Wedstrijd bekijken</a></td>
+                        @else
+                            <td></td>
+                        @endif
                     </tr>
                 @endforeach
             </tbody>

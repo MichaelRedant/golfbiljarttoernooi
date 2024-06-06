@@ -6,9 +6,17 @@ use Illuminate\Http\Request;
 use App\Models\Division;
 use App\Models\Player;
 use App\Models\Season;
+use App\Services\RankingService;
 
 class RankingController extends Controller
 {
+    protected $rankingService;
+
+    public function __construct(RankingService $rankingService)
+    {
+        $this->rankingService = $rankingService;
+    }
+
     public function index(Request $request)
     {
         $seasons = Season::all();
@@ -23,54 +31,9 @@ class RankingController extends Controller
     {
         $seasonId = $request->input('season_id', Season::latest()->first()->id);
         $seasons = Season::all();
-        
-        $teams = $division->teams()->with(['games' => function($query) use ($seasonId) {
-            $query->where('season_id', $seasonId);
-        }])->get();
 
-        // Bereken standings
-        $standings = $teams->map(function ($team) use ($seasonId) {
-            $games = $team->games->where('season_id', $seasonId);
-            $won = 0;
-            $lost = 0;
-            $draw = 0;
-            $points = 0;
-
-            foreach ($games as $game) {
-                if ($game->home_team_id == $team->id) {
-                    if ($game->home_score > $game->away_score) {
-                        $won++;
-                        $points += 3; // Voorbeeld: 3 punten voor een win
-                    } elseif ($game->home_score == $game->away_score) {
-                        $draw++;
-                        $points += 1; // 1 punt voor een draw
-                    } else {
-                        $lost++;
-                    }
-                } else if ($game->away_team_id == $team->id) {
-                    if ($game->away_score > $game->home_score) {
-                        $won++;
-                        $points += 3;
-                    } elseif ($game->away_score == $game->home_score) {
-                        $draw++;
-                        $points += 1;
-                    } else {
-                        $lost++;
-                    }
-                }
-            }
-
-            return [
-                'team_name' => $team->name,
-                'games_won' => $won,
-                'games_lost' => $lost,
-                'games_draw' => $draw,
-                'points' => $points,
-                'team_id' => $team->id
-            ];
-        });
-
-        $standings = collect($standings);
+        // Bereken standings met behulp van RankingService
+        $standings = $this->rankingService->calculateDivisionStandings($division, $seasonId);
 
         return view('rankings.teams', compact('division', 'standings', 'seasonId', 'seasons'));
     }

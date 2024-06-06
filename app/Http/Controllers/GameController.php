@@ -482,32 +482,40 @@ private function calculateDivisionStandings(Division $division, $seasonId)
 
 
 public function showGamesForDivisionAndSeason(Request $request, $division_id, $season_id = null)
-    {
-        $division = Division::findOrFail($division_id);
-        $seasons = Season::all();
-        $season_id = $season_id ?? Season::latest('id')->first()->id;
-        $season = Season::findOrFail($season_id);
-
-        // Fetch all games for the current division and selected season
-        $games = Game::with(['homeTeam', 'awayTeam'])
-                     ->where('division_id', $division_id)
-                     ->where('season_id', $season_id)
-                     ->orderBy('date', 'asc')
-                     ->get()
-                     ->groupBy(function($game) {
-                         return \Carbon\Carbon::parse($game->date)->format('d-m-Y');
-                     });
-
-        // Fetch past games
-        $pastGames = Game::with(['homeTeam', 'awayTeam'])
-                         ->where('division_id', $division_id)
-                         ->where('season_id', $season_id)
-                         ->where('date', '<', now())
-                         ->orderBy('date', 'desc')
-                         ->get();
-
-        return view('games.list', compact('division', 'games', 'seasons', 'season', 'pastGames'));
+{
+    $division = Division::find($division_id);
+    if (!$division) {
+        return redirect()->route('dashboard')->with('error', 'Division not found.');
     }
+
+    $seasons = Season::all();
+    $season = $season_id ? Season::find($season_id) : Season::latest('id')->first();
+
+    if (!$season) {
+        return redirect()->route('dashboard')->with('error', 'Season not found.');
+    }
+
+    // Fetch all games for the current division and selected season
+    $games = Game::with(['homeTeam', 'awayTeam'])
+                 ->where('division_id', $division_id)
+                 ->where('season_id', $season->id)
+                 ->orderBy('date', 'asc')
+                 ->get()
+                 ->groupBy(function($game) {
+                     return \Carbon\Carbon::parse($game->date)->format('d-m-Y');
+                 });
+
+    // Fetch past games
+    $pastGames = Game::with(['homeTeam', 'awayTeam'])
+                     ->where('division_id', $division_id)
+                     ->where('season_id', $season->id)
+                     ->where('date', '<', now())
+                     ->orderBy('date', 'desc')
+                     ->get();
+
+    return view('games.list', compact('division', 'games', 'seasons', 'season', 'pastGames'));
+}
+
 
 
 public function generateMatches()

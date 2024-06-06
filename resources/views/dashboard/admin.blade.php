@@ -49,6 +49,30 @@
             </div>
         </div>
 
+        <!-- New section for quick access to edit seasons, clubs, divisions, teams, and players -->
+        <div class="col-md-12">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-edit"></i> Beheer</h5>
+                    <a href="{{ route('seasons.index') }}" class="btn btn-outline-secondary d-block mb-2">
+                        <i class="fas fa-calendar-alt"></i> Seizoenen Beheren
+                    </a>
+                    <a href="{{ route('clubs.index') }}" class="btn btn-outline-secondary d-block mb-2">
+                        <i class="fas fa-building"></i> Clubs Beheren
+                    </a>
+                    <a href="{{ route('divisions.index') }}" class="btn btn-outline-secondary d-block mb-2">
+                        <i class="fas fa-sitemap"></i> Divisies Beheren
+                    </a>
+                    <a href="{{ route('teams.index') }}" class="btn btn-outline-secondary d-block mb-2">
+                        <i class="fas fa-users"></i> Teams Beheren
+                    </a>
+                    <a href="{{ route('players.index') }}" class="btn btn-outline-secondary d-block mb-2">
+                        <i class="fas fa-user"></i> Spelers Beheren
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <div class="col-md-12 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">

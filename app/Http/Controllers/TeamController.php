@@ -9,9 +9,17 @@ use App\Models\Season;
 use App\Models\Division;
 use Illuminate\Http\Request;
 use App\Services\TeamStatsService;
+use App\Services\RankingService;
 
 class TeamController extends Controller
 {
+    protected $rankingService;
+
+    public function __construct(RankingService $rankingService)
+    {
+        $this->rankingService = $rankingService;
+    }
+
     public function index(Request $request)
     {
         $search = $request->input('search');
@@ -36,13 +44,17 @@ class TeamController extends Controller
 
         return view('teams.index', compact('teams', 'divisions', 'divisionName'));
     }
-    public function create()
+    
+    public function create(Request $request)
 {
+    $clubId = $request->query('club_id');
     $divisions = Division::all();
     $clubs = Club::all();
     $players = Player::all();
-    return view('teams.create', compact('divisions', 'clubs', 'players'));
+    return view('teams.create', compact('divisions', 'clubs', 'players', 'clubId'));
 }
+
+
 
 public function store(Request $request)
 {
@@ -57,7 +69,7 @@ public function store(Request $request)
     return redirect()->route('teams.edit', $team)->with('success', 'Team succesvol toegevoegd.');
 }
 
-public function show(Team $team, Request $request)
+ public function show(Team $team, Request $request)
     {
         $currentSeasonId = $request->query('season_id', Season::latest()->first()->id);
         $seasons = Season::all();
@@ -76,12 +88,12 @@ public function show(Team $team, Request $request)
         // Ensure the division is loaded
         $division = $team->division;
         if (!$division) {
-            return redirect()->back()->with('error', 'Division not found.');
+            $standings = [];
+            $currentTeamStanding = null;
+        } else {
+            $standings = $this->rankingService->calculateDivisionStandings($division, $currentSeasonId);
+            $currentTeamStanding = collect($standings)->firstWhere('team_id', $team->id);
         }
-
-        $standings = $this->calculateDivisionStandings($division, $currentSeasonId);
-
-        $currentTeamStanding = collect($standings)->firstWhere('team_id', $team->id);
 
         $players = $team->players; // Fetch players of the team
 

@@ -1,27 +1,24 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>Golfbiljart</title>
-<!-- Fonts en Styles -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito">
+    <title>{{ config('app.name', 'Golfbiljart') }}</title>
+    <!-- Fonts en Styles -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito">
     <link href="{{ asset('css/stijl.css') }}" rel="stylesheet">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Scripts (Veronderstel dat Vite of vergelijkbare build tool gebruikt wordt voor assets) -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
 <body class="font-sans antialiased">
     <!-- Navigation -->
     @include('layouts.navigation')
 
-        <!-- Page Content -->
-    <main>
+    <div class="container mt-4">
         @yield('content')
-    </main>
+    </div>
 
     <footer class="footer">
         <div class="container">
@@ -29,27 +26,34 @@
             <p class="footer-text">Designed & created by <a href="https://pixapop.be" target="_blank">Pixapop webdesign</a> © {{ date('Y') }}</p>
         </div>
     </footer>
-    <!-- Optioneel JavaScript -->
-<!-- jQuery eerst, dan Popper.js, dan Bootstrap JS -->
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const nightModeToggle = document.getElementById('nightModeToggle');
-    const isNightMode = localStorage.getItem('nightMode') === 'true';
 
-    // Stel de toggle in op basis van opgeslagen voorkeur
-    nightModeToggle.checked = isNightMode;
-    document.body.classList.toggle('night-mode', isNightMode);
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
 
-    // Luister naar veranderingen in de toggle
-    nightModeToggle.addEventListener('change', function() {
-        document.body.classList.toggle('night-mode', this.checked);
-        // Bewaar de voorkeur in localStorage
-        localStorage.setItem('nightMode', this.checked);
-    });
-});
-</script>
-    </body>
+        document.addEventListener('DOMContentLoaded', function() {
+            const nightModeToggle = document.getElementById('nightModeToggle');
+            const isNightMode = localStorage.getItem('nightMode') === 'true';
+
+            // Set the toggle based on saved preference
+            nightModeToggle.checked = isNightMode;
+            document.body.classList.toggle('night-mode', isNightMode);
+
+            // Listen for changes in the toggle
+            nightModeToggle.addEventListener('change', function() {
+                document.body.classList.toggle('night-mode', this.checked);
+                // Save the preference in localStorage
+                localStorage.setItem('nightMode', this.checked);
+            });
+        });
+    </script>
+</body>
 </html>

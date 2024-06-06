@@ -18,7 +18,9 @@
                     <select name="club_id" class="form-select" id="club_id" required>
                         <option value="">Selecteer een club</option>
                         @foreach ($clubs as $club)
-                            <option value="{{ $club->id }}">{{ $club->name }}</option>
+                            <option value="{{ $club->id }}" {{ isset($clubId) && $clubId == $club->id ? 'selected' : '' }}>
+                                {{ $club->name }}
+                            </option>
                         @endforeach
                     </select>
                 </div>
