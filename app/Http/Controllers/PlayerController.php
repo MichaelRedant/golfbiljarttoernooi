@@ -28,45 +28,49 @@ class PlayerController extends Controller
 
     if ($teamId) {
         $players = Player::with('team')
-                         ->where('team_id', $teamId)
-                         ->get();
+                        ->where('team_id', $teamId)
+                        ->get();
 
-        $divisionId = $players->first()->team->division_id ?? null;
-        $currentSeasonId = Season::latest('id')->first()->id;
-        $standings = $divisionId ? $this->calculatePlayerStandings($divisionId, $currentSeasonId) : [];
+        if ($players->isNotEmpty()) {
+            $divisionId = $players->first()->team->division_id ?? null;
+            $currentSeasonId = Season::latest('id')->first()->id;
+            $standings = $divisionId ? $this->calculatePlayerStandings($divisionId, $currentSeasonId) : [];
 
-        $players = $players->map(function ($player) use ($standings) {
-            $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
-            return (object) [
-                'id' => $player->id,
-                'name' => $player->first_name . ' ' . $player->last_name,
-                'team_name' => $player->team->name,
-                'team_id' => $player->team->id,
-                'rank' => $rank,
-            ];
-        });
+            $players = $players->map(function ($player) use ($standings) {
+                $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
+                return (object) [
+                    'id' => $player->id,
+                    'name' => $player->first_name . ' ' . $player->last_name,
+                    'team_name' => $player->team->name ?? 'Geen team',
+                    'team_id' => $player->team->id ?? null,
+                    'rank' => $rank,
+                ];
+            });
+        }
     }
 
     if ($query) {
         $players = Player::with('team')
-                         ->where('first_name', 'LIKE', "%{$query}%")
-                         ->orWhere('last_name', 'LIKE', "%{$query}%")
-                         ->get();
+                        ->where('first_name', 'LIKE', "%{$query}%")
+                        ->orWhere('last_name', 'LIKE', "%{$query}%")
+                        ->get();
 
-        $divisionId = $players->first()->team->division_id ?? null;
-        $currentSeasonId = Season::latest('id')->first()->id;
-        $standings = $divisionId ? $this->calculatePlayerStandings($divisionId, $currentSeasonId) : [];
+        if ($players->isNotEmpty()) {
+            $divisionId = $players->first()->team->division_id ?? null;
+            $currentSeasonId = Season::latest('id')->first()->id;
+            $standings = $divisionId ? $this->calculatePlayerStandings($divisionId, $currentSeasonId) : [];
 
-        $players = $players->map(function ($player) use ($standings) {
-            $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
-            return (object) [
-                'id' => $player->id,
-                'name' => $player->first_name . ' ' . $player->last_name,
-                'team_name' => $player->team->name,
-                'team_id' => $player->team->id,
-                'rank' => $rank,
-            ];
-        });
+            $players = $players->map(function ($player) use ($standings) {
+                $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
+                return (object) [
+                    'id' => $player->id,
+                    'name' => $player->first_name . ' ' . $player->last_name,
+                    'team_name' => $player->team->name ?? 'Geen team',
+                    'team_id' => $player->team->id ?? null,
+                    'rank' => $rank,
+                ];
+            });
+        }
     }
 
     return view('players.index', compact('players', 'divisions', 'teams'));
@@ -313,8 +317,8 @@ public function getPlayersByTeam(Request $request)
             return [
                 'id' => $player->id,
                 'name' => $player->first_name . ' ' . $player->last_name,
-                'team_name' => $player->team->name,
-                'team_id' => $player->team->id,
+                'team_name' => $player->team->name ?? 'Geen team',
+                'team_id' => $player->team->id ?? null,
                 'rank' => $rank,
             ];
         });
@@ -325,7 +329,6 @@ public function getPlayersByTeam(Request $request)
         return response()->json(['error' => 'Failed to fetch players'], 500);
     }
 }
-
 
 
 public function playersBySeason($divisionId, $seasonId)

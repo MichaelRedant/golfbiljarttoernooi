@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
     ClubController, GameController, TeamController, UserController, BelleController,
@@ -24,7 +25,6 @@ Route::get('/players/{player}', [PlayerController::class, 'show'])->name('player
 Route::get('/get-teams', [PlayerController::class, 'getTeams'])->name('get-teams');
 Route::get('/get-players-by-team', [PlayerController::class, 'getPlayersByTeam'])->name('get-players-by-team');
 Route::get('/search-players', [PlayerController::class, 'searchPlayers'])->name('search.players');
-
 
 Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
 Route::post('/games/{game}/forfeit', [GameController::class, 'forfeitRequest'])->name('games.forfeit')->middleware('ensureTeamIsAuthorized');
@@ -92,9 +92,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     // Season routes
     Route::resource('seasons', SeasonController::class)->except(['show']);
 
-    //Game routes
+    // Game routes
     Route::post('/games/bulk-approve', [GameController::class, 'bulkApprove'])->name('games.bulkApprove');
-
 
     // Player routes
     Route::resource('players', PlayerController::class)->except(['index', 'show','create']);
@@ -106,7 +105,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::resource('clubs', ClubController::class)->except(['index', 'show','create']);
     Route::post('clubs', [ClubController::class, 'store'])->name('clubs.store');
     Route::get('/club/create', [ClubController::class, 'create'])->name('clubs.create');
-    
+
     // User management routes
     Route::resource('users', UserController::class)->except(['show']);
 });
@@ -126,4 +125,3 @@ Route::get('/reserve-players', [ReservePlayerController::class, 'index'])->name(
 
 // Include authentication routes
 require __DIR__ . '/auth.php';
-
