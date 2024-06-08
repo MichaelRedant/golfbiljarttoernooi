@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'Golfbiljart') }}</title>
+    <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon"/>
     <!-- Fonts en Styles -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito">
     <link href="{{ asset('css/stijl.css') }}" rel="stylesheet">

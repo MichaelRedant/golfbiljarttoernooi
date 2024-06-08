@@ -37,9 +37,11 @@
             <label for="team_id">Team:</label>
             <select id="team_id" name="team_id" class="form-control">
                 <option value="">Geen Team</option>
-                @foreach ($teams as $team)
-                    <option value="{{ $team->id }}" {{ $user->team_id == $team->id ? 'selected' : '' }}>{{ $team->name }}</option>
-                @endforeach
+                @if ($teams->isNotEmpty())
+                    @foreach ($teams as $team)
+                        <option value="{{ $team->id }}" {{ $user->team_id == $team->id ? 'selected' : '' }}>{{ $team->name }}</option>
+                    @endforeach
+                @endif
             </select>
         </div>
 

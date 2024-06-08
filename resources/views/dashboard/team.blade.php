@@ -29,7 +29,7 @@
                             </select>
                         </div>
                     </form>
-                    @if($teamRanking)
+                    @if(isset($teamRanking) && $teamRanking)
                         <ul class="list-group">
                             <li class="list-group-item"><i class="fas fa-users"></i> <strong>Team Naam:</strong> {{ $teamRanking['team_name'] }}</li>
                             <li class="list-group-item"><i class="fas fa-trophy"></i> <strong>Punten:</strong> {{ $teamRanking['points'] }}</li>
@@ -48,9 +48,7 @@
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title"><i class="fas fa-calendar-alt"></i> Aankomende Wedstrijden</h5>
-                    @if($upcomingGames->isEmpty())
-                        <p>Geen aankomende wedstrijden.</p>
-                    @else
+                    @if(isset($upcomingGames) && $upcomingGames->isNotEmpty())
                         <ul class="list-group">
                             @foreach($upcomingGames as $game)
                                 <li class="list-group-item">
@@ -65,12 +63,14 @@
                                 </li>
                             @endforeach
                         </ul>
+                    @else
+                        <p>Geen aankomende wedstrijden.</p>
                     @endif
                 </div>
             </div>
         </div>
 
-        @if(auth()->user()->team_id == $game->away_team_id || auth()->user()->role == 'admin')
+        @if(isset($pendingGames) && $pendingGames->isNotEmpty())
             <div class="col-md-12 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-body">

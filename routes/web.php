@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
     ClubController, GameController, TeamController, UserController, BelleController,
     MancheController, PlayerController, SeasonController, ProfileController,
-    RankingController, DivisionController, ReservePlayerController, DashboardController
+    RankingController, DivisionController, ReservePlayerController, DashboardController, Auth\AuthenticatedSessionController
 };
 
 // Publicly accessible routes
@@ -40,6 +40,10 @@ Route::get('/live-scores', [GameController::class, 'showLiveScores'])->name('liv
 Route::put('/games/{game}/update-live-score', [GameController::class, 'updateLiveScore'])->name('games.updateLiveScore');
 Route::get('/games/fetchLiveScores', [GameController::class, 'fetchLiveScores'])->name('games.fetchLiveScores');
 Route::get('/scores/stream', [GameController::class, 'streamScores'])->name('scores.stream');
+
+Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
 // Home route
 Route::get('/', function () {

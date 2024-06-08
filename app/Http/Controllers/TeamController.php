@@ -10,6 +10,7 @@ use App\Models\Division;
 use Illuminate\Http\Request;
 use App\Services\TeamStatsService;
 use App\Services\RankingService;
+use Illuminate\Support\Facades\Log;
 
 class TeamController extends Controller
 {
@@ -46,64 +47,78 @@ class TeamController extends Controller
     }
     
     public function create(Request $request)
-{
-    $clubId = $request->query('club_id');
-    $divisions = Division::all();
-    $clubs = Club::all();
-    $players = Player::all();
-    return view('teams.create', compact('divisions', 'clubs', 'players', 'clubId'));
-}
-
-
-
-public function store(Request $request)
-{
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'club_id' => 'required|exists:clubs,id',
-        'division_id' => 'required|exists:divisions,id',
-    ]);
-
-    $team = Team::create($request->all());
-
-    return redirect()->route('teams.edit', $team)->with('success', 'Team succesvol toegevoegd.');
-}
-
-public function show(Team $team, Request $request)
-{
-    $latestSeason = Season::latest()->first();
-    if (!$latestSeason) {
-        return back()->withErrors('Geen actief seizoen gevonden.');
-    }
-    $currentSeasonId = $request->query('season_id', $latestSeason->id);
-    $seasons = Season::all();
-
-    $teamStats = $team->calculateStatsForSeason($currentSeasonId);
-
-    $defaultStats = [
-        'games_won' => 0,
-        'games_lost' => 0,
-        'games_draw' => 0,
-        'points' => 0
-    ];
-
-    $teamStats = array_merge($defaultStats, $teamStats);
-
-    // Ensure the division is loaded
-    $division = $team->division;
-    if (!$division) {
-        $standings = [];
-        $currentTeamStanding = null;
-    } else {
-        $standings = $this->rankingService->calculateDivisionStandings($division, $currentSeasonId);
-        $currentTeamStanding = collect($standings)->firstWhere('team_id', $team->id);
+    {
+        $clubId = $request->query('club_id');
+        $divisions = Division::all();
+        $clubs = Club::all();
+        $players = Player::all();
+        return view('teams.create', compact('divisions', 'clubs', 'players', 'clubId'));
     }
 
-    $players = $team->players; // Fetch players of the team
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'club_id' => 'required|exists:clubs,id',
+            'division_id' => 'required|exists:divisions,id',
+        ]);
 
-    return view('teams.show', compact('team', 'teamStats', 'seasons', 'currentSeasonId', 'standings', 'currentTeamStanding', 'players'));
-}
+        $team = Team::create($request->all());
 
+        return redirect()->route('teams.edit', $team)->with('success', 'Team succesvol toegevoegd.');
+    }
+
+    public function show(Team $team, Request $request)
+    {
+        Log::info('TeamController@show reached', ['team' => $team]);
+    
+        $latestSeason = Season::latest()->first();
+        if (!$latestSeason) {
+            Log::error('No active season found');
+            return view('teams.show', [
+                'team' => $team,
+                'teamStats' => [],
+                'seasons' => collect(),
+                'currentSeasonId' => null,
+                'standings' => collect(),
+                'currentTeamStanding' => null,
+                'players' => $team->players ?? collect(),
+                'error' => 'Geen actief seizoen gevonden. Zorg ervoor dat er minstens één seizoen is toegevoegd.'
+            ]);
+        }
+    
+        $currentSeasonId = $request->query('season_id', $latestSeason->id);
+        Log::info('Current season ID', ['currentSeasonId' => $currentSeasonId]);
+    
+        $seasons = Season::all();
+        Log::info('All seasons', ['seasons' => $seasons]);
+    
+        $defaultStats = [
+            'games_won' => 0,
+            'games_lost' => 0,
+            'games_draw' => 0,
+            'points' => 0
+        ];
+    
+        $teamStats = $team->calculateStatsForSeason($currentSeasonId);
+        $teamStats = array_merge($defaultStats, $teamStats ?? []);
+        Log::info('Team stats', ['teamStats' => $teamStats]);
+    
+        $division = $team->division;
+        if (!$division) {
+            $standings = [];
+            $currentTeamStanding = null;
+        } else {
+            $standings = $this->rankingService->calculateDivisionStandings($division, $currentSeasonId);
+            $currentTeamStanding = collect($standings)->firstWhere('team_id', $team->id);
+        }
+        Log::info('Division and standings', ['division' => $division, 'standings' => $standings, 'currentTeamStanding' => $currentTeamStanding]);
+    
+        $players = $team->players ?? collect();
+        Log::info('Team players', ['players' => $players]);
+    
+        return view('teams.show', compact('team', 'teamStats', 'seasons', 'currentSeasonId', 'standings', 'currentTeamStanding', 'players'));
+    }
 
     public function addresses()
     {
@@ -218,7 +233,6 @@ public function show(Team $team, Request $request)
 
         return $standings;
     }
-    
 
     private function calculateDivisionStandings(Division $division, $seasonId)
     {
@@ -266,6 +280,7 @@ public function show(Team $team, Request $request)
             ];
         })->sortByDesc('points')->values()->all();
     }
+
 
     public function getTeamsByDivision(Request $request)
     {

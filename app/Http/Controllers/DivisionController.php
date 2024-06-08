@@ -9,31 +9,50 @@ use App\Models\Team;
 use App\Models\Season;
 use App\Models\Division;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class DivisionController extends Controller
 {
     public function index()
-{
-    $divisions = Division::with('teams')->get(); // Load divisions with teams
-    return view('divisions.index', compact('divisions'));
-}
-
-    public function getDivisions() {
-    $divisions = Division::all();
-    return response()->json($divisions);
-}
-
-    
-public function show(Request $request, Division $division)
     {
-        $currentSeasonId = $request->query('season_id', Season::latest('id')->value('id'));
-        $seasons = Season::all();
+        Log::info('DivisionController@index reached');
 
-        if (!$currentSeasonId) {
-            return back()->withErrors('Geen actief seizoen gevonden.');
+        try {
+            $divisions = Division::with('teams')->get();
+
+            if ($divisions->isEmpty()) {
+                Log::warning('No divisions found');
+                return view('divisions.index', ['divisions' => collect()]);
+            }
+
+            Log::info('Divisions retrieved', ['divisions_count' => $divisions->count()]);
+            return view('divisions.index', compact('divisions'));
+
+        } catch (\Exception $e) {
+            Log::error('Error retrieving divisions: ' . $e->getMessage());
+            return response()->view('errors.500', [], 500);
+        }
+    }
+
+    public function show(Request $request, Division $division)
+{
+    Log::info('DivisionController@show reached', ['division_id' => $division->id]);
+
+    try {
+        $latestSeason = Season::latest()->first();
+        if (!$latestSeason) {
+            Log::warning('No active season found');
+            $currentSeasonId = null;
+            $seasons = collect();
+            $gamesByDate = collect();
+            $standings = collect();
+            session()->flash('error', 'Geen actief seizoen gevonden.');
+            return view('divisions.show', compact('division', 'gamesByDate', 'standings', 'seasons', 'currentSeasonId'));
         }
 
-        // Fetch all games for the current division and selected season
+        $currentSeasonId = $request->query('season_id', $latestSeason->id);
+        $seasons = Season::all();
+
         $games = Game::with(['homeTeam', 'awayTeam'])
                      ->where('division_id', $division->id)
                      ->where('season_id', $currentSeasonId)
@@ -42,61 +61,79 @@ public function show(Request $request, Division $division)
 
         $gamesByDate = $games->groupBy('date');
 
-        // Fetch standings
         $standings = $this->calculateDivisionStandings($division, $currentSeasonId);
 
-        return view('divisions.show', compact('division', 'gamesByDate', 'games', 'standings', 'seasons', 'currentSeasonId'));
+        Log::info('Division data retrieved', [
+            'games_count' => $games->count(),
+            'standings_count' => count($standings)
+        ]);
+
+        return view('divisions.show', compact('division', 'gamesByDate', 'standings', 'seasons', 'currentSeasonId'));
+
+    } catch (\Exception $e) {
+        Log::error('Error retrieving division data: ' . $e->getMessage());
+        return response()->view('errors.500', [], 500);
     }
+}
 
 
     private function calculateDivisionStandings(Division $division, $seasonId)
-{
-    $teams = $division->teams()->with([
-        'gamesHome' => function ($query) use ($seasonId) {
-            $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
-        },
-        'gamesAway' => function ($query) use ($seasonId) {
-            $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
+    {
+        Log::info('Calculating standings for division', ['division_id' => $division->id, 'season_id' => $seasonId]);
+
+        try {
+            $teams = $division->teams()->with([
+                'gamesHome' => function ($query) use ($seasonId) {
+                    $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
+                },
+                'gamesAway' => function ($query) use ($seasonId) {
+                    $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
+                }
+            ])->get();
+
+            $standings = $teams->map(function ($team) {
+                $gamesWon = 0;
+                $gamesLost = 0;
+                $gamesDraw = 0;
+
+                foreach ($team->gamesHome as $game) {
+                    if ($game->home_score > $game->away_score) {
+                        $gamesWon++;
+                    } elseif ($game->home_score == $game->away_score) {
+                        $gamesDraw++;
+                    } else {
+                        $gamesLost++;
+                    }
+                }
+
+                foreach ($team->gamesAway as $game) {
+                    if ($game->away_score > $game->home_score) {
+                        $gamesWon++;
+                    } elseif ($game->away_score == $game->home_score) {
+                        $gamesDraw++;
+                    } else {
+                        $gamesLost++;
+                    }
+                }
+
+                return [
+                    'team_id' => $team->id,
+                    'team_name' => $team->name,
+                    'games_won' => $gamesWon,
+                    'games_lost' => $gamesLost,
+                    'games_draw' => $gamesDraw,
+                    'points' => $gamesWon * 3 + $gamesDraw
+                ];
+            })->sortByDesc('points')->values()->all();
+
+            Log::info('Standings calculated', ['standings_count' => count($standings)]);
+            return $standings;
+
+        } catch (\Exception $e) {
+            Log::error('Error calculating standings: ' . $e->getMessage());
+            return [];
         }
-    ])->get();
-
-    return $teams->map(function ($team) {
-        $gamesWon = 0;
-        $gamesLost = 0;
-        $gamesDraw = 0;
-
-        // Iterate over home games
-        foreach ($team->gamesHome as $game) {
-            if ($game->home_score > $game->away_score) {
-                $gamesWon++;
-            } elseif ($game->home_score == $game->away_score) {
-                $gamesDraw++;
-            } else {
-                $gamesLost++;
-            }
-        }
-
-        // Iterate over away games
-        foreach ($team->gamesAway as $game) {
-            if ($game->away_score > $game->home_score) {
-                $gamesWon++;
-            } elseif ($game->away_score == $game->home_score) {
-                $gamesDraw++;
-            } else {
-                $gamesLost++;
-            }
-        }
-
-        return [
-            'team_id' => $team->id,
-            'team_name' => $team->name,
-            'games_won' => $gamesWon,
-            'games_lost' => $gamesLost,
-            'games_draw' => $gamesDraw,
-            'points' => $gamesWon * 3 + $gamesDraw // 3 points for a win, 1 point for a draw
-        ];
-    })->sortByDesc('points')->values()->all();
-}
+    }
 
 
 public function create()

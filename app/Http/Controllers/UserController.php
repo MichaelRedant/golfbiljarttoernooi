@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\Team;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
@@ -16,11 +17,44 @@ class UserController extends Controller
         return view('users.index', compact('users'));
     }
 
-    public function edit()
+    public function create()
     {
-        $user = auth()->user();
-        return view('users.edit', compact('user'));
+        $teams = Team::all();
+        return view('users.create', compact('teams'));
     }
+
+    public function store(Request $request)
+{
+    $validatedData = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users',
+        'password' => 'required|string|min:8|confirmed',
+        'role' => 'required|string|max:255',
+        'team_id' => 'nullable|exists:teams,id',
+    ]);
+
+    // Debugging hash
+    Log::info('Storing user with raw password', ['password' => $request->password]);
+
+    // Laat de setPasswordAttribute in het User model de hashing uitvoeren
+    User::create([
+        'name' => $validatedData['name'],
+        'email' => $validatedData['email'],
+        'password' => $request->password, // raw password, het model zal het hashen
+        'role' => $validatedData['role'],
+        'team_id' => $validatedData['team_id']
+    ]);
+
+    return redirect()->route('users.index')->with('success', 'Gebruiker succesvol aangemaakt');
+}
+
+
+    public function edit(User $user)
+    {
+        $teams = Team::all();
+        return view('users.edit', compact('user', 'teams'));
+    }
+
     public function update(Request $request, User $user)
     {
         $validatedData = $request->validate([
@@ -49,32 +83,9 @@ class UserController extends Controller
         return redirect()->route('dashboard')->with('success', 'Profiel bijgewerkt');
     }
 
-
     public function destroy(User $user)
     {
         $user->delete();
         return redirect()->route('users.index')->with('success', 'Gebruiker succesvol verwijderd');
-    }
-
-    public function create()
-    {
-        $teams = Team::all();
-        return view('users.create', compact('teams'));
-    }
-
-    public function store(Request $request)
-    {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|string|max:255',
-            'team_id' => 'nullable|exists:teams,id',
-        ]);
-
-        $validatedData['password'] = Hash::make($validatedData['password']);
-        User::create($validatedData);
-
-        return redirect()->route('users.index')->with('success', 'Gebruiker succesvol aangemaakt');
     }
 }

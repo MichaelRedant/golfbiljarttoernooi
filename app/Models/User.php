@@ -1,11 +1,12 @@
 <?php
-
 namespace App\Models;
 
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
@@ -40,8 +41,9 @@ class User extends Authenticatable
     }
 
     public function setPasswordAttribute($password)
-{
-    $this->attributes['password'] = bcrypt($password);
+    {
+        Log::info('Hashing password within User model', ['password' => $password]);
+        $this->attributes['password'] = Hash::make($password);
+    }
 }
 
-}

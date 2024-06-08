@@ -21,7 +21,7 @@
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title"><i class="fas fa-calendar-alt"></i> Wedstrijden</h5>
-                    @if(isset($divisions) && $divisions->isNotEmpty())
+                    @if(isset($divisions) && $divisions->isNotEmpty() && isset($currentSeason))
                         <a href="{{ route('games.create', ['division_id' => $divisions->first()->id, 'season_id' => $currentSeason->id]) }}" class="btn btn-outline-secondary d-block mb-2">
                             <i class="fas fa-calendar-plus"></i> Plan Wedstrijd
                         </a>
@@ -30,6 +30,8 @@
                                 <i class="fas fa-eye"></i> Bekijk Wedstrijden van {{ $division->name }}
                             </a>
                         @endforeach
+                    @else
+                        <p>Geen seizoenen of divisies beschikbaar.</p>
                     @endif
                 </div>
             </div>
