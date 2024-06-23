@@ -70,6 +70,7 @@ class Kernel extends HttpKernel
         'ensureTeamIsAuthorized' => \App\Http\Middleware\EnsureTeamIsAuthorized::class,
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'superadmin' => \App\Http\Middleware\SuperAdminMiddleware::class,
+        'check.resources' => \App\Http\Middleware\CheckResourcesAvailability::class,
         // bestaande middlewares...
     ];
     

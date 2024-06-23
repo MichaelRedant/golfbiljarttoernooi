@@ -43,17 +43,22 @@ class GameController extends Controller
     }
 
     public function create(Request $request, $division_id = null, $season_id = null)
-{
-    $divisions = Division::all();
-    $teams = Team::all();
-    $seasons = Season::all();
-    $latestSeason = Season::latest('id')->first();
-
-    $selectedDivisionId = $division_id ?? $divisions->first()->id ?? null;
-    $selectedSeasonId = $season_id ?? $latestSeason->id;
-
-    return view('games.create', compact('divisions', 'teams', 'seasons', 'selectedDivisionId', 'selectedSeasonId', 'latestSeason'));
-}
+    {
+        $divisions = Division::all();
+        $teams = Team::all();
+        $seasons = Season::all();
+        $latestSeason = Season::latest('id')->first();
+    
+        if ($divisions->isEmpty() || $teams->isEmpty() || $seasons->isEmpty()) {
+            return redirect()->route('home')->withErrors(['msg' => 'Er zijn geen divisies, teams of seizoenen beschikbaar om een wedstrijd aan te maken.']);
+        }
+    
+        $selectedDivisionId = $division_id ?? $divisions->first()->id ?? null;
+        $selectedSeasonId = $season_id ?? $latestSeason->id;
+    
+        return view('games.create', compact('divisions', 'teams', 'seasons', 'selectedDivisionId', 'selectedSeasonId', 'latestSeason'));
+    }
+    
 
 
 
