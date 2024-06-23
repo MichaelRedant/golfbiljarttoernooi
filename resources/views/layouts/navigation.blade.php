@@ -40,8 +40,20 @@
                 </li>
                 @auth
                     @if(Auth::user()->role == 'admin')
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('dashboard') }}">Admin Dashboard</a>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownAdminDashboard" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Dashboard
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdownAdminDashboard">
+                                <a class="dropdown-item" href="{{ route('dashboard') }}">Admin Dashboard</a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="{{ route('players.create') }}">Nieuwe Speler Toevoegen</a>
+                                <a class="dropdown-item" href="{{ route('teams.create') }}">Nieuw Team Toevoegen</a>
+                                <a class="dropdown-item" href="{{ route('divisions.create') }}">Nieuwe Divisie Toevoegen</a>
+                                <a class="dropdown-item" href="{{ route('clubs.create') }}">Nieuwe Club Toevoegen</a>
+                                <a class="dropdown-item" href="{{ route('seasons.create') }}">Nieuw Seizoen Toevoegen</a>
+                                <a class="dropdown-item" href="{{ route('game.create') }}">Nieuwe Wedstrijd</a>
+                            </div>
                         </li>
                     @endif
                 @endauth
@@ -54,14 +66,6 @@
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownMenuLink">
                         <a class="dropdown-item" href="{{ route('dashboard') }}">Dashboard</a>
-                        @if(Auth::user()->role == 'admin')
-                            <a class="dropdown-item" href="{{ route('players.create') }}">Nieuwe Speler Toevoegen</a>
-                            <a class="dropdown-item" href="{{ route('teams.create') }}">Nieuw Team Toevoegen</a>
-                            <a class="dropdown-item" href="{{ route('divisions.create') }}">Nieuwe Divisie Toevoegen</a>
-                            <a class="dropdown-item" href="{{ route('clubs.create') }}">Nieuwe Club Toevoegen</a>
-                            <a class="dropdown-item" href="{{ route('seasons.create') }}">Nieuw Seizoen Toevoegen</a>
-                            <a class="dropdown-item" href="{{ route('games.create', ['division_id' => $divisions->first()->id ?? null, 'season_id' => $currentSeason->id ?? null]) }}">Nieuwe Wedstrijd</a>
-                        @endif
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                             Uitloggen
@@ -81,9 +85,9 @@
         </div>
     </div>
 </nav>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Verwijder de nachtmodus functie
         document.querySelectorAll('.nav-item.dropdown').forEach(function(dropdown) {
             dropdown.addEventListener('mouseover', function() {
                 const dropdownMenu = this.querySelector('.dropdown-menu');

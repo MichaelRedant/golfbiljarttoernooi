@@ -18,16 +18,29 @@
             <!-- Verplaats de knoppen naar een centrale positie en voeg marges toe -->
             <div class="row justify-content-center my-4">
                 <div class="col-md-8 d-flex flex-wrap justify-content-center gap-3">
-                    <a href="{{ route('divisions.index') }}" class="btn btn-primary animated-btn">Divisies</a>
-                    <a href="{{ route('teams.index') }}" class="btn btn-primary animated-btn">Teams</a>
-                    <a href="{{ route('players.index') }}" class="btn btn-primary animated-btn">Spelers</a>
-                    <a href="{{ route('rankings.index') }}" class="btn btn-primary animated-btn">Rankings</a>
-                    <a href="{{ route('clubs.index') }}" class="btn btn-primary animated-btn">Clubs</a>
-                    <a href="{{ route('live-scores') }}" class="btn btn-primary animated-btn">Live Wedstrijden</a>
+                    <a href="{{ route('divisions.index') }}" class="btn btn-primary animated-btn m-3 ">Divisies</a>
+                    <a href="{{ route('teams.index') }}" class="btn btn-primary animated-btn m-3">Teams</a>
+                    <a href="{{ route('players.index') }}" class="btn btn-primary animated-btn m-3">Spelers</a>
+                    <a href="{{ route('rankings.index') }}" class="btn btn-primary animated-btn m-3">Rankings</a>
+                    <a href="{{ route('clubs.index') }}" class="btn btn-primary animated-btn m-3">Clubs</a>
+                    <a href="{{ route('live-scores') }}" class="btn btn-primary animated-btn m-3">Live Wedstrijden</a>
                 </div>
             </div>
+            <section id="news-section" class="mt-5">
+                <h2>Laatste Nieuws</h2>
+                <div class="news-cards">
+                    @forelse ($news as $newsItem)
+                        <div class="news-card">
+                            <h3>{{ $newsItem->title }}</h3>
+                            <p>{{ Str::limit($newsItem->content, 150) }}</p>
+                        </div>
+                    @empty
+                        <p>Geen nieuws beschikbaar.</p>
+                    @endforelse
+                </div>
+            </section>
             
-            <div class="card mb-4">
+            <div class="card mb-4 mt-4">
                 <div class="card-header">
                     <h2 class="card-title">Wat is Golfbiljart?</h2>
                 </div>
@@ -52,6 +65,8 @@
                     </ul>
                 </div>
             </div>
+
+           
         </div>
     </div>
     <div class="row">
@@ -66,4 +81,34 @@
         </div>
     </div>
 </div>
+
+<style>
+    .news-cards {
+        display: flex;
+        gap: 20px;
+        overflow: hidden;
+    }
+    .news-card {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+    .news-card:hover {
+        transform: scale(1.05);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const newsCards = document.querySelectorAll('.news-card');
+        newsCards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = 1;
+                card.style.transform = 'translateY(0)';
+            }, index * 200);
+        });
+    });
+</script>
 @endsection

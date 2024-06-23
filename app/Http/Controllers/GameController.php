@@ -42,17 +42,23 @@ class GameController extends Controller
         return view('games.index', compact('upcomingGames', 'pastGames', 'divisions', 'seasons', 'currentSeasonId'));
     }
 
-public function create(Request $request, $division_id = null, $season_id = null)
+    public function create(Request $request, $division_id = null, $season_id = null)
 {
     $divisions = Division::all();
     $teams = Team::all();
     $seasons = Season::all();
+    $latestSeason = Season::latest('id')->first();
 
     $selectedDivisionId = $division_id ?? $divisions->first()->id ?? null;
-    $selectedSeasonId = $season_id ?? Season::latest('id')->first()->id;
+    $selectedSeasonId = $season_id ?? $latestSeason->id;
 
-    return view('games.create', compact('divisions', 'teams', 'seasons', 'selectedDivisionId', 'selectedSeasonId'));
+    return view('games.create', compact('divisions', 'teams', 'seasons', 'selectedDivisionId', 'selectedSeasonId', 'latestSeason'));
 }
+
+
+
+
+    
 
 
 public function store(Request $request)
@@ -61,11 +67,11 @@ public function store(Request $request)
     Log::info('Request data: ', $request->all());
 
     $validatedData = $request->validate([
-        'home_team_id' => 'nullable|exists:teams,id',
-        'away_team_id' => 'nullable|exists:teams,id',
-        'bye_team_id' => 'nullable|exists:teams,id',
-        'date' => 'required|date',
+        'home_team_id' => 'required|exists:teams,id',
+        'away_team_id' => 'required|exists:teams,id',
+        'division_id' => 'required|exists:divisions,id',
         'season_id' => 'required|exists:seasons,id',
+        'date' => 'required|date',
         'scores' => 'sometimes|array',
         'scores.*.home_player' => 'nullable|exists:players,id',
         'scores.*.away_player' => 'nullable|exists:players,id',
@@ -80,30 +86,17 @@ public function store(Request $request)
 
     $homeTeam = Team::find($validatedData['home_team_id']);
     $awayTeam = Team::find($validatedData['away_team_id']);
-    $byeTeam = Team::find($validatedData['bye_team_id']);
+    $divisionId = $validatedData['division_id'];
 
-    if ($byeTeam) {
-        $validatedData['home_team_id'] = null;
-        $validatedData['away_team_id'] = null;
-        $validatedData['division_id'] = $byeTeam->division_id;
-    } else {
-        if ($homeTeam && $awayTeam) {
-            $divisionId = $homeTeam->division_id == $awayTeam->division_id ? $homeTeam->division_id : null;
-            if (!$divisionId) {
-                Log::error('Teams are not in the same division');
-                return back()->withErrors(['msg' => 'Teams must be in the same division']);
-            }
-            $validatedData['division_id'] = $divisionId;
-        } else {
-            Log::error('Invalid teams provided');
-            return back()->withErrors(['msg' => 'Invalid teams']);
-        }
+    if ($homeTeam->division_id != $divisionId || $awayTeam->division_id != $divisionId) {
+        Log::error('Teams are not in the selected division');
+        return back()->withErrors(['msg' => 'Teams must be in the selected division']);
     }
 
     $game = Game::create($validatedData);
     Log::info('Game created: ', ['game_id' => $game->id]);
 
-    if (!$byeTeam && isset($validatedData['scores'])) {
+    if (isset($validatedData['scores'])) {
         $homeWins = 0;
         $awayWins = 0;
 
@@ -147,8 +140,6 @@ public function store(Request $request)
 }
 
 
-
-
 public function edit(Game $game)
 {
     Log::info('Game data:', $game->toArray());
@@ -163,42 +154,40 @@ public function edit(Game $game)
 }
 
 
+
+
 public function update(Request $request, Game $game)
 {
     Log::info('Update method called');
-    Log::info('Request data: ', $request->all());
+    Log::info('Request data:', $request->all());
 
     $validatedData = $request->validate([
-        'home_team_id' => 'required|exists:teams,id',
-        'away_team_id' => 'required|exists:teams,id',
         'date' => 'required|date',
-        'season_id' => 'required|exists:seasons,id',
-        'home_score' => 'required|integer',
-        'away_score' => 'required|integer',
-        'home_captain' => 'nullable|exists:players,id',
-        'away_captain' => 'nullable|exists:players,id',
-        'home_reserve' => 'nullable|exists:players,id',
-        'away_reserve' => 'nullable|exists:players,id',
-        'forfeit_team' => 'nullable|in:home,away',
+        'home_team_id' => 'nullable|exists:teams,id',
+        'away_team_id' => 'nullable|exists:teams,id',
+        'bye_team_id' => 'nullable|exists:teams,id',
+        'home_score' => 'nullable|integer',
+        'away_score' => 'nullable|integer',
     ]);
 
-    if ($request->filled('forfeit_team')) {
-        $validatedData['forfeit_by'] = $validatedData['forfeit_team'];
-        $validatedData['forfeit_confirmed'] = true;
-
-        if ($validatedData['forfeit_team'] == 'home') {
-            $validatedData['home_score'] = 0;
-            $validatedData['away_score'] = 3;  // assuming 3 as default win score
-        } elseif ($validatedData['forfeit_team'] == 'away') {
-            $validatedData['home_score'] = 3;
-            $validatedData['away_score'] = 0;
-        }
+    if ($request->filled('is_bye')) {
+        $validatedData['home_team_id'] = null;
+        $validatedData['away_team_id'] = null;
+        $validatedData['bye_team_id'] = $validatedData['bye_team_id'];
+    } else {
+        $validatedData['bye_team_id'] = null;
     }
 
     $game->update($validatedData);
 
-    return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol bijgewerkt!');
+    return redirect()->route('games.for-division-season', ['division_id' => $game->division_id, 'season_id' => $game->season_id])->with('success', 'Wedstrijd succesvol bijgewerkt!');
 }
+
+
+
+
+
+
 
 public function requestApproval(Game $game)
 {
@@ -495,26 +484,36 @@ public function showGamesForDivisionAndSeason(Request $request, $division_id, $s
         return redirect()->route('dashboard')->with('error', 'Season not found.');
     }
 
-    // Fetch all games for the current division and selected season
-    $games = Game::with(['homeTeam', 'awayTeam'])
-                 ->where('division_id', $division_id)
-                 ->where('season_id', $season->id)
-                 ->orderBy('date', 'asc')
-                 ->get()
-                 ->groupBy(function($game) {
-                     return \Carbon\Carbon::parse($game->date)->format('d-m-Y');
-                 });
+    $currentDateTime = Carbon::now();
+
+    // Fetch upcoming games for the current division and selected season
+    $upcomingGames = Game::with(['homeTeam', 'awayTeam'])
+                         ->where('division_id', $division_id)
+                         ->where('season_id', $season->id)
+                         ->where('date', '>=', $currentDateTime)
+                         ->whereNull('bye_team_id')
+                         ->orderBy('date', 'asc')
+                         ->get()
+                         ->groupBy(function($game) {
+                             return \Carbon\Carbon::parse($game->date)->format('d-m-Y');
+                         });
 
     // Fetch past games
     $pastGames = Game::with(['homeTeam', 'awayTeam'])
                      ->where('division_id', $division_id)
                      ->where('season_id', $season->id)
-                     ->where('date', '<', now())
+                     ->where('date', '<', $currentDateTime)
+                     ->whereNull('bye_team_id')
                      ->orderBy('date', 'desc')
                      ->get();
 
-    return view('games.list', compact('division', 'games', 'seasons', 'season', 'pastGames'));
+    return view('games.list', compact('division', 'upcomingGames', 'pastGames', 'seasons', 'season', 'currentDateTime'));
 }
+
+
+
+
+
 
 
 
@@ -622,10 +621,10 @@ function updateBelles(Game $game, array $bellesData)
 }
 
     
-    public function destroy(Game $game)
-    {
-        $game->delete();
-        return redirect()->route('games.index');
-    }
+public function destroy(Game $game, Request $request)
+{
+    $game->delete();
+    return redirect($request->headers->get('referer'))->with('success', 'Wedstrijd succesvol verwijderd.');
+}
     
 }

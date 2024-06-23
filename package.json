@@ -21,6 +21,7 @@
         "@fullcalendar/interaction": "^6.1.10",
         "@fullcalendar/timegrid": "^6.1.10",
         "laravel-echo": "^1.16.1",
-        "pusher-js": "^8.4.0-rc2"
+        "pusher-js": "^8.4.0-rc2",
+        "tinymce": "^7.1.2"
     }
 }

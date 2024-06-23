@@ -21,20 +21,13 @@
         <div class="form-group mb-3">
             <label for="team_id"><i class="fas fa-users"></i> Team:</label>
             <select name="team_id" class="form-control" id="team_id">
+                <option value="">Selecteer een team (optioneel)</option>
                 @foreach ($teams as $team)
                     <option value="{{ $team->id }}" {{ (old('team_id', $player->team_id) == $team->id) ? 'selected' : '' }}>{{ $team->name }}</option>
                 @endforeach
             </select>
         </div>
 
-        <div class="form-group mb-3">
-            <label for="division_id"><i class="fas fa-layer-group"></i> Divisie:</label>
-            <select name="division_id" class="form-control" id="division_id">
-                @foreach ($divisions as $division)
-                    <option value="{{ $division->id }}" {{ (old('division_id', $player->division_id) == $division->id) ? 'selected' : '' }}>{{ $division->name }}</option>
-                @endforeach
-            </select>
-        </div>
 
         <div class="d-flex justify-content-between">
             <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Opslaan</button>

@@ -1,4 +1,3 @@
-{{-- resources/views/teams/show.blade.php --}}
 @extends('layouts.app')
 
 @section('content')
@@ -24,6 +23,7 @@
         </div>
         <div class="card-body">
             @if(!$error)
+                <p><strong><i class="fas fa-building"></i> Club:</strong> <a href="{{ route('clubs.show', $team->club->id) }}">{{ $team->club->name }}</a></p>
                 <form action="{{ route('teams.show', $team) }}" method="GET">
                     <div class="form-group">
                         <label for="season_id"><i class="fas fa-calendar-alt"></i> Kies een seizoen:</label>
@@ -35,12 +35,17 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label for="division_id"><i class="fas fa-layer-group"></i> Kies een divisie:</label>
+                        <select id="division_id" name="division_id" class="form-control" onchange="this.form.submit()">
+                            @foreach ($divisions as $division)
+                                <option value="{{ $division->id }}" {{ $division->id == $currentDivisionId ? 'selected' : '' }}>
+                                    {{ $division->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </form>
-                @if ($team->division)
-                    <p><strong><i class="fas fa-layer-group"></i> Divisie:</strong> {{ $team->division->name }}</p>
-                @else
-                    <p><strong><i class="fas fa-layer-group"></i> Divisie:</strong> Geen divisie</p>
-                @endif
                 <p><strong><i class="fas fa-trophy"></i> Aantal Gewonnen:</strong> {{ $currentTeamStanding['games_won'] ?? 'N/A' }}</p>
                 <p><strong><i class="fas fa-thumbs-down"></i> Aantal Verloren:</strong> {{ $currentTeamStanding['games_lost'] ?? 'N/A' }}</p>
                 <p><strong><i class="fas fa-handshake"></i> Aantal Gelijk:</strong> {{ $currentTeamStanding['games_draw'] ?? 'N/A' }}</p>

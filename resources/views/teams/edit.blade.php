@@ -7,6 +7,16 @@
             <h3 class="mb-0">Team Bewerken</h3>
         </div>
         <div class="card-body">
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <form action="{{ route('teams.update', $team) }}" method="POST">
                 @csrf
                 @method('PUT')
@@ -15,18 +25,20 @@
                     <input type="text" name="name" class="form-control" id="name" value="{{ $team->name }}" required>
                 </div>
                 <div class="mb-3">
-                    <label for="division_id" class="form-label">Divisie:</label>
-                    <select name="division_id" class="form-control" id="division_id" required>
-                        @foreach ($divisions as $division)
-                            <option value="{{ $division->id }}" {{ $team->division_id == $division->id ? 'selected' : '' }}>
-                                {{ $division->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="mb-3">
                     <label for="location" class="form-label">Locatie:</label>
                     <input type="text" name="location" class="form-control" id="location" value="{{ $team->location }}">
+                </div>
+                <div class="mb-3">
+                    <label for="division_ids" class="form-label">Divisies:</label>
+                    <div id="division_ids">
+                        @foreach ($divisions as $division)
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="division_{{ $division->id }}" name="division_ids[]" value="{{ $division->id }}"
+                                    {{ $team->divisions->contains($division->id) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="division_{{ $division->id }}">{{ $division->name }}</label>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
                 <button type="submit" class="btn btn-primary">Opslaan</button>
             </form>
@@ -85,4 +97,10 @@
         </div>
     </div>
 </div>
+
+<style>
+    .form-check {
+        margin-bottom: 10px;
+    }
+</style>
 @endsection

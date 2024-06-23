@@ -14,6 +14,10 @@
                     <input type="text" name="name" class="form-control" id="name" placeholder="Teamnaam" required>
                 </div>
                 <div class="mb-3">
+                    <label for="location" class="form-label">Locatie</label>
+                    <input type="text" name="location" class="form-control" id="location" placeholder="Locatie">
+                </div>
+                <div class="mb-3">
                     <label for="club_id" class="form-label">Club</label>
                     <select name="club_id" class="form-select" id="club_id" required>
                         <option value="">Selecteer een club</option>
@@ -25,16 +29,16 @@
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label for="division_id" class="form-label">Divisie</label>
-                    <select name="division_id" class="form-select" id="division_id" required>
-                        <option value="">Selecteer een divisie</option>
+                    <label for="division_ids" class="form-label">Divisies</label>
+                    <div id="division_ids">
                         @foreach ($divisions as $division)
-                            <option value="{{ $division->id }}">{{ $division->name }}</option>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="division_{{ $division->id }}" name="division_ids[]" value="{{ $division->id }}">
+                                <label class="form-check-label" for="division_{{ $division->id }}">{{ $division->name }}</label>
+                            </div>
                         @endforeach
-                    </select>
+                    </div>
                 </div>
-               
-                <input type="hidden" name="players" id="selected-players-input">
                 <div class="d-grid">
                     <button type="submit" class="btn btn-primary">Opslaan</button>
                 </div>
@@ -44,79 +48,8 @@
 </div>
 
 <style>
-    .dual-listbox {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .dual-listbox-column {
-        flex: 1;
-        padding: 10px;
-    }
-    .dual-listbox-controls {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
-    .list-group {
-        height: 200px;
-        overflow-y: auto;
-    }
-    .list-group-item {
-        cursor: pointer;
-    }
-    .list-group-item.selected {
-        background-color: #007bff;
-        color: white;
-    }
-    .team-header {
-        background-color: #f8f9fa;
-        font-weight: bold;
-        cursor: default;
+    .form-check {
+        margin-bottom: 10px;
     }
 </style>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const availablePlayers = document.getElementById('available-players');
-        const selectedPlayers = document.getElementById('selected-players');
-        const selectedPlayersInput = document.getElementById('selected-players-input');
-
-        availablePlayers.addEventListener('click', function (e) {
-            if (e.target && e.target.nodeName == "LI" && !e.target.classList.contains('team-header')) {
-                e.target.classList.toggle('selected');
-            }
-        });
-
-        selectedPlayers.addEventListener('click', function (e) {
-            if (e.target && e.target.nodeName == "LI") {
-                e.target.classList.toggle('selected');
-            }
-        });
-
-        document.getElementById('move-right').addEventListener('click', function () {
-            moveItems(availablePlayers, selectedPlayers);
-        });
-
-        document.getElementById('move-left').addEventListener('click', function () {
-            moveItems(selectedPlayers, availablePlayers);
-        });
-
-        function moveItems(from, to) {
-            Array.from(from.querySelectorAll('.selected')).forEach(function (item) {
-                item.classList.remove('selected');
-                to.appendChild(item);
-            });
-            updateSelectedPlayersInput();
-        }
-
-        function updateSelectedPlayersInput() {
-            const selectedIds = Array.from(selectedPlayers.querySelectorAll('li')).map(function (item) {
-                return item.getAttribute('data-id');
-            });
-            selectedPlayersInput.value = selectedIds.join(',');
-        }
-    });
-</script>
 @endsection

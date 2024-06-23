@@ -12,7 +12,6 @@ class Player extends Model
         'first_name',
         'last_name',
         'team_id',
-        'division_id',
         'photo',
         'thumbnail',
         'matches_won',
@@ -27,9 +26,9 @@ class Player extends Model
         return $this->belongsTo(Team::class);
     }
 
-    public function division()
+    public function divisions()
     {
-        return $this->belongsTo(Division::class);
+        return $this->belongsToMany(Division::class, 'player_division');
     }
 
     public function games()
@@ -37,13 +36,10 @@ class Player extends Model
         return $this->belongsToMany(Game::class, 'game_player')
                     ->withPivot(['manche_1_score', 'manche_2_score', 'belle_score', 'is_belle_winner']);
     }
-    // Player model
 
-public function seasons()
-{
-    // Dit haalt alle unieke seizoenen op waarin de speler heeft deelgenomen via games.
-    return $this->games()->with('season')->get()->pluck('season')->unique('id');
-}
-
-
+    public function seasons()
+    {
+        // Dit haalt alle unieke seizoenen op waarin de speler heeft deelgenomen via games.
+        return $this->games()->with('season')->get()->pluck('season')->unique('id');
+    }
 }

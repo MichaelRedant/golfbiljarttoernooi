@@ -83,13 +83,12 @@ public function create()
     return view('players.create', compact('divisions', 'teams'));
 }
 
-    public function store(Request $request)
+public function store(Request $request)
 {
     $request->validate([
         'first_name' => 'required|string|max:255',
         'last_name' => 'required|string|max:255',
-        'team_id' => 'required|exists:teams,id',
-        'division_id' => 'required|exists:divisions,id',
+        'team_id' => 'nullable|exists:teams,id', // Nullable gemaakt
         'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Maak 'photo' nullable en pas validatie aan
     ]);
 
@@ -109,13 +108,13 @@ public function create()
         'first_name' => $request->first_name,
         'last_name' => $request->last_name,
         'team_id' => $request->team_id,
-        'division_id' => $request->division_id,
         'photo' => $imageName, // Kan null zijn
         'thumbnail' => $thumbnailName, // Kan null zijn
     ]);
 
     return redirect()->route('players.index')->with('success', 'Speler succesvol toegevoegd.');
 }
+
 
 
 public function show(Player $player, Request $request)
@@ -182,40 +181,38 @@ public function show(Player $player, Request $request)
 }
 
 
-    public function update(Request $request, Player $player)
-    {
-        $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'team_id' => 'required|exists:teams,id',
-            'division_id' => 'required|exists:divisions,id',
-            'photo' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
-        ]);
+   public function update(Request $request, Player $player)
+{
+    $request->validate([
+        'first_name' => 'required|string|max:255',
+        'last_name' => 'required|string|max:255',
+        'team_id' => 'nullable|exists:teams,id', // Nullable gemaakt
+        'photo' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
+    ]);
 
-        // Handle file upload
-        if ($request->hasFile('photo')) {
-            $image = $request->file('photo');
-            $imageName = time() . '.' . $image->getClientOriginalExtension();
-            $thumbnailName = 'thumbnail_' . $imageName;
-            $image->storeAs('public/photos', $imageName);
-            $image->storeAs('public/thumbnails', $thumbnailName);
-            // Remove old photo and thumbnail
-            Storage::delete(['public/photos/' . $player->photo, 'public/thumbnails/' . $player->thumbnail]);
-            $player->photo = $imageName;
-            $player->thumbnail = $thumbnailName;
-        }
-
-        $player->update([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'team_id' => $request->team_id,
-            'division_id' => $request->division_id,
-            'photo' => $imageName ?? $player->photo, // Keep the old photo if no new one uploaded
-            'thumbnail' => $thumbnailName ?? $player->thumbnail, // Keep the old thumbnail if no new one uploaded
-        ]);
-
-        return redirect()->route('players.index')->with('success', 'Speler succesvol bijgewerkt.');
+    // Handle file upload
+    if ($request->hasFile('photo')) {
+        $image = $request->file('photo');
+        $imageName = time() . '.' . $image->getClientOriginalExtension();
+        $thumbnailName = 'thumbnail_' . $imageName;
+        $image->storeAs('public/photos', $imageName);
+        $image->storeAs('public/thumbnails', $thumbnailName);
+        // Remove old photo and thumbnail
+        Storage::delete(['public/photos/' . $player->photo, 'public/thumbnails/' . $player->thumbnail]);
+        $player->photo = $imageName;
+        $player->thumbnail = $thumbnailName;
     }
+
+    $player->update([
+        'first_name' => $request->first_name,
+        'last_name' => $request->last_name,
+        'team_id' => $request->team_id,
+        'photo' => $imageName ?? $player->photo, // Keep the old photo if no new one uploaded
+        'thumbnail' => $thumbnailName ?? $player->thumbnail, // Keep the old thumbnail if no new one uploaded
+    ]);
+
+    return redirect()->route('players.index')->with('success', 'Speler succesvol bijgewerkt.');
+}
 
     public function getTeams(Request $request)
 {

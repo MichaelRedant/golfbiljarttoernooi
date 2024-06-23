@@ -11,9 +11,9 @@ class Team extends Model
 
     protected $fillable = ['name', 'captain_id', 'reserve_id', 'division_id', 'club_id', 'location'];
 
-    public function division()
+    public function divisions()
     {
-        return $this->belongsTo(Division::class);
+        return $this->belongsToMany(Division::class, 'division_team', 'team_id', 'division_id');
     }
     
     public function gamesHome()
@@ -103,6 +103,43 @@ class Team extends Model
         })->sortByDesc('points')->values();
 
         return $standings;
+    }
+
+    public function calculateStatsForSeasonAndDivision($seasonId, $divisionId)
+    {
+        $gamesWon = 0;
+        $gamesLost = 0;
+        $gamesDraw = 0;
+
+        $homeGames = $this->gamesHome()->where('season_id', $seasonId)->where('division_id', $divisionId)->get();
+        $awayGames = $this->gamesAway()->where('season_id', $seasonId)->where('division_id', $divisionId)->get();
+
+        foreach ($homeGames as $game) {
+            if ($game->home_score > $game->away_score) {
+                $gamesWon++;
+            } elseif ($game->home_score == $game->away_score) {
+                $gamesDraw++;
+            } else {
+                $gamesLost++;
+            }
+        }
+
+        foreach ($awayGames as $game) {
+            if ($game->away_score > $game->home_score) {
+                $gamesWon++;
+            } elseif ($game->away_score == $game->home_score) {
+                $gamesDraw++;
+            } else {
+                $gamesLost++;
+            }
+        }
+
+        return [
+            'games_won' => $gamesWon,
+            'games_lost' => $gamesLost,
+            'games_draw' => $gamesDraw,
+            'points' => $gamesWon * 3 + $gamesDraw
+        ];
     }
 
     public function games()

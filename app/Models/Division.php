@@ -14,7 +14,7 @@ class Division extends Model
 
     public function teams()
     {
-        return $this->belongsToMany(Team::class);
+        return $this->belongsToMany(Team::class, 'division_team', 'division_id', 'team_id');
     }
 
     public function games()

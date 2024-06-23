@@ -5,7 +5,7 @@
     <div class="card shadow-sm p-3">
         <h1>Nieuwe Speler Toevoegen</h1>
 
-        <form action="{{ route('players.store') }}" method="POST">
+        <form action="{{ route('players.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="form-group">
                 <label for="first_name">Voornaam:</label>
@@ -15,26 +15,16 @@
                 <label for="last_name">Achternaam:</label>
                 <input type="text" name="last_name" class="form-control" id="last_name" required>
             </div>
-            
             <div class="form-group">
-                <label for="division_id">Divisie:</label>
-                <select name="division_id" class="form-control" id="division_id" required>
-                    <option value="">Selecteer een divisie</option>
-                    @foreach ($divisions as $division)
-                        <option value="{{ $division->id }}">{{ $division->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="team">Team:</label>
-                <select name="team_id" class="form-control" id="team" required>
-                    <option value="">Selecteer een team</option>
+                <label for="team_id">Team:</label>
+                <select name="team_id" class="form-control" id="team_id">
+                    <option value="">Selecteer een team (optioneel)</option>
                     @foreach($teams as $team)
                         <option value="{{ $team->id }}">{{ $team->name }}</option>
                     @endforeach
                 </select>
             </div>
-            
+           
             <button type="submit" class="btn btn-primary">Opslaan</button>
         </form>
     </div>

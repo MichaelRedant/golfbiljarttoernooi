@@ -65,4 +65,9 @@ class Game extends Model
     {
         return $this->belongsTo(Division::class, 'division_id');
     }
+
+    public function scores()
+    {
+        return $this->hasMany(Score::class);
+    }
 }

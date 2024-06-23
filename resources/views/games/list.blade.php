@@ -1,5 +1,3 @@
-<!-- resources/views/games/list.blade.php -->
-
 @extends('layouts.app')
 
 @section('content')
@@ -10,7 +8,7 @@
         </div>
     @endif
 
-    <h1>Wedstrijden voor Divisie: {{ $division->name }} - Seizoen: {{ $season->name }}</h1>
+    <h1>Wedstrijden voor: {{ $division->name }} - {{ $season->name }}</h1>
 
     <!-- Dropdown for season selection -->
     <div class="mb-4">
@@ -26,14 +24,15 @@
 
     <!-- Button to create a new game -->
     <div class="mb-4">
-        <a href="{{ route('games.create', ['division_id' => $division->id, 'season_id' => $season->id]) }}" class="btn btn-success">
-            <i class="fas fa-plus-circle"></i> Nieuwe Wedstrijd Toevoegen
+        <a href="{{ route('games.create', ['division_id' => $division->id, 'season_id' => $season->id]) }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Wedstrijd maken
         </a>
+        
     </div>
 
-    @if ($games->isNotEmpty())
+    @if ($upcomingGames->isNotEmpty())
         @php
-            $matchDays = $games->keys();
+            $matchDays = $upcomingGames->keys()->sortDesc();
         @endphp
         @foreach ($matchDays as $matchDay)
             <div class="card mb-4">
@@ -41,45 +40,52 @@
                     {{ \Carbon\Carbon::parse($matchDay)->format('d-m-Y') }}
                 </div>
                 <ul class="list-group list-group-flush">
-                    @foreach ($games[$matchDay] as $game)
+                    @foreach ($upcomingGames[$matchDay] as $game)
                         <li class="list-group-item">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     @if ($game->homeTeam)
                                         <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
                                     @else
-                                        Bye - {{ $game->byeTeam ? $game->byeTeam->name : 'No Home Team' }}
+                                        Bye - {{ $game->byeTeam ? $game->byeTeam->name : 'Geen Thuis Team' }}
                                     @endif
                                     vs
                                     @if ($game->awayTeam)
                                         <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
                                     @else
-                                        Bye - {{ $game->byeTeam ? $game->byeTeam->name : 'No Away Team' }}
+                                        Bye - {{ $game->byeTeam ? $game->byeTeam->name : 'Geen Uit Team' }}
                                     @endif
                                 </div>
-                                @if ($game->homeTeam && $game->awayTeam)
-                                    <div>
+                                <div>
+                                    @if ($game->bye_team_id)
+                                        <button class="btn btn-sm btn-secondary" disabled>
+                                            <i class="fas fa-play-circle"></i> Wedstrijd Spelen
+                                        </button>
+                                        <button class="btn btn-sm btn-info" disabled>
+                                            <i class="fas fa-pencil-alt"></i> Wedstrijd Bewerken
+                                        </button>
+                                    @else
                                         @if (!$game->played)
                                             <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-secondary">
                                                 <i class="fas fa-play-circle"></i> Wedstrijd Spelen
                                             </a>
-                                        @else
-                                            <a href="{{ route('games.edit', $game->id) }}" class="btn btn-sm btn-info">
-                                                <i class="fas fa-pencil-alt"></i> Wedstrijd Bewerken
-                                            </a>
                                         @endif
-                                        <a href="{{ route('games.show', $game->id) }}" class="btn btn-sm btn-primary">
-                                            <i class="fas fa-eye"></i> Bekijk
+                                        <a href="{{ route('games.edit', $game->id) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-pencil-alt"></i> Wedstrijd Bewerken
                                         </a>
-                                        <form action="{{ route('games.destroy', $game->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Weet je zeker dat je deze wedstrijd wilt verwijderen?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger">
-                                                <i class="fas fa-trash-alt"></i> Verwijder
-                                            </button>
-                                        </form>
-                                    </div>
-                                @endif
+                                    @endif
+                                    <a href="{{ $game->played ? route('games.show', $game->id) : '#' }}" class="btn btn-sm btn-primary {{ !$game->played ? 'disabled' : '' }}">
+                                        <i class="fas fa-eye"></i> Bekijk
+                                    </a>
+                                    <form action="{{ route('games.destroy', $game->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Weet je zeker dat je deze wedstrijd wilt verwijderen?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <input type="hidden" name="redirect_to" value="{{ url()->current() }}">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash-alt"></i> Verwijder
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </li>
                     @endforeach
@@ -121,11 +127,23 @@
                             @endif
                         </td>
                         <td>{{ $game->home_score ?? '' }} : {{ $game->away_score ?? '' }}</td>
-                        @if ($game->homeTeam && $game->awayTeam)
-                            <td><a href="{{ route('games.show', $game->id) }}" class="btn btn-primary"><i class="fas fa-eye"></i> Wedstrijd bekijken</a></td>
-                        @else
-                            <td></td>
-                        @endif
+                        <td>
+                            @if ($game->homeTeam && $game->awayTeam)
+                                <a href="{{ route('games.show', $game->id) }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-eye"></i> Bekijk
+                                </a>
+                                <a href="{{ route('games.edit', $game->id) }}" class="btn btn-info btn-sm">
+                                    <i class="fas fa-pencil-alt"></i> Aanpassen
+                                </a>
+                            @else
+                                <button class="btn btn-primary btn-sm" disabled>
+                                    <i class="fas fa-eye"></i> Bekijk
+                                </button>
+                                <button class="btn btn-info btn-sm" disabled>
+                                    <i class="fas fa-pencil-alt"></i> Aanpassen
+                                </button>
+                            @endif
+                        </td>
                     </tr>
                 @endforeach
             </tbody>

@@ -96,8 +96,8 @@
                     <tr>
                         <th>Datum</th>
                         <th>Thuis Team</th>
-                        <th>Uit Team</th>
                         <th>Uitslag</th>
+                        <th>Uit Team</th>
                         <th>Actie</th>
                     </tr>
                 </thead>
@@ -109,8 +109,8 @@
                                     <tr>
                                         <td>{{ \Carbon\Carbon::parse($date)->format('d-m-Y') }}</td>
                                         <td><a href="{{ route('teams.show', $game->homeTeam->id ?? '#') }}">{{ $game->homeTeam ? $game->homeTeam->name : 'Bye' }}</a></td>
-                                        <td><a href="{{ route('teams.show', $game->awayTeam->id ?? '#') }}">{{ $game->awayTeam ? $game->awayTeam->name : 'Bye' }}</a></td>
                                         <td>{{ $game->home_score ?? '' }} : {{ $game->away_score ?? '' }}</td>
+                                        <td><a href="{{ route('teams.show', $game->awayTeam->id ?? '#') }}">{{ $game->awayTeam ? $game->awayTeam->name : 'Bye' }}</a></td>                                      
                                         <td><a href="{{ route('games.show', $game->id) }}" class="btn btn-primary"><i class="fas fa-eye"></i> Wedstrijd bekijken</a></td>
                                     </tr>
                                 @endif

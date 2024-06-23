@@ -22,10 +22,10 @@
                 <div class="card-body">
                     <h5 class="card-title"><i class="fas fa-calendar-alt"></i> Wedstrijden</h5>
                     @if(isset($divisions) && $divisions->isNotEmpty() && isset($currentSeason))
-                        <a href="{{ route('games.create', ['division_id' => $divisions->first()->id, 'season_id' => $currentSeason->id]) }}" class="btn btn-outline-secondary d-block mb-2">
-                            <i class="fas fa-calendar-plus"></i> Plan Wedstrijd
-                        </a>
                         @foreach($divisions as $division)
+                            <a href="{{ route('game.create', ['division_id' => $division->id, 'season_id' => $currentSeason->id]) }}" class="btn btn-outline-secondary d-block mb-2">
+                                <i class="fas fa-calendar-plus"></i> Plan Wedstrijd
+                            </a>
                             <a href="{{ route('games.for-division-season', ['division_id' => $division->id, 'season_id' => $currentSeason->id]) }}" class="btn btn-outline-secondary d-block mb-2">
                                 <i class="fas fa-eye"></i> Bekijk Wedstrijden van {{ $division->name }}
                             </a>
@@ -70,6 +70,21 @@
                     </a>
                     <a href="{{ route('players.index') }}" class="btn btn-outline-secondary d-block mb-2">
                         <i class="fas fa-user"></i> Spelers Beheren
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- New section for news management -->
+        <div class="col-md-12">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-newspaper"></i> Nieuwsbeheer</h5>
+                    <a href="{{ route('news.index') }}" class="btn btn-outline-secondary d-block mb-2">
+                        <i class="fas fa-eye"></i> Bekijk Nieuws
+                    </a>
+                    <a href="{{ route('news.create') }}" class="btn btn-outline-secondary d-block mb-2">
+                        <i class="fas fa-plus"></i> Voeg Nieuws Toe
                     </a>
                 </div>
             </div>
