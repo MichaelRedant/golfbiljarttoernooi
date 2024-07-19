@@ -36,7 +36,7 @@
 
     <footer class="footer">
         <div class="container">
-            <img src="{{ asset('images/Pixapop_black.webp') }}" alt="Pixapop Logo" class="footer-logo">
+            <img src="{{ asset('images/Pixapop_black.webp') }}" alt="Pixapop Logo" class="footer-logo" style="width: 300px; height: auto;">
             <p class="footer-text">Designed & created by <a href="https://pixapop.be" target="_blank">Pixapop webdesign</a> © {{ date('Y') }}</p>
         </div>
     </footer>

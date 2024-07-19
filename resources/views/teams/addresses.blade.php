@@ -2,7 +2,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
+<div class="container mt-5">
     <h1 class="mb-4">Locaties van Teams</h1>
     <select id="club-select" class="form-control mb-3">
         <option value="">Selecteer een club</option>

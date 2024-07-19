@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
+<div class="container mt-5">
     <h1 class="mb-4"><i class="fas fa-users"></i> Teams</h1>
 
     <!-- Search input and division selection form -->
@@ -34,7 +34,7 @@
                                 <tr>
                                     <th><i class="fas fa-users"></i> Naam</th>
                                     <th><i class="fas fa-map-marker-alt"></i> Locatie</th>
-                                    <th><i class="fas fa-building"></i> Club</th> <!-- New column for Club -->
+                                    <th><i class="fas fa-building"></i> Club</th>
                                     @if(auth()->user() && auth()->user()->role === 'admin')
                                         <th><i class="fas fa-cogs"></i> Acties</th>
                                     @endif
@@ -47,7 +47,7 @@
                                         <td>{{ $team->location }}</td>
                                         <td>
                                             <a href="{{ route('clubs.show', $team->club->id) }}">{{ $team->club->name }}</a>
-                                        </td> <!-- Club name with clickable link -->
+                                        </td>
                                         @if(auth()->user() && auth()->user()->role === 'admin')
                                             <td>
                                                 <a href="{{ route('teams.edit', $team) }}" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Bewerken</a>
@@ -71,6 +71,5 @@
     @else
         <p>Geen teams gevonden.</p>
     @endif
-  
 </div>
 @endsection

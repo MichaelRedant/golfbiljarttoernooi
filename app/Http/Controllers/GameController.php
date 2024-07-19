@@ -72,11 +72,12 @@ public function store(Request $request)
     Log::info('Request data: ', $request->all());
 
     $validatedData = $request->validate([
-        'home_team_id' => 'required|exists:teams,id',
-        'away_team_id' => 'required|exists:teams,id',
         'division_id' => 'required|exists:divisions,id',
         'season_id' => 'required|exists:seasons,id',
         'date' => 'required|date',
+        'home_team_id' => 'nullable|exists:teams,id',
+        'away_team_id' => 'nullable|exists:teams,id',
+        'bye_team_id' => 'nullable|exists:teams,id',
         'scores' => 'sometimes|array',
         'scores.*.home_player' => 'nullable|exists:players,id',
         'scores.*.away_player' => 'nullable|exists:players,id',
@@ -89,13 +90,23 @@ public function store(Request $request)
         'away_reserve' => 'nullable|exists:players,id',
     ]);
 
-    $homeTeam = Team::find($validatedData['home_team_id']);
-    $awayTeam = Team::find($validatedData['away_team_id']);
-    $divisionId = $validatedData['division_id'];
+    if ($validatedData['bye_team_id']) {
+        $validatedData['home_team_id'] = null;
+        $validatedData['away_team_id'] = null;
+    } else {
+        $request->validate([
+            'home_team_id' => 'required|exists:teams,id',
+            'away_team_id' => 'required|exists:teams,id',
+        ]);
 
-    if ($homeTeam->division_id != $divisionId || $awayTeam->division_id != $divisionId) {
-        Log::error('Teams are not in the selected division');
-        return back()->withErrors(['msg' => 'Teams must be in the selected division']);
+        $homeTeam = Team::find($validatedData['home_team_id']);
+        $awayTeam = Team::find($validatedData['away_team_id']);
+        $divisionId = $validatedData['division_id'];
+
+        if ($homeTeam->division_id != $divisionId || $awayTeam->division_id != $divisionId) {
+            Log::error('Teams are not in the selected division');
+            return back()->withErrors(['msg' => 'Teams must be in the selected division']);
+        }
     }
 
     $game = Game::create($validatedData);

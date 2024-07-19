@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
+<div class="container mt-5">
     <h1 class="mb-4"><i class="fas fa-users"></i> Spelerslijst</h1>
 
     <!-- Search form at the top -->

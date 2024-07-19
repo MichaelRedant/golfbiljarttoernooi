@@ -33,7 +33,9 @@ class TeamController extends Controller
         }
 
         if ($divisionId) {
-            $teams = $teams->where('division_id', $divisionId);
+            $teams = $teams->whereHas('divisions', function ($query) use ($divisionId) {
+                $query->where('division_id', $divisionId);
+            });
             $division = Division::find($divisionId);
             $divisionName = $division ? $division->name : 'Geselecteerde divisie';
         } else {
@@ -57,84 +59,93 @@ class TeamController extends Controller
 
     public function store(Request $request)
 {
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'club_id' => 'required|exists:clubs,id',
-        'division_ids' => 'array',
-        'division_ids.*' => 'exists:divisions,id',
-        'location' => 'nullable|string|max:255',
-    ]);
+    try {
+        Log::info('Store method called');
+        Log::info('Request data: ', $request->all());
 
-    $team = Team::create($request->only('name', 'club_id', 'location'));
-
-    // Synchronize the divisions, allowing for no selection
-    if ($request->has('division_ids')) {
-        $team->divisions()->sync($request->division_ids);
-    }
-
-    return redirect()->route('teams.edit', $team)->with('success', 'Team succesvol toegevoegd.');
-}
-
-public function show(Team $team, Request $request)
-{
-    Log::info('TeamController@show reached', ['team' => $team]);
-
-    $latestSeason = Season::latest()->first();
-    if (!$latestSeason) {
-        Log::error('No active season found');
-        return view('teams.show', [
-            'team' => $team,
-            'teamStats' => [],
-            'seasons' => collect(),
-            'divisions' => collect(),
-            'currentSeasonId' => null,
-            'currentDivisionId' => null,
-            'standings' => collect(),
-            'currentTeamStanding' => null,
-            'players' => $team->players ?? collect(),
-            'error' => 'Geen actief seizoen gevonden. Zorg ervoor dat er minstens één seizoen is toegevoegd.'
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'club_id' => 'required|exists:clubs,id',
+            'division_ids' => 'array',
+            'division_ids.*' => 'exists:divisions,id',
+            'location' => 'nullable|string|max:255',
         ]);
+
+        // Create team without division_id
+        $team = Team::create($request->only('name', 'club_id', 'location'));
+
+        // Synchronize the divisions, allowing for no selection
+        if ($request->has('division_ids')) {
+            $team->divisions()->sync($request->division_ids);
+        }
+
+        return redirect()->route('teams.edit', $team)->with('success', 'Team succesvol toegevoegd.');
+    } catch (\Exception $e) {
+        Log::error('Error storing team: ' . $e->getMessage());
+        return back()->with('error', 'Er is een fout opgetreden bij het toevoegen van het team. Controleer de invoer en probeer het opnieuw.');
     }
-
-    $currentSeasonId = $request->query('season_id', $latestSeason->id);
-    $currentDivisionId = $request->query('division_id', $team->division_id);
-    Log::info('Current season ID', ['currentSeasonId' => $currentSeasonId]);
-    Log::info('Current division ID', ['currentDivisionId' => $currentDivisionId]);
-
-    $seasons = Season::all();
-    $divisions = $team->divisions;
-    Log::info('All seasons', ['seasons' => $seasons]);
-    Log::info('Team divisions', ['divisions' => $divisions]);
-
-    $defaultStats = [
-        'games_won' => 0,
-        'games_lost' => 0,
-        'games_draw' => 0,
-        'points' => 0
-    ];
-
-    $teamStats = $team->calculateStatsForSeasonAndDivision($currentSeasonId, $currentDivisionId);
-    $teamStats = array_merge($defaultStats, $teamStats ?? []);
-    Log::info('Team stats', ['teamStats' => $teamStats]);
-
-    $division = Division::find($currentDivisionId);
-    if (!$division) {
-        $standings = [];
-        $currentTeamStanding = null;
-    } else {
-        $standings = $this->rankingService->calculateDivisionStandings($division, $currentSeasonId);
-        $currentTeamStanding = collect($standings)->firstWhere('team_id', $team->id);
-    }
-    Log::info('Division and standings', ['division' => $division, 'standings' => $standings, 'currentTeamStanding' => $currentTeamStanding]);
-
-    $players = $team->players ?? collect();
-    Log::info('Team players', ['players' => $players]);
-
-    $error = null; // Initialize error variable
-
-    return view('teams.show', compact('team', 'teamStats', 'seasons', 'divisions', 'currentSeasonId', 'currentDivisionId', 'standings', 'currentTeamStanding', 'players', 'error'));
 }
 
+
+    public function show(Team $team, Request $request)
+    {
+        Log::info('TeamController@show reached', ['team' => $team]);
+
+        $latestSeason = Season::latest()->first();
+        if (!$latestSeason) {
+            Log::error('No active season found');
+            return view('teams.show', [
+                'team' => $team,
+                'teamStats' => [],
+                'seasons' => collect(),
+                'divisions' => collect(),
+                'currentSeasonId' => null,
+                'currentDivisionId' => null,
+                'standings' => collect(),
+                'currentTeamStanding' => null,
+                'players' => $team->players ?? collect(),
+                'error' => 'Geen actief seizoen gevonden. Zorg ervoor dat er minstens één seizoen is toegevoegd.'
+            ]);
+        }
+
+        $currentSeasonId = $request->query('season_id', $latestSeason->id);
+        $currentDivisionId = $request->query('division_id', $team->division_id);
+        Log::info('Current season ID', ['currentSeasonId' => $currentSeasonId]);
+        Log::info('Current division ID', ['currentDivisionId' => $currentDivisionId]);
+
+        $seasons = Season::all();
+        $divisions = $team->divisions;
+        Log::info('All seasons', ['seasons' => $seasons]);
+        Log::info('Team divisions', ['divisions' => $divisions]);
+
+        $defaultStats = [
+            'games_won' => 0,
+            'games_lost' => 0,
+            'games_draw' => 0,
+            'points' => 0
+        ];
+
+        $teamStats = $team->calculateStatsForSeasonAndDivision($currentSeasonId, $currentDivisionId);
+        $teamStats = array_merge($defaultStats, $teamStats ?? []);
+        Log::info('Team stats', ['teamStats' => $teamStats]);
+
+        $division = Division::find($currentDivisionId);
+        if (!$division) {
+            $standings = [];
+            $currentTeamStanding = null;
+        } else {
+            $standings = $this->rankingService->calculateDivisionStandings($division, $currentSeasonId);
+            $currentTeamStanding = collect($standings)->firstWhere('team_id', $team->id);
+        }
+        Log::info('Division and standings', ['division' => $division, 'standings' => $standings, 'currentTeamStanding' => $currentTeamStanding]);
+
+        $players = $team->players ?? collect();
+        Log::info('Team players', ['players' => $players]);
+
+        $error = null; // Initialize error variable
+
+        return view('teams.show', compact('team', 'teamStats', 'seasons', 'divisions', 'currentSeasonId', 'currentDivisionId', 'standings', 'currentTeamStanding', 'players', 'error'));
+    }
 
     public function addresses()
     {
@@ -185,42 +196,45 @@ public function show(Team $team, Request $request)
     }
 
     public function update(Request $request, Team $team)
-{
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'location' => 'nullable|string|max:255',
-        'division_ids' => 'array',
-        'division_ids.*' => 'exists:divisions,id',
-    ]);
+    {
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'location' => 'nullable|string|max:255',
+                'division_ids' => 'array',
+                'division_ids.*' => 'exists:divisions,id',
+            ]);
 
-    $team->update($request->only('name', 'location'));
+            $team->update($request->only('name', 'location'));
 
-    // Synchronize the divisions, allowing for no selection
-    if ($request->has('division_ids')) {
-        $team->divisions()->sync($request->division_ids);
-    } else {
-        $team->divisions()->sync([]);
+            if ($request->has('division_ids')) {
+                $team->divisions()->sync($request->division_ids);
+            } else {
+                $team->divisions()->sync([]);
+            }
+
+            return redirect()->route('teams.index')->with('success', 'Team succesvol bijgewerkt.');
+        } catch (\Exception $e) {
+            Log::error('Error updating team: ' . $e->getMessage());
+            return back()->with('error', 'Er is een fout opgetreden bij het bijwerken van het team. Controleer de invoer en probeer het opnieuw.');
+        }
     }
 
-    return redirect()->route('teams.index')->with('success', 'Team succesvol bijgewerkt.');
-}
+    public function assignToTeam(Request $request, Team $team)
+    {
+        $request->validate([
+            'player_id' => 'required|exists:players,id',
+        ], [
+            'player_id.required' => 'Selecteer een speler om toe te voegen.',
+            'player_id.exists' => 'De geselecteerde speler bestaat niet.',
+        ]);
 
-public function assignToTeam(Request $request, Team $team)
-{
-    $request->validate([
-        'player_id' => 'required|exists:players,id',
-    ], [
-        'player_id.required' => 'Selecteer een speler om toe te voegen.',
-        'player_id.exists' => 'De geselecteerde speler bestaat niet.',
-    ]);
+        $player = Player::findOrFail($request->player_id);
+        $player->team_id = $team->id;
+        $player->save();
 
-    $player = Player::findOrFail($request->player_id);
-    $player->team_id = $team->id;
-    $player->save();
-
-    return redirect()->route('teams.edit', $team)->with('success', 'Speler succesvol toegevoegd aan het team.');
-}
-
+        return redirect()->route('teams.edit', $team)->with('success', 'Speler succesvol toegevoegd aan het team.');
+    }
 
     public function removeFromTeam(Team $team, Player $player)
     {
@@ -313,7 +327,6 @@ public function assignToTeam(Request $request, Team $team)
             ];
         })->sortByDesc('points')->values()->all();
     }
-
 
     public function getTeamsByDivision(Request $request)
     {

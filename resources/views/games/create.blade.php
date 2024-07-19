@@ -2,7 +2,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
+<div class="container mt-5">
     <h1>Nieuwe Wedstrijd Aanmaken</h1>
 
     @if ($errors->any())
@@ -21,6 +21,7 @@
         <div class="form-group mb-3">
             <label for="division_id"><i class="fas fa-layer-group"></i> Kies een divisie:</label>
             <select id="division_id" name="division_id" class="form-control">
+                <option value="">Selecteer een divisie</option>
                 @foreach ($divisions as $division)
                     <option value="{{ $division->id }}" {{ $division->id == $selectedDivisionId ? 'selected' : '' }}>
                         {{ $division->name }}
@@ -48,18 +49,14 @@
         <div class="form-group mb-3" id="homeTeamGroup">
             <label for="home_team_id"><i class="fas fa-home"></i> Thuis Team:</label>
             <select id="home_team_id" name="home_team_id" class="form-control">
-                @foreach ($teams as $team)
-                    <option value="{{ $team->id }}">{{ $team->name }}</option>
-                @endforeach
+                <!-- Teams will be dynamically populated based on selected division -->
             </select>
         </div>
 
         <div class="form-group mb-3" id="awayTeamGroup">
             <label for="away_team_id"><i class="fas fa-plane"></i> Uit Team:</label>
             <select id="away_team_id" name="away_team_id" class="form-control">
-                @foreach ($teams as $team)
-                    <option value="{{ $team->id }}">{{ $team->name }}</option>
-                @endforeach
+                <!-- Teams will be dynamically populated based on selected division -->
             </select>
         </div>
 
@@ -78,6 +75,29 @@
 </div>
 
 <script>
+    document.getElementById('division_id').addEventListener('change', function() {
+        const divisionId = this.value;
+        const homeTeamSelect = document.getElementById('home_team_id');
+        const awayTeamSelect = document.getElementById('away_team_id');
+
+        homeTeamSelect.innerHTML = '';
+        awayTeamSelect.innerHTML = '';
+
+        if (divisionId) {
+            fetch(`/api/divisions/${divisionId}/teams`)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(team => {
+                        const option = document.createElement('option');
+                        option.value = team.id;
+                        option.textContent = team.name;
+                        homeTeamSelect.appendChild(option.cloneNode(true));
+                        awayTeamSelect.appendChild(option);
+                    });
+                });
+        }
+    });
+
     function toggleTeamSelectVisibility(select) {
         const homeTeamGroup = document.getElementById('homeTeamGroup');
         const awayTeamGroup = document.getElementById('awayTeamGroup');

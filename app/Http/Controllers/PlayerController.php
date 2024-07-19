@@ -13,68 +13,72 @@ use Illuminate\Support\Facades\Log;
 class PlayerController extends Controller
 {
     public function index(Request $request)
-{
-    $query = $request->input('query');
-    $divisionId = $request->input('division_id');
-    $teamId = $request->input('team_id');
+    {
+        $query = $request->input('query');
+        $divisionId = $request->input('division_id');
+        $teamId = $request->input('team_id');
 
-    $divisions = Division::all(); // Fetch all divisions
-    $teams = collect(); // Initialize teams as an empty collection
-    $players = collect(); // Initialize players as an empty collection
+        $divisions = Division::all(); // Fetch all divisions
+        $teams = collect(); // Initialize teams as an empty collection
+        $players = collect(); // Initialize players as an empty collection
 
-    if ($divisionId) {
-        $teams = Team::where('division_id', $divisionId)->get();
-    }
-
-    if ($teamId) {
-        $players = Player::with('team')
-                        ->where('team_id', $teamId)
-                        ->get();
-
-        if ($players->isNotEmpty()) {
-            $divisionId = $players->first()->team->division_id ?? null;
-            $currentSeasonId = Season::latest('id')->first()->id;
-            $standings = $divisionId ? $this->calculatePlayerStandings($divisionId, $currentSeasonId) : [];
-
-            $players = $players->map(function ($player) use ($standings) {
-                $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
-                return (object) [
-                    'id' => $player->id,
-                    'name' => $player->first_name . ' ' . $player->last_name,
-                    'team_name' => $player->team->name ?? 'Geen team',
-                    'team_id' => $player->team->id ?? null,
-                    'rank' => $rank,
-                ];
-            });
+        if ($divisionId) {
+            // Fetch teams related to the selected division using the many-to-many relationship
+            $division = Division::with('teams')->find($divisionId);
+            if ($division) {
+                $teams = $division->teams;
+            }
         }
-    }
 
-    if ($query) {
-        $players = Player::with('team')
-                        ->where('first_name', 'LIKE', "%{$query}%")
-                        ->orWhere('last_name', 'LIKE', "%{$query}%")
-                        ->get();
+        if ($teamId) {
+            $players = Player::with('team')
+                            ->where('team_id', $teamId)
+                            ->get();
 
-        if ($players->isNotEmpty()) {
-            $divisionId = $players->first()->team->division_id ?? null;
-            $currentSeasonId = Season::latest('id')->first()->id;
-            $standings = $divisionId ? $this->calculatePlayerStandings($divisionId, $currentSeasonId) : [];
+            if ($players->isNotEmpty()) {
+                $divisionId = $players->first()->team->divisions->first()->id ?? null;
+                $currentSeasonId = Season::latest('id')->first()->id;
+                $standings = $divisionId ? $this->calculatePlayerStandings($divisionId, $currentSeasonId) : [];
 
-            $players = $players->map(function ($player) use ($standings) {
-                $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
-                return (object) [
-                    'id' => $player->id,
-                    'name' => $player->first_name . ' ' . $player->last_name,
-                    'team_name' => $player->team->name ?? 'Geen team',
-                    'team_id' => $player->team->id ?? null,
-                    'rank' => $rank,
-                ];
-            });
+                $players = $players->map(function ($player) use ($standings) {
+                    $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
+                    return (object) [
+                        'id' => $player->id,
+                        'name' => $player->first_name . ' ' . $player->last_name,
+                        'team_name' => $player->team->name ?? 'Geen team',
+                        'team_id' => $player->team->id ?? null,
+                        'rank' => $rank,
+                    ];
+                });
+            }
         }
-    }
 
-    return view('players.index', compact('players', 'divisions', 'teams'));
-}
+        if ($query) {
+            $players = Player::with('team')
+                            ->where('first_name', 'LIKE', "%{$query}%")
+                            ->orWhere('last_name', 'LIKE', "%{$query}%")
+                            ->get();
+
+            if ($players->isNotEmpty()) {
+                $divisionId = $players->first()->team->divisions->first()->id ?? null;
+                $currentSeasonId = Season::latest('id')->first()->id;
+                $standings = $divisionId ? $this->calculatePlayerStandings($divisionId, $currentSeasonId) : [];
+
+                $players = $players->map(function ($player) use ($standings) {
+                    $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
+                    return (object) [
+                        'id' => $player->id,
+                        'name' => $player->first_name . ' ' . $player->last_name,
+                        'team_name' => $player->team->name ?? 'Geen team',
+                        'team_id' => $player->team->id ?? null,
+                        'rank' => $rank,
+                    ];
+                });
+            }
+        }
+
+        return view('players.index', compact('players', 'divisions', 'teams'));
+    }
 
 public function create()
 {
@@ -84,36 +88,38 @@ public function create()
 }
 
 public function store(Request $request)
-{
-    $request->validate([
-        'first_name' => 'required|string|max:255',
-        'last_name' => 'required|string|max:255',
-        'team_id' => 'nullable|exists:teams,id', // Nullable gemaakt
-        'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Maak 'photo' nullable en pas validatie aan
-    ]);
+    {
+        Log::info('Store method called');
+        Log::info('Request data: ', $request->all());
 
-    // Handle file upload
-    if ($request->hasFile('photo')) {
-        $image = $request->file('photo');
-        $imageName = time() . '.' . $image->getClientOriginalExtension();
-        $thumbnailName = 'thumbnail_' . $imageName;
-        $image->storeAs('public/photos', $imageName);
-        $image->storeAs('public/thumbnails', $thumbnailName);
-    } else {
-        $imageName = null; // Accepteer null waarden
-        $thumbnailName = null; // Accepteer null waarden
+        $validatedData = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'team_id' => 'required|exists:teams,id',
+            'photo' => 'nullable|image|max:2048',
+            'thumbnail' => 'nullable|image|max:2048',
+        ]);
+
+        // Haal het team op en vind de eerste divisie
+        $team = Team::find($validatedData['team_id']);
+        $divisionId = $team->divisions->first()->id ?? null;
+
+        // Voeg de division_id toe aan de gevalideerde gegevens
+        $validatedData['division_id'] = $divisionId;
+
+        // Verwerk de foto en thumbnail indien aanwezig
+        if ($request->hasFile('photo')) {
+            $validatedData['photo'] = $request->file('photo')->store('photos');
+        }
+        if ($request->hasFile('thumbnail')) {
+            $validatedData['thumbnail'] = $request->file('thumbnail')->store('thumbnails');
+        }
+
+        // Voeg de speler toe met de juiste division_id
+        Player::create($validatedData);
+
+        return redirect()->route('players.index')->with('success', 'Speler succesvol toegevoegd.');
     }
-
-    Player::create([
-        'first_name' => $request->first_name,
-        'last_name' => $request->last_name,
-        'team_id' => $request->team_id,
-        'photo' => $imageName, // Kan null zijn
-        'thumbnail' => $thumbnailName, // Kan null zijn
-    ]);
-
-    return redirect()->route('players.index')->with('success', 'Speler succesvol toegevoegd.');
-}
 
 
 

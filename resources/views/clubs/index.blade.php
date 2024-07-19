@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
+<div class="container mt-5">
     <h1>Clubs</h1>
     @if(auth()->user() && auth()->user()->role === 'admin')
         <a href="{{ route('clubs.create') }}" class="btn btn-primary">Nieuwe Club</a>

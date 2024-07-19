@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
+<div class="container mt-5">
     <h1>Edit Club: {{ $club->name }}</h1>
     <form method="POST" action="{{ route('clubs.update', $club->id) }}">
         @csrf
@@ -30,7 +30,7 @@
         </div>
 
         <button type="submit" class="btn btn-primary">Update</button>
-        <a href="{{ route('teams.create', ['club_id' => $club->id]) }}" class="btn btn-success">Create Team</a>
+        <a href="{{ route('teams.create', ['club_id' => $club->id]) }}" class="btn btn-success">Create team voor {{ $club->name }}</a>
     </form>
 </div>
 @endsection

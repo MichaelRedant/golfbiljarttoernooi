@@ -19,6 +19,7 @@ class Player extends Model
         'manches_won',
         'manches_lost',
         'club',
+        'division_id'
     ];
 
     public function team()

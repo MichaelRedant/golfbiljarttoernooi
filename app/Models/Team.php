@@ -147,5 +147,3 @@ class Team extends Model
         return $this->gamesHome()->union($this->gamesAway()->getQuery());
     }
 }
-
-
