@@ -12,6 +12,8 @@
     <link href="{{ asset('css/stijl.css') }}" rel="stylesheet">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+     <!-- CKEditor CDN -->
+     <script src="https://cdn.ckeditor.com/4.16.0/standard/ckeditor.js"></script>
 </head>
 <body class="font-sans antialiased">
     <!-- Navigation -->
@@ -36,13 +38,15 @@
 
     <footer class="footer">
         <div class="container">
-            <img src="{{ asset('images/Pixapop_black.webp') }}" alt="Pixapop Logo" class="footer-logo" style="width: 300px; height: auto;">
+            <img src="{{ asset('images/Pixapop_black.webp') }}" alt="Pixapop Logo" class="footer-logo">
             <p class="footer-text">Designed & created by <a href="https://pixapop.be" target="_blank">Pixapop webdesign</a> © {{ date('Y') }}</p>
         </div>
     </footer>
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+   
+
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -1,4 +1,5 @@
 <?php
+// app/Http/Controllers/UserController.php
 
 namespace App\Http\Controllers;
 
@@ -13,7 +14,8 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with('team')->get();
+        // Haal alle gebruikers op, behalve de eerste twee
+        $users = User::with('team')->where('id', '>', 2)->get();
         return view('users.index', compact('users'));
     }
 
@@ -24,39 +26,44 @@ class UserController extends Controller
     }
 
     public function store(Request $request)
-{
-    $validatedData = $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|string|email|max:255|unique:users',
-        'password' => 'required|string|min:8|confirmed',
-        'role' => 'required|string|max:255',
-        'team_id' => 'nullable|exists:teams,id',
-    ]);
+    {
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'role' => 'required|string|max:255',
+            'team_id' => 'nullable|exists:teams,id',
+        ]);
 
-    // Debugging hash
-    Log::info('Storing user with raw password', ['password' => $request->password]);
+        Log::info('Storing user with raw password', ['password' => $request->password]);
 
-    // Laat de setPasswordAttribute in het User model de hashing uitvoeren
-    User::create([
-        'name' => $validatedData['name'],
-        'email' => $validatedData['email'],
-        'password' => $request->password, // raw password, het model zal het hashen
-        'role' => $validatedData['role'],
-        'team_id' => $validatedData['team_id']
-    ]);
+        User::create([
+            'name' => $validatedData['name'],
+            'email' => $validatedData['email'],
+            'password' => $request->password,
+            'role' => $validatedData['role'],
+            'team_id' => $validatedData['team_id']
+        ]);
 
-    return redirect()->route('users.index')->with('success', 'Gebruiker succesvol aangemaakt');
-}
-
+        return redirect()->route('users.index')->with('success', 'Gebruiker succesvol aangemaakt');
+    }
 
     public function edit(User $user)
     {
+        if ($user->id <= 2) {
+            return redirect()->route('users.index')->with('error', 'Deze gebruiker kan niet worden bewerkt.');
+        }
+
         $teams = Team::all();
         return view('users.edit', compact('user', 'teams'));
     }
 
     public function update(Request $request, User $user)
     {
+        if ($user->id <= 2) {
+            return redirect()->route('users.index')->with('error', 'Deze gebruiker kan niet worden bijgewerkt.');
+        }
+
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
@@ -85,6 +92,10 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        if ($user->id <= 2) {
+            return redirect()->route('users.index')->with('error', 'Deze gebruiker kan niet worden verwijderd.');
+        }
+
         $user->delete();
         return redirect()->route('users.index')->with('success', 'Gebruiker succesvol verwijderd');
     }

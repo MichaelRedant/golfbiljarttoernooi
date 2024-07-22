@@ -12,5 +12,7 @@ class News extends Model
     protected $fillable = [
         'title',
         'content',
+        'is_sticky',
+        'created_at',
     ];
 }

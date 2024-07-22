@@ -22,13 +22,6 @@
         </select>
     </div>
 
-    <!-- Button to create a new game -->
-    <div class="mb-4">
-        <a href="{{ route('games.create', ['division_id' => $division->id, 'season_id' => $season->id]) }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Wedstrijd maken
-        </a>
-        
-    </div>
 
     @if ($upcomingGames->isNotEmpty())
         @php

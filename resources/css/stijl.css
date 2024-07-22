@@ -261,7 +261,7 @@ h1.text-center {
 }
 
 .footer-logo {
-  max-width: 100px;
+ width: 200px;
 }
 
 .footer-text {

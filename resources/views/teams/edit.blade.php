@@ -89,6 +89,13 @@
                                     Verwijder uit Team
                                 </button>
                             </form>
+                            <form action="{{ route('players.destroy', $player->id) }}" method="POST" style="display: inline;">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger" onclick="return confirm('Weet je zeker dat je deze speler volledig wilt verwijderen?')">
+                                    Verwijder Speler
+                                </button>
+                            </form>
                         </td>
                     </tr>
                     @endforeach

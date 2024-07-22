@@ -1,3 +1,4 @@
+<!-- resources/views/news/create.blade.php -->
 @extends('layouts.app')
 
 @section('title', 'Create News')
@@ -18,6 +19,11 @@
             <textarea name="content" class="form-control" id="content" rows="10" required></textarea>
         </div>
 
+        <div class="form-group mb-3">
+            <label for="is_sticky"><i class="fas fa-thumbtack"></i> Sticky:</label>
+            <input type="checkbox" name="is_sticky" id="is_sticky" class="form-check-input">
+        </div>
+
         <div class="d-flex justify-content-between">
             <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Opslaan</button>
             <a href="{{ route('news.index') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Terug naar Nieuws</a>
@@ -25,15 +31,3 @@
     </form>
 </div>
 @endsection
-
-@section('scripts')
-<script src="{{ asset('node_modules/tinymce/tinymce.min.js') }}"></script>
-<script>
-    tinymce.init({
-        selector: '#content',
-        plugins: 'advlist autolink lists link image charmap print preview hr anchor pagebreak',
-        toolbar_mode: 'floating',
-    });
-</script>
-@endsection
-

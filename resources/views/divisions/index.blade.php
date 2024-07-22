@@ -46,8 +46,19 @@
                                 <h5><i class="fas fa-users"></i> Teams in deze Divisie</h5>
                                 <ul class="list-group">
                                     @foreach ($division->teams as $team)
-                                        <li class="list-group-item">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
                                             <a href="{{ route('teams.show', $team) }}">{{ $team->name }}</a>
+                                            @if(auth()->user() && auth()->user()->role === 'admin')
+                                                <div>
+                                                    <button class="btn btn-danger btn-sm" onclick="event.preventDefault(); if(confirm('Weet je zeker dat je dit team wilt verwijderen?')) document.getElementById('delete-team-{{ $team->id }}').submit();">
+                                                        <i class="fas fa-trash-alt"></i> Verwijderen
+                                                    </button>
+                                                    <form id="delete-team-{{ $team->id }}" action="{{ route('teams.destroy', $team) }}" method="POST" style="display: none;">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                    </form>
+                                                </div>
+                                            @endif
                                         </li>
                                     @endforeach
                                 </ul>

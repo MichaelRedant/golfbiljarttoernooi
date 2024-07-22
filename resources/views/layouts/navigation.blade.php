@@ -32,6 +32,7 @@
                         Informatie
                     </a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdownInfo">
+                        <a class="dropdown-item" href="{{ route('divisions.index') }}">Divisies</a>
                         <a class="dropdown-item" href="{{ route('clubs.index') }}">Clubs</a>
                         <a class="dropdown-item" href="{{ route('teams.index') }}">Teams</a>
                         <a class="dropdown-item" href="{{ route('players.index') }}">Spelers</a>

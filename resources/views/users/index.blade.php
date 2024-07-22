@@ -20,6 +20,12 @@
         </div>
     @endif
 
+    @if (session('error'))
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
+    @endif
+
     @if ($users->isEmpty())
         <p>Er zijn geen gebruikers beschikbaar.</p>
     @else

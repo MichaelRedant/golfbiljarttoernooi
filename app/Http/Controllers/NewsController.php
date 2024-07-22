@@ -1,5 +1,4 @@
 <?php
-
 // app/Http/Controllers/NewsController.php
 
 namespace App\Http\Controllers;
@@ -11,7 +10,7 @@ class NewsController extends Controller
 {
     public function index()
     {
-        $news = News::all();
+        $news = News::orderBy('is_sticky', 'desc')->orderBy('created_at', 'desc')->get();
         return view('news.index', compact('news'));
     }
 
@@ -34,6 +33,7 @@ class NewsController extends Controller
 
         return redirect()->route('news.index')->with('success', 'Nieuws succesvol toegevoegd.');
     }
+
     public function edit(News $news)
     {
         return view('news.edit', compact('news'));
@@ -55,5 +55,11 @@ class NewsController extends Controller
     {
         $news->delete();
         return redirect()->route('news.index')->with('success', 'Nieuwsbericht succesvol verwijderd.');
+    }
+
+    public function toggleSticky(News $news)
+    {
+        $news->update(['is_sticky' => !$news->is_sticky]);
+        return redirect()->route('news.index')->with('success', 'Sticky status succesvol bijgewerkt.');
     }
 }

@@ -24,8 +24,10 @@
                     @endforeach
                 </select>
             </div>
-           
-            <button type="submit" class="btn btn-primary">Opslaan</button>
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">Opslaan</button>
+                <button type="submit" class="btn btn-secondary" name="save_and_add_another" value="true">Opslaan en Nieuwe Toevoegen</button>
+            </div>
         </form>
     </div>
 </div>

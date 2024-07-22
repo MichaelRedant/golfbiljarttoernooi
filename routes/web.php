@@ -73,6 +73,7 @@ Route::post('/games/{game}/approve', [GameController::class, 'approve'])->name('
     Route::resource('news', NewsController::class);
     Route::get('/news/create', [NewsController::class, 'create'])->name('news.create');
     Route::post('/news', [NewsController::class, 'store'])->name('news.store');
+    Route::patch('/news/{news}/toggle-sticky', [NewsController::class, 'toggleSticky'])->name('news.toggleSticky');
 
     // User profile routes
     Route::get('/profile/edit', [UserController::class, 'edit'])->name('profile.edit');
