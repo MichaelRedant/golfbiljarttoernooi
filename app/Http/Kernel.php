@@ -71,7 +71,7 @@ class Kernel extends HttpKernel
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'superadmin' => \App\Http\Middleware\SuperAdminMiddleware::class,
         'check.resources' => \App\Http\Middleware\CheckResourcesAvailability::class,
-        // bestaande middlewares...
+        'auth.username' => \App\Http\Middleware\AuthenticateWithUsername::class,
     ];
     
 }

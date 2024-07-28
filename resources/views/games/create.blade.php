@@ -1,4 +1,3 @@
-{{-- resources/views/games/create.blade.php --}}
 @extends('layouts.app')
 
 @section('content')
@@ -49,14 +48,18 @@
         <div class="form-group mb-3" id="homeTeamGroup">
             <label for="home_team_id"><i class="fas fa-home"></i> Thuis Team:</label>
             <select id="home_team_id" name="home_team_id" class="form-control">
-                <!-- Teams will be dynamically populated based on selected division -->
+                @foreach($teams as $team)
+                    <option value="{{ $team->id }}">{{ $team->name }}</option>
+                @endforeach
             </select>
         </div>
 
         <div class="form-group mb-3" id="awayTeamGroup">
             <label for="away_team_id"><i class="fas fa-plane"></i> Uit Team:</label>
             <select id="away_team_id" name="away_team_id" class="form-control">
-                <!-- Teams will be dynamically populated based on selected division -->
+                @foreach($teams as $team)
+                <option value="{{ $team->id }}">{{ $team->name }}</option>
+            @endforeach
             </select>
         </div>
 
@@ -80,8 +83,8 @@
         const homeTeamSelect = document.getElementById('home_team_id');
         const awayTeamSelect = document.getElementById('away_team_id');
 
-        homeTeamSelect.innerHTML = '';
-        awayTeamSelect.innerHTML = '';
+        homeTeamSelect.innerHTML = '<option value="">Selecteer een team</option>';
+        awayTeamSelect.innerHTML = '<option value="">Selecteer een team</option>';
 
         if (divisionId) {
             fetch(`/api/divisions/${divisionId}/teams`)

@@ -26,7 +26,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $credentials = $request->only('email', 'password');
+        $credentials = $request->only('name', 'password');
 
         // Debugging credentials
         Log::info('Attempting to authenticate', $credentials);
@@ -38,12 +38,13 @@ class AuthenticatedSessionController extends Controller
             return redirect()->intended(RouteServiceProvider::HOME);
         }
 
-        Log::warning('Authentication failed', ['email' => $request->email]);
+        Log::warning('Authentication failed', ['name' => $request->name]);
 
         return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
+            'name' => 'The provided credentials do not match our records.',
         ]);
     }
+
     /**
      * Destroy an authenticated session.
      */

@@ -118,6 +118,7 @@
                             <tr>
                                 <td>
                                     <select class="form-control player-select wide-select" data-player-type="home" data-row-index="{{ $i }}" name="scores[{{ $i }}][home_player]">
+                                        <option value="">-- Selecteer een teamlid --</option>
                                         @foreach ($homeTeamPlayers as $player)
                                         <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}</option>
                                         @endforeach
@@ -126,6 +127,7 @@
                                 <td class="small" id="home-team-{{ $i }}"></td>
                                 <td>
                                     <select class="form-control player-select wide-select" data-player-type="away" data-row-index="{{ $i }}" name="scores[{{ $i }}][away_player]">
+                                        <option value="">-- Selecteer een teamlid --</option>
                                         @foreach ($awayTeamPlayers as $player)
                                         <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}</option>
                                         @endforeach

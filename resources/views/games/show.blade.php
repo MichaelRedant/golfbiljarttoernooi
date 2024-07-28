@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
+<div class="container mt-4">
     <h1>Wedstrijddetails voor 
         <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a> 
         vs 
@@ -16,8 +16,6 @@
                     <i class="fas fa-trophy" style="color: gold;"></i>
                 @endif
             </a>
-            
-            
         </p>
         <a href="{{ route('clubs.show', $game->awayTeam->club->id) }}">{{ $game->awayTeam->club->name }}</a>
         <p>Bezoekers: 
@@ -27,19 +25,12 @@
                     <i class="fas fa-trophy" style="color: gold;"></i>
                 @endif
             </a>
-            
-           
         </p>
         <p>
             <i class="fas fa-map-marker-alt"></i> {{ $game->homeTeam->location }}
         </p>
         <p>Datum: {{ \Carbon\Carbon::parse($game->date)->format('d-m-Y') }}</p>
         <p>Wedstrijdscore: <strong>{{ $game->home_score }} - {{ $game->away_score }}</strong></p>
-        @if($game->division)
-            <a href="{{ route('divisions.show', ['division' => $game->division->id]) }}" class="btn btn-primary">Terug naar Wedstrijdkalender</a>
-        @else
-            <a href="#" onclick="history.back()" class="btn btn-primary">Terug</a>
-        @endif
 
         <table class="table">
             <thead>

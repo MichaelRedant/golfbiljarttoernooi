@@ -135,6 +135,13 @@ class DivisionController extends Controller
         }
     }
 
+    public function getTeamsByDivision($divisionId)
+    {
+        $teams = Team::where('division_id', $divisionId)->get();
+
+        return response()->json($teams);
+    }
+
 
 public function create()
 {

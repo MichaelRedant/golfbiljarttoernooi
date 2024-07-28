@@ -59,14 +59,7 @@ class GameController extends Controller
         return view('games.create', compact('divisions', 'teams', 'seasons', 'selectedDivisionId', 'selectedSeasonId', 'latestSeason'));
     }
     
-
-
-
-
-    
-
-
-public function store(Request $request)
+    public function store(Request $request)
 {
     Log::info('Store method called');
     Log::info('Request data: ', $request->all());
@@ -135,6 +128,17 @@ public function store(Request $request)
                 'belle_score' => $score['Belle'] ?? null,
                 'winner_id' => $matchResult == 1 ? $score['home_player'] : ($matchResult == 2 ? $score['away_player'] : null),
             ]);
+
+            Log::info('Manche created:', [
+                'game_id' => $game->id,
+                'player1_id' => $score['home_player'],
+                'player2_id' => $score['away_player'],
+                'number' => $index + 1,
+                'score1' => $score['1M'],
+                'score2' => $score['2M'],
+                'belle_score' => $score['Belle'] ?? null,
+                'winner_id' => $matchResult == 1 ? $score['home_player'] : ($matchResult == 2 ? $score['away_player'] : null),
+            ]);
         }
 
         Log::info('Home Wins: ' . $homeWins);
@@ -155,102 +159,91 @@ public function store(Request $request)
     return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol aangemaakt! Wachtend op goedkeuring.');
 }
 
+    public function edit(Game $game)
+    {
+        Log::info('Game data:', $game->toArray());
+        $teams = Team::all();
+        $game->load('homeTeam', 'awayTeam');
 
-public function edit(Game $game)
-{
-    Log::info('Game data:', $game->toArray());
-    $teams = Team::all();
-    $game->load('homeTeam', 'awayTeam');
+        if (is_string($game->date)) {
+            $game->date = \Carbon\Carbon::parse($game->date);
+        }
 
-    if (is_string($game->date)) {
-        $game->date = \Carbon\Carbon::parse($game->date);
+        return view('games.edit', compact('game', 'teams'));
     }
 
-    return view('games.edit', compact('game', 'teams'));
-}
+    public function update(Request $request, Game $game)
+    {
+        Log::info('Update method called');
+        Log::info('Request data:', $request->all());
 
+        $validatedData = $request->validate([
+            'date' => 'required|date',
+            'home_team_id' => 'nullable|exists:teams,id',
+            'away_team_id' => 'nullable|exists:teams,id',
+            'bye_team_id' => 'nullable|exists:teams,id',
+            'home_score' => 'nullable|integer',
+            'away_score' => 'nullable|integer',
+        ]);
 
+        if ($request->filled('is_bye')) {
+            $validatedData['home_team_id'] = null;
+            $validatedData['away_team_id'] = null;
+            $validatedData['bye_team_id'] = $validatedData['bye_team_id'];
+        } else {
+            $validatedData['bye_team_id'] = null;
+        }
 
+        $game->update($validatedData);
 
-public function update(Request $request, Game $game)
-{
-    Log::info('Update method called');
-    Log::info('Request data:', $request->all());
-
-    $validatedData = $request->validate([
-        'date' => 'required|date',
-        'home_team_id' => 'nullable|exists:teams,id',
-        'away_team_id' => 'nullable|exists:teams,id',
-        'bye_team_id' => 'nullable|exists:teams,id',
-        'home_score' => 'nullable|integer',
-        'away_score' => 'nullable|integer',
-    ]);
-
-    if ($request->filled('is_bye')) {
-        $validatedData['home_team_id'] = null;
-        $validatedData['away_team_id'] = null;
-        $validatedData['bye_team_id'] = $validatedData['bye_team_id'];
-    } else {
-        $validatedData['bye_team_id'] = null;
+        return redirect()->route('games.for-division-season', ['division_id' => $game->division_id, 'season_id' => $game->season_id])->with('success', 'Wedstrijd succesvol bijgewerkt!');
     }
 
-    $game->update($validatedData);
-
-    return redirect()->route('games.for-division-season', ['division_id' => $game->division_id, 'season_id' => $game->season_id])->with('success', 'Wedstrijd succesvol bijgewerkt!');
-}
-
-
-
-
-
-
-
-public function requestApproval(Game $game)
-{
-    if (auth()->user()->team_id == $game->away_team_id || auth()->user()->role == 'admin') {
-        return view('games.approval', compact('game'));
-    }
-    return redirect()->route('games.index')->withErrors(['msg' => 'You are not authorized to approve this game.']);
-}
-
-public function approve(Request $request, Game $game)
-{
-    $user = auth()->user();
-    if ($user->team_id == $game->away_team_id || $user->role == 'admin') {
-        $game->update(['away_team_approved' => true]);
-        return redirect()->route('dashboard')->with('success', 'Wedstrijd succesvol goedgekeurd!');
-    }
-    return redirect()->route('games.index')->withErrors(['msg' => 'You are not authorized to approve this game.']);
-}
-
-public function bulkApprove(Request $request)
-{
-    $gameIds = $request->input('game_ids', []);
-
-    if (!empty($gameIds)) {
-        Game::whereIn('id', $gameIds)->update(['away_team_approved' => true]);
-        return redirect()->route('dashboard')->with('success', 'Geselecteerde wedstrijden zijn goedgekeurd.');
+    public function requestApproval(Game $game)
+    {
+        if (auth()->user()->team_id == $game->away_team_id || auth()->user()->role == 'admin') {
+            return view('games.approval', compact('game'));
+        }
+        return redirect()->route('games.index')->withErrors(['msg' => 'You are not authorized to approve this game.']);
     }
 
-    return redirect()->route('dashboard')->with('error', 'Geen wedstrijden geselecteerd voor goedkeuring.');
-}
-
-
-protected function calculateMatchResult(array $scoreData)
-{
-    $homePoints = $scoreData['1M'];
-    $awayPoints = $scoreData['2M'];
-
-    if ($homePoints > $awayPoints) {
-        return 1;
-    } elseif ($awayPoints > $homePoints) {
-        return 2;
-    } elseif (isset($scoreData['Belle'])) {
-        return $scoreData['Belle'] == 1 ? 1 : 2;
+    public function approve(Request $request, Game $game)
+    {
+        $user = auth()->user();
+        if ($user->team_id == $game->away_team_id || $user->role == 'admin') {
+            $game->update(['away_team_approved' => true]);
+            return redirect()->route('dashboard')->with('success', 'Wedstrijd succesvol goedgekeurd!');
+        }
+        return redirect()->route('games.index')->withErrors(['msg' => 'You are not authorized to approve this game.']);
     }
 
-    return 0;
-}
+    public function bulkApprove(Request $request)
+    {
+        $gameIds = $request->input('game_ids', []);
+
+        if (!empty($gameIds)) {
+            Game::whereIn('id', $gameIds)->update(['away_team_approved' => true]);
+            return redirect()->route('dashboard')->with('success', 'Geselecteerde wedstrijden zijn goedgekeurd.');
+        }
+
+        return redirect()->route('dashboard')->with('error', 'Geen wedstrijden geselecteerd voor goedkeuring.');
+    }
+
+    protected function calculateMatchResult(array $scoreData)
+    {
+        $homePoints = $scoreData['1M'];
+        $awayPoints = $scoreData['2M'];
+
+        if ($homePoints > $awayPoints) {
+            return 1;
+        } elseif ($awayPoints > $homePoints) {
+            return 2;
+        } elseif (isset($scoreData['Belle'])) {
+            return $scoreData['Belle'] == 1 ? 1 : 2;
+        }
+
+        return 0;
+    }
 
     protected function updatePlayerStats(Game $game)
     {
@@ -282,13 +275,15 @@ protected function calculateMatchResult(array $scoreData)
         }
     }
 
-
-public function show(Request $request, Division $division, Game $game)
+    public function show(Request $request, Division $division, Game $game)
     {
         $currentSeasonId = $request->query('season_id', Season::latest('id')->value('id'));
         $seasons = Season::all();
         $season = Season::find($currentSeasonId);
         $game->load(['homeTeam', 'awayTeam', 'manches.player1', 'manches.player2']);
+
+        Log::info('Game data:', $game->toArray());
+        Log::info('Manches data:', $game->manches->toArray());
 
         if (!$currentSeasonId) {
             return back()->withErrors('Geen actief seizoen gevonden.');
@@ -322,20 +317,23 @@ public function show(Request $request, Division $division, Game $game)
 {
     $game->load(['homeTeam', 'awayTeam', 'manches.player1', 'manches.player2']);
     
+    Log::info('Game data:', $game->toArray());
+    Log::info('Manches data:', $game->manches->toArray());
+
     return view('games.show', compact('game'));
 }
 
-public function showLiveScores()
-{
-    $today = Carbon::today();
-    $matches = Game::with(['homeTeam', 'awayTeam'])
-                    ->whereDate('date', $today)
-                    ->get();
+    public function showLiveScores()
+    {
+        $today = Carbon::today();
+        $matches = Game::with(['homeTeam', 'awayTeam'])
+                        ->whereDate('date', $today)
+                        ->get();
 
-    return view('live-scores', compact('matches'));
-}
+        return view('live-scores', compact('matches'));
+    }
 
-public function updateLiveScore(Request $request, Game $game)
+    public function updateLiveScore(Request $request, Game $game)
     {
         Log::info('updateLiveScore called for game ID: ' . $game->id);
         $validatedData = $request->validate([
@@ -362,285 +360,268 @@ public function updateLiveScore(Request $request, Game $game)
     }
 
     public function fetchLiveScores()
-{
-    $matches = Game::with(['homeTeam', 'awayTeam'])->get();
+    {
+        $matches = Game::with(['homeTeam', 'awayTeam'])->get();
 
-    return response()->json([
-        'matches' => $matches->map(function ($match) {
-            return [
-                'match_id' => $match->id,
-                'home_score' => $match->home_score,
-                'away_score' => $match->away_score,
-                'updated_at' => $match->updated_at->setTimezone('Europe/Brussels')->format('H:i:s'),
+        return response()->json([
+            'matches' => $matches->map(function ($match) {
+                return [
+                    'match_id' => $match->id,
+                    'home_score' => $match->home_score,
+                    'away_score' => $match->away_score,
+                    'updated_at' => $match->updated_at->setTimezone('Europe/Brussels')->format('H:i:s'),
+                ];
+            }),
+        ]);
+    }
+
+    public function forfeitRequest(Request $request, Game $game)
+    {
+        $user = auth()->user();
+        $teamId = $user->team_id;
+
+        if ($user->role === 'admin' || $teamId === $game->home_team_id || $teamId === $game->away_team_id) {
+            if ($teamId === $game->home_team_id || $user->role === 'admin') {
+                $game->update([
+                    'forfeit_by' => 'home',
+                    'forfeit_confirmed' => true,
+                    'home_score' => 0,
+                    'away_score' => $game->away_score,
+                ]);
+            } elseif ($teamId === $game->away_team_id) {
+                $game->update([
+                    'forfeit_by' => 'away',
+                    'forfeit_confirmed' => false,
+                ]);
+                // Notify home team for confirmation
+            }
+            return redirect()->route('games.show', $game->id)->with('success', 'Forfeit request submitted.');
+        }
+        return redirect()->route('games.show', $game->id)->withErrors(['msg' => 'You are not authorized to forfeit this game.']);
+    }
+
+    public function confirmForfeit(Request $request, Game $game)
+    {
+        $user = auth()->user();
+        if ($user->role === 'admin' || $user->team_id === $game->home_team_id) {
+            $game->update(['forfeit_confirmed' => true, 'away_score' => 0]);
+            return redirect()->route('games.show', $game->id)->with('success', 'Forfeit confirmed.');
+        }
+        return redirect()->route('games.show', $game->id)->withErrors(['msg' => 'You are not authorized to confirm this forfeit.']);
+    }
+
+    public function calendarData()
+    {
+        $games = Game::all();
+        $events = [];
+        foreach ($games as $game) {
+            $events[] = [
+                'title' => $game->homeTeam->name . ' tegen ' . $game->awayTeam->name,
+                'start' => $game->date,
+                'url' => route('games.show', $game->id),
             ];
-        }),
-    ]);
-}
-
-public function forfeitRequest(Request $request, Game $game)
-{
-    $user = auth()->user();
-    $teamId = $user->team_id;
-
-    if ($user->role === 'admin' || $teamId === $game->home_team_id || $teamId === $game->away_team_id) {
-        if ($teamId === $game->home_team_id || $user->role === 'admin') {
-            $game->update([
-                'forfeit_by' => 'home',
-                'forfeit_confirmed' => true,
-                'home_score' => 0,
-                'away_score' => $game->away_score,
-            ]);
-        } elseif ($teamId === $game->away_team_id) {
-            $game->update([
-                'forfeit_by' => 'away',
-                'forfeit_confirmed' => false,
-            ]);
-            // Notify home team for confirmation
         }
-        return redirect()->route('games.show', $game->id)->with('success', 'Forfeit request submitted.');
+        return response()->json($events);
     }
-    return redirect()->route('games.show', $game->id)->withErrors(['msg' => 'You are not authorized to forfeit this game.']);
-}
 
-public function confirmForfeit(Request $request, Game $game)
-{
-    $user = auth()->user();
-    if ($user->role === 'admin' || $user->team_id === $game->home_team_id) {
-        $game->update(['forfeit_confirmed' => true, 'away_score' => 0]);
-        return redirect()->route('games.show', $game->id)->with('success', 'Forfeit confirmed.');
+    public function showDashboard()
+    {
+        $divisions = Division::all();
+        $seasons = Season::all();
+        $currentSeason = Season::latest('id')->first();
+        return view('dashboard', compact('divisions', 'currentSeason', 'seasons'));
     }
-    return redirect()->route('games.show', $game->id)->withErrors(['msg' => 'You are not authorized to confirm this forfeit.']);
-}
 
-public function calendarData()
-{
-    $games = Game::all();
-    $events = [];
-    foreach ($games as $game) {
-        $events[] = [
-            'title' => $game->homeTeam->name . ' tegen ' . $game->awayTeam->name,
-            'start' => $game->date,
-            'url' => route('games.show', $game->id),
-        ];
-    }
-    return response()->json($events);
-}
-
-
-public function showDashboard()
-{
-    $divisions = Division::all();
-    $seasons = Season::all();
-    $currentSeason = Season::latest('id')->first();
-    return view('dashboard', compact('divisions', 'currentSeason', 'seasons'));
-}
-
-private function calculateDivisionStandings(Division $division, $seasonId)
-{
-    $teams = $division->teams()->with([
-        'gamesHome' => function ($query) use ($seasonId) {
-            $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
-        },
-        'gamesAway' => function ($query) use ($seasonId) {
-            $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
-        }
-    ])->get();
-
-    return $teams->map(function ($team) {
-        $gamesWon = 0;
-        $gamesLost = 0;
-        $gamesDraw = 0;
-
-        // Iterate over home games
-        foreach ($team->gamesHome as $game) {
-            if ($game->home_score > $game->away_score) {
-                $gamesWon++;
-            } elseif ($game->home_score == $game->away_score) {
-                $gamesDraw++;
-            } else {
-                $gamesLost++;
+    private function calculateDivisionStandings(Division $division, $seasonId)
+    {
+        $teams = $division->teams()->with([
+            'gamesHome' => function ($query) use ($seasonId) {
+                $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
+            },
+            'gamesAway' => function ($query) use ($seasonId) {
+                $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
             }
-        }
+        ])->get();
 
-        // Iterate over away games
-        foreach ($team->gamesAway as $game) {
-            if ($game->away_score > $game->home_score) {
-                $gamesWon++;
-            } elseif ($game->away_score == $game->home_score) {
-                $gamesDraw++;
-            } else {
-                $gamesLost++;
+        return $teams->map(function ($team) {
+            $gamesWon = 0;
+            $gamesLost = 0;
+            $gamesDraw = 0;
+
+            // Iterate over home games
+            foreach ($team->gamesHome as $game) {
+                if ($game->home_score > $game->away_score) {
+                    $gamesWon++;
+                } elseif ($game->home_score == $game->away_score) {
+                    $gamesDraw++;
+                } else {
+                    $gamesLost++;
+                }
             }
+
+            // Iterate over away games
+            foreach ($team->gamesAway as $game) {
+                if ($game->away_score > $game->home_score) {
+                    $gamesWon++;
+                } elseif ($game->away_score == $game->home_score) {
+                    $gamesDraw++;
+                } else {
+                    $gamesLost++;
+                }
+            }
+
+            return [
+                'team_id' => $team->id,
+                'team_name' => $team->name,
+                'games_won' => $gamesWon,
+                'games_lost' => $gamesLost,
+                'games_draw' => $gamesDraw,
+                'points' => $gamesWon * 3 + $gamesDraw // 3 points for a win, 1 point for a draw
+            ];
+        })->sortByDesc('points')->values()->all();
+    }
+
+    public function showGamesForDivisionAndSeason(Request $request, $division_id, $season_id = null)
+    {
+        $division = Division::find($division_id);
+        if (!$division) {
+            return redirect()->route('dashboard')->with('error', 'Division not found.');
         }
 
-        return [
-            'team_id' => $team->id,
-            'team_name' => $team->name,
-            'games_won' => $gamesWon,
-            'games_lost' => $gamesLost,
-            'games_draw' => $gamesDraw,
-            'points' => $gamesWon * 3 + $gamesDraw // 3 points for a win, 1 point for a draw
-        ];
-    })->sortByDesc('points')->values()->all();
-}
+        $seasons = Season::all();
+        $season = $season_id ? Season::find($season_id) : Season::latest('id')->first();
 
+        if (!$season) {
+            return redirect()->route('dashboard')->with('error', 'Season not found.');
+        }
 
+        $currentDateTime = Carbon::now();
 
-public function showGamesForDivisionAndSeason(Request $request, $division_id, $season_id = null)
-{
-    $division = Division::find($division_id);
-    if (!$division) {
-        return redirect()->route('dashboard')->with('error', 'Division not found.');
-    }
+        // Fetch upcoming games for the current division and selected season
+        $upcomingGames = Game::with(['homeTeam', 'awayTeam'])
+                             ->where('division_id', $division_id)
+                             ->where('season_id', $season->id)
+                             ->where('date', '>=', $currentDateTime)
+                             ->whereNull('bye_team_id')
+                             ->orderBy('date', 'asc')
+                             ->get()
+                             ->groupBy(function($game) {
+                                 return \Carbon\Carbon::parse($game->date)->format('d-m-Y');
+                             });
 
-    $seasons = Season::all();
-    $season = $season_id ? Season::find($season_id) : Season::latest('id')->first();
-
-    if (!$season) {
-        return redirect()->route('dashboard')->with('error', 'Season not found.');
-    }
-
-    $currentDateTime = Carbon::now();
-
-    // Fetch upcoming games for the current division and selected season
-    $upcomingGames = Game::with(['homeTeam', 'awayTeam'])
+        // Fetch past games
+        $pastGames = Game::with(['homeTeam', 'awayTeam'])
                          ->where('division_id', $division_id)
                          ->where('season_id', $season->id)
-                         ->where('date', '>=', $currentDateTime)
+                         ->where('date', '<', $currentDateTime)
                          ->whereNull('bye_team_id')
-                         ->orderBy('date', 'asc')
-                         ->get()
-                         ->groupBy(function($game) {
-                             return \Carbon\Carbon::parse($game->date)->format('d-m-Y');
-                         });
+                         ->orderBy('date', 'desc')
+                         ->get();
 
-    // Fetch past games
-    $pastGames = Game::with(['homeTeam', 'awayTeam'])
-                     ->where('division_id', $division_id)
-                     ->where('season_id', $season->id)
-                     ->where('date', '<', $currentDateTime)
-                     ->whereNull('bye_team_id')
-                     ->orderBy('date', 'desc')
-                     ->get();
+        return view('games.list', compact('division', 'upcomingGames', 'pastGames', 'seasons', 'season', 'currentDateTime'));
+    }
 
-    return view('games.list', compact('division', 'upcomingGames', 'pastGames', 'seasons', 'season', 'currentDateTime'));
-}
+    public function generateMatches()
+    {
+        $teams = Team::all();
+        $numTeams = $teams->count();
+        $totalRounds = $numTeams - 1;
+        $matchesPerRound = intdiv($numTeams, 2);
+        $matchDate = Carbon::now()->next('Saturday');
+        $currentSeason = Season::latest()->first()->id;
 
+        $schedule = [];
 
-
-
-
-
-
-
-public function generateMatches()
-{
-    $teams = Team::all();
-    $numTeams = $teams->count();
-    $totalRounds = $numTeams - 1;
-    $matchesPerRound = intdiv($numTeams, 2);
-    $matchDate = Carbon::now()->next('Saturday');
-    $currentSeason = Season::latest()->first()->id;
-
-    $schedule = [];
-
-    for ($i = 0; $i < $totalRounds * 2; $i++) {
-        for ($j = 0; $j < $matchesPerRound; $j++) {
-            $home = ($i + $j) % $numTeams;
-            $away = ($i + $numTeams - $j) % $numTeams;
-            if ($home != $away) {
-                $schedule[] = [
-                    'home_team_id' => $teams[$home]->id,
-                    'away_team_id' => $teams[$away]->id,
-                    'season_id' => $currentSeason,
-                    'date' => $matchDate->copy()->addWeeks($i)->format('Y-m-d')
-                ];
+        for ($i = 0; $i < $totalRounds * 2; $i++) {
+            for ($j = 0; $matchesPerRound; $j++) {
+                $home = ($i + $j) % $numTeams;
+                $away = ($i + $numTeams - $j) % $numTeams;
+                if ($home != $away) {
+                    $schedule[] = [
+                        'home_team_id' => $teams[$home]->id,
+                        'away_team_id' => $teams[$away]->id,
+                        'season_id' => $currentSeason,
+                        'date' => $matchDate->copy()->addWeeks($i)->format('Y-m-d')
+                    ];
+                }
             }
         }
+
+        foreach ($schedule as $gameData) {
+            Game::create($gameData);
+        }
+
+        return redirect()->route('games.index')->with('success', 'Wedstrijden succesvol gegenereerd!');
     }
 
-    foreach ($schedule as $gameData) {
-        Game::create($gameData);
+    public function clearCalendar()
+    {
+        Manche::query()->delete(); // Verwijder alle manches
+        Game::query()->delete(); // Verwijder alle games
+
+        return redirect()->route('games.index')->with('success', 'Kalender succesvol verwijderd!');
     }
 
-    return redirect()->route('games.index')->with('success', 'Wedstrijden succesvol gegenereerd!');
-}
-
-
-public function clearCalendar()
-{
-    Manche::query()->delete(); // Verwijder alle manches
-    Game::query()->delete(); // Verwijder alle games
-
-    return redirect()->route('games.index')->with('success', 'Kalender succesvol verwijderd!');
-}
-
-
-public function editForm(Game $game)
-{
-    $game->load([
-        'homeTeam' => function ($query) {
-            $query->with(['club.teams.players']);
-        },
-        'awayTeam' => function ($query) {
-            $query->with(['club.teams.players']);
-        },
-        'manches', 
-        'belles'
-    ]);
-
-    $homeTeamPlayers = $game->homeTeam->club->teams->flatMap(function ($team) {
-        return $team->players;
-    })->unique('id');
-
-    $awayTeamPlayers = $game->awayTeam->club->teams->flatMap(function ($team) {
-        return $team->players;
-    })->unique('id');
-
-    return view('games.match_form', compact('game', 'homeTeamPlayers', 'awayTeamPlayers'));
-}
-
-
-public function play(Game $game)
-{
-    $this->authorize('update', $game);
-    return view('games.play', compact('game'));
-}
-    
-function updateManches(Game $game, array $manchesData)
-{
-    $game->players()->detach();
-
-    foreach ($manchesData as $playerId => $scores) {
-        $game->players()->attach($playerId, [
-            'manche_1_score' => $scores['manche_1_score'] ?? 0,
-            'manche_2_score' => $scores['manche_2_score'] ?? 0,
-            'belle_score' => $scores['belle_score'] ?? 0,
-            'is_belle_winner' => isset($scores['belle_score']) && $scores['belle_score'] > 0
+    public function editForm(Game $game)
+    {
+        $game->load([
+            'homeTeam' => function ($query) {
+                $query->with(['club.teams.players']);
+            },
+            'awayTeam' => function ($query) {
+                $query->with(['club.teams.players']);
+            },
+            'manches', 
+            'belles'
         ]);
+
+        $homeTeamPlayers = $game->homeTeam->club->teams->flatMap(function ($team) {
+            return $team->players;
+        })->unique('id');
+
+        $awayTeamPlayers = $game->awayTeam->club->teams->flatMap(function ($team) {
+            return $team->players;
+        })->unique('id');
+
+        return view('games.match_form', compact('game', 'homeTeamPlayers', 'awayTeamPlayers'));
     }
-}
 
-
-    
-function updateBelles(Game $game, array $bellesData)
-{
-    $game->belles()->delete();
-
-    foreach ($bellesData as $belle) {
-        $game->belles()->create([
-            'player_id' => $belle['player_id'],
-            'score' => $belle['score'],
-            'is_winner' => $belle['is_winner'] ?? false,
-        ]);
+    public function play(Game $game)
+    {
+        $this->authorize('update', $game);
+        return view('games.play', compact('game'));
     }
-}
+    
+    function updateManches(Game $game, array $manchesData)
+    {
+        $game->players()->detach();
 
+        foreach ($manchesData as $playerId => $scores) {
+            $game->players()->attach($playerId, [
+                'manche_1_score' => $scores['manche_1_score'] ?? 0,
+                'manche_2_score' => $scores['manche_2_score'] ?? 0,
+                'belle_score' => $scores['belle_score'] ?? 0,
+                'is_belle_winner' => isset($scores['belle_score']) && $scores['belle_score'] > 0
+            ]);
+        }
+    }
     
-public function destroy(Game $game, Request $request)
-{
-    $game->delete();
-    return redirect($request->headers->get('referer'))->with('success', 'Wedstrijd succesvol verwijderd.');
-}
+    function updateBelles(Game $game, array $bellesData)
+    {
+        $game->belles()->delete();
+
+        foreach ($bellesData as $belle) {
+            $game->belles()->create([
+                'player_id' => $belle['player_id'],
+                'score' => $belle['score'],
+                'is_winner' => $belle['is_winner'] ?? false,
+            ]);
+        }
+    }
     
+    public function destroy(Game $game, Request $request)
+    {
+        $game->delete();
+        return redirect($request->headers->get('referer'))->with('success', 'Wedstrijd succesvol verwijderd.');
+    }
 }
