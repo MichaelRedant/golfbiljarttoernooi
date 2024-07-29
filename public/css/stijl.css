@@ -16,7 +16,7 @@
   --table-row-background: #ffffff;
   --table-row-text-color: #333333;
   --link-color: #007bff;
-  --link-hover-color: #0056b3;
+  --link-hover-color: #dadada1e;
   --dark-link-color: #1e90ff;
   --dark-link-hover-color: #1c86ee;
 }
@@ -257,21 +257,6 @@ a:hover::after {
   transform-origin: bottom left;
 }
 
-body.night-mode a {
-  color: var(--link-color);
-}
-
-body.night-mode a:hover {
-  color: var(--link-hover-color);
-}
-
-body.night-mode a::after {
-  background-color: var(--link-color);
-}
-
-body.night-mode a:hover::after {
-  background-color: var(--link-hover-color);
-}
 
 .navbar {
   background-color: var(--navbar-background);
@@ -280,10 +265,6 @@ body.night-mode a:hover::after {
   border-bottom: 1px solid #ccc;
 }
 
-body.night-mode .navbar {
-  background-color: var(--navbar-background);
-  color: var(--navbar-text-color);
-}
 
 .btn {
   background-color: var(--button-background);
@@ -302,7 +283,7 @@ body.night-mode .navbar {
 }
 
 .btn:hover {
-  background-color: var(--link-hover-color);
+
   transform: translateY(-2px);
 }
 
@@ -310,9 +291,6 @@ body.night-mode .navbar {
   background-color: var(--button-background);
 }
 
-.btn-primary:hover {
-  background-color: var(--link-hover-color);
-}
 
 .btn-danger {
   background-color: #dc3545;
@@ -322,29 +300,6 @@ body.night-mode .navbar {
   background-color: #b21f2d;
 }
 
-body.night-mode .btn {
-  background-color: #375a7f;
-}
-
-body.night-mode .btn:hover {
-  background-color: #1e3a5f;
-}
-
-body.night-mode .btn-primary {
-  background-color: #375a7f;
-}
-
-body.night-mode .btn-primary:hover {
-  background-color: #1e3a5f;
-}
-
-body.night-mode .btn-danger {
-  background-color: #a71d2a;
-}
-
-body.night-mode .btn-danger:hover {
-  background-color: #881122;
-}
 
 .text-justify {
   text-align: justify;
@@ -561,3 +516,16 @@ body.night-mode .table td {
   transform: translateY(-3px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
+
+.sponsor-image {
+  max-height: 100px; /* Set the maximum height */
+  width: auto; /* Maintain aspect ratio */
+  display: block;
+  margin: auto; /* Center the image */
+}
+
+.carousel-control-prev,
+.carousel-control-next {
+  display: none; /* Hide the carousel controls */
+}
+

@@ -90,6 +90,21 @@
             </div>
         </div>
 
+        <!-- New section for sponsor management -->
+        <div class="col-md-12">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-ad"></i> Sponsorbeheer</h5>
+                    <a href="{{ route('sponsors.index') }}" class="btn btn-outline-secondary d-block mb-2">
+                        <i class="fas fa-eye"></i> Bekijk Sponsors
+                    </a>
+                    <a href="{{ route('sponsors.create') }}" class="btn btn-outline-secondary d-block mb-2">
+                        <i class="fas fa-plus"></i> Voeg Sponsor Toe
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <div class="col-md-12 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">

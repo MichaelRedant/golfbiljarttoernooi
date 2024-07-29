@@ -3,8 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
     ClubController, GameController, TeamController, UserController, BelleController, HomeController,
-    MancheController, PlayerController, SeasonController, ProfileController, NewsController,
-    RankingController, DivisionController, ReservePlayerController, DashboardController, Auth\AuthenticatedSessionController
+    MancheController, SponsorController, PlayerController, SeasonController, ProfileController, NewsController,
+    RankingController, DivisionController, ReservePlayerController, DashboardController, Auth\AuthenticatedSessionController, Auth\PasswordResetLinkController, Auth\NewPasswordController
 };
 
 // Publicly accessible routes
@@ -117,7 +117,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     // User management routes
     Route::resource('users', UserController::class)->except(['show']);
+
 });
+
+// Sponsor routes
+Route::resource('sponsors', SponsorController::class)->middleware('auth');
 
 // Additional player and team routes
 Route::get('/get-teams', [PlayerController::class, 'getTeamsByDivision'])->name('get-teams');

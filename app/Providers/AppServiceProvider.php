@@ -2,11 +2,12 @@
 
 namespace App\Providers;
 
-use App\Models\Division;
-use App\Models\Game;
 use Carbon\Carbon;
-use Illuminate\Support\ServiceProvider;
+use App\Models\Game;
+use App\Models\Sponsor;
+use App\Models\Division;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
             $today = Carbon::today();
             $hasLiveMatches = Game::whereDate('date', $today)->exists();
             $view->with('hasLiveMatches', $hasLiveMatches);
+            $sponsors = Sponsor::all();
+            $view->with('sponsors', $sponsors);
         });
     }
 }

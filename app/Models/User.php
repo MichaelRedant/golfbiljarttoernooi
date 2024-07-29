@@ -22,7 +22,7 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
+        // 'password' => 'hashed',
     ];
 
     public function isAdmin()
@@ -40,10 +40,10 @@ class User extends Authenticatable
         return $this->belongsTo(Team::class);
     }
 
-    public function setPasswordAttribute($password)
+    /* public function setPasswordAttribute($password)
     {
         Log::info('Hashing password within User model', ['password' => $password]);
         $this->attributes['password'] = Hash::make($password);
-    }
+    } */
 }
 

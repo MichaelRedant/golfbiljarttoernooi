@@ -31,7 +31,10 @@ class AuthenticatedSessionController extends Controller
         // Debugging credentials
         Log::info('Attempting to authenticate', $credentials);
 
-        if (Auth::attempt($credentials)) {
+        $user = \App\Models\User::where('name', $credentials['name'])->first();
+
+        if ($user && $user->password === $credentials['password']) {
+            Auth::login($user);
             $request->session()->regenerate();
 
             Log::info('Authentication successful');

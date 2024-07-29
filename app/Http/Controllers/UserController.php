@@ -36,7 +36,7 @@ class UserController extends Controller
         ]);
 
         Log::info('Storing user with raw password', ['password' => $request->password]);
-
+ 
         User::create([
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
@@ -79,8 +79,14 @@ class UserController extends Controller
             }
         }
 
-        if (!empty($validatedData['password'])) {
+        /* if (!empty($validatedData['password'])) {
             $validatedData['password'] = Hash::make($validatedData['password']);
+        } else {
+            unset($validatedData['password']);
+        } */
+
+        if (!empty($validatedData['password'])) {
+            $validatedData['password'] = $validatedData['password']; // Sla wachtwoord als plain text op
         } else {
             unset($validatedData['password']);
         }

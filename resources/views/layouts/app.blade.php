@@ -31,6 +31,9 @@
     <!-- Flash Messages -->
     @include('partials.flash-messages')
 
+     <!-- Sponsors Navbar -->
+     @include('layouts.sponsor-navbar', ['sponsors' => $sponsors])
+
     <!-- Page Content -->
     <main class="content-wrapper">
         @yield('content')
@@ -38,8 +41,10 @@
 
     <footer class="footer">
         <div class="container">
-            <img src="{{ asset('images/Pixapop_black.webp') }}" alt="Pixapop Logo" class="footer-logo">
-            <p class="footer-text">Designed & created by <a href="https://pixapop.be" target="_blank">Pixapop webdesign</a> © {{ date('Y') }}</p>
+            <a href="https://pixapop.be" target="_blank">
+                <img src="{{ asset('images/Pixapop_black.webp') }}" alt="Pixapop Logo" class="footer-logo">
+            </a>
+            <p class="footer-text">Designed & created by <a href="https://pixapop.be" target="_blank">Pixapop webdesign</a> © <span id="current-year"></span></p>
         </div>
     </footer>
 
@@ -55,6 +60,11 @@
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             }
+        });
+         // Dynamically set the current year in the footer
+         document.addEventListener('DOMContentLoaded', function() {
+            const yearSpan = document.getElementById('current-year');
+            yearSpan.textContent = new Date().getFullYear();
         });
     </script>
 </body>
