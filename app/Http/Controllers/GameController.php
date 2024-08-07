@@ -43,23 +43,23 @@ class GameController extends Controller
     }
 
     public function create(Request $request, $division_id = null, $season_id = null)
-    {
-        $divisions = Division::all();
-        $teams = Team::all();
-        $seasons = Season::all();
-        $latestSeason = Season::latest('id')->first();
-    
-        if ($divisions->isEmpty() || $teams->isEmpty() || $seasons->isEmpty()) {
-            return redirect()->route('home')->withErrors(['msg' => 'Er zijn geen divisies, teams of seizoenen beschikbaar om een wedstrijd aan te maken.']);
-        }
-    
-        $selectedDivisionId = $division_id ?? $divisions->first()->id ?? null;
-        $selectedSeasonId = $season_id ?? $latestSeason->id;
-    
-        return view('games.create', compact('divisions', 'teams', 'seasons', 'selectedDivisionId', 'selectedSeasonId', 'latestSeason'));
+{
+    $divisions = Division::all();
+    $teams = Team::all();
+    $seasons = Season::all();
+    $latestSeason = Season::latest('id')->first();
+
+    if ($divisions->isEmpty() || $teams->isEmpty() || $seasons->isEmpty()) {
+        return redirect()->route('home')->withErrors(['msg' => 'Er zijn geen divisies, teams of seizoenen beschikbaar om een wedstrijd aan te maken.']);
     }
+
+    $selectedDivisionId = $division_id ?? '';
+    $selectedSeasonId = $season_id ?? $latestSeason->id;
+
+    return view('games.create', compact('divisions', 'teams', 'seasons', 'selectedDivisionId', 'selectedSeasonId', 'latestSeason'));
+}
     
-    public function store(Request $request)
+public function store(Request $request)
 {
     Log::info('Store method called');
     Log::info('Request data: ', $request->all());
@@ -96,7 +96,8 @@ class GameController extends Controller
         $awayTeam = Team::find($validatedData['away_team_id']);
         $divisionId = $validatedData['division_id'];
 
-        if ($homeTeam->division_id != $divisionId || $awayTeam->division_id != $divisionId) {
+        // Check if the home team and away team belong to the selected division
+        if (!$homeTeam->divisions->contains($divisionId) || !$awayTeam->divisions->contains($divisionId)) {
             Log::error('Teams are not in the selected division');
             return back()->withErrors(['msg' => 'Teams must be in the selected division']);
         }
@@ -156,7 +157,7 @@ class GameController extends Controller
         }
     }
 
-    return redirect()->route('games.index')->with('success', 'Wedstrijd succesvol aangemaakt! Wachtend op goedkeuring.');
+    return redirect()->route('game.create')->with('success', 'Wedstrijd succesvol aangemaakt!');
 }
 
     public function edit(Game $game)

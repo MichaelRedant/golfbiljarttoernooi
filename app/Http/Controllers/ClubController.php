@@ -8,11 +8,14 @@ use Illuminate\Http\Request;
 
 class ClubController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $clubs = Club::all();
+        $sort = $request->query('sort', 'name');
+        $order = $request->query('order', 'asc');
+        $clubs = Club::orderBy($sort, $order)->get();
         return view('clubs.index', compact('clubs'));
     }
+
 
     public function create()
     {

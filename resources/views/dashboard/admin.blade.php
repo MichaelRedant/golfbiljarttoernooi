@@ -63,7 +63,7 @@
                         <i class="fas fa-building"></i> Clubs Beheren
                     </a>
                     <a href="{{ route('divisions.index') }}" class="btn btn-outline-secondary d-block mb-2">
-                        <i class="fas fa-sitemap"></i> Divisies Beheren
+                        <i class="fas fa-sitemap"></i> Reeksen Beheren
                     </a>
                     <a href="{{ route('teams.index') }}" class="btn btn-outline-secondary d-block mb-2">
                         <i class="fas fa-users"></i> Teams Beheren

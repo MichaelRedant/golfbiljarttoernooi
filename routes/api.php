@@ -20,6 +20,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 Route::get('/teams/by-club/{club}', [TeamController::class, 'getTeamsByClub']);
+Route::get('/divisions/{division}/teams', [DivisionController::class, 'getTeamsByDivision']);
 
 Route::get('/divisions/{division}/teams', function (Division $division) {
     return response()->json($division->teams);

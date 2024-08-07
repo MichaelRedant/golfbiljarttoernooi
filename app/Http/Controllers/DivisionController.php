@@ -137,7 +137,12 @@ class DivisionController extends Controller
 
     public function getTeamsByDivision($divisionId)
     {
-        $teams = Team::where('division_id', $divisionId)->get();
+        $division = Division::find($divisionId);
+        if (!$division) {
+            return response()->json(['message' => 'Division not found'], 404);
+        }
+
+        $teams = $division->teams;
 
         return response()->json($teams);
     }
@@ -187,6 +192,8 @@ public function update(Request $request, Division $division)
 
     return redirect()->route('divisions.index')->with('success', 'Divisie succesvol bijgewerkt.');
 }
+
+
 
     public function delete(Division $division)
     {

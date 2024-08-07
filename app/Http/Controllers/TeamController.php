@@ -25,13 +25,13 @@ class TeamController extends Controller
     {
         $search = $request->input('search');
         $divisionId = $request->input('division');
-
-        $teams = Team::query();
-
+    
+        $teams = Team::with('club'); // Voeg eager loading toe voor de club-relatie
+    
         if ($search) {
             $teams = $teams->where('name', 'LIKE', '%' . $search . '%');
         }
-
+    
         if ($divisionId) {
             $teams = $teams->whereHas('divisions', function ($query) use ($divisionId) {
                 $query->where('division_id', $divisionId);
@@ -41,12 +41,13 @@ class TeamController extends Controller
         } else {
             $divisionName = 'Alle divisies';
         }
-
+    
         $teams = $teams->get();
         $divisions = Division::all();
-
+    
         return view('teams.index', compact('teams', 'divisions', 'divisionName'));
     }
+
     
     public function create(Request $request)
     {

@@ -23,15 +23,17 @@ class NewsController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'content' => 'required|string',
+            'content' => 'required',
+            'is_sticky' => 'sometimes|boolean',
         ]);
 
         News::create([
             'title' => $request->title,
             'content' => $request->content,
+            'is_sticky' => $request->is_sticky ?? false,
         ]);
 
-        return redirect()->route('news.index')->with('success', 'Nieuws succesvol toegevoegd.');
+        return redirect()->route('news.index')->with('success', 'News item created successfully.');
     }
 
     public function edit(News $news)
