@@ -24,8 +24,8 @@
                 <th class="text-justify">#</th> <!-- Nieuwe kolom voor rangnummer -->
                 <th  class="text-justify">Speler</th>
                 <th  class="text-justify">Team</th>
-                <th  class="text-justify">Matches Gewonnen</th>
-                <th  class="text-justify">Matches Verloren</th>
+                <th  class="text-justify">Gewonnen</th>
+                <th  class="text-justify">Verloren</th>
                 <th  class="text-justify">Punten</th>
             </tr>
         </thead>

@@ -36,7 +36,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="division_id"><i class="fas fa-layer-group"></i> Kies een divisie:</label>
+                        <label for="division_id"><i class="fas fa-layer-group"></i> Kies een reeks:</label>
                         <select id="division_id" name="division_id" class="form-control" onchange="this.form.submit()">
                             @foreach ($divisions as $division)
                                 <option value="{{ $division->id }}" {{ $division->id == $currentDivisionId ? 'selected' : '' }}>
@@ -46,9 +46,9 @@
                         </select>
                     </div>
                 </form>
-                <p><strong><i class="fas fa-trophy"></i> Aantal Gewonnen:</strong> {{ $currentTeamStanding['games_won'] ?? 'N/A' }}</p>
-                <p><strong><i class="fas fa-thumbs-down"></i> Aantal Verloren:</strong> {{ $currentTeamStanding['games_lost'] ?? 'N/A' }}</p>
-                <p><strong><i class="fas fa-handshake"></i> Aantal Gelijk:</strong> {{ $currentTeamStanding['games_draw'] ?? 'N/A' }}</p>
+                <p><strong><i class="fas fa-trophy"></i>Gewonnen:</strong> {{ $currentTeamStanding['games_won'] ?? 'N/A' }}</p>
+                <p><strong><i class="fas fa-thumbs-down"></i>Verloren:</strong> {{ $currentTeamStanding['games_lost'] ?? 'N/A' }}</p>
+                <p><strong><i class="fas fa-handshake"></i>Gelijk:</strong> {{ $currentTeamStanding['games_draw'] ?? 'N/A' }}</p>
                 <p><strong><i class="fas fa-star"></i> Totaal Punten:</strong> {{ $currentTeamStanding['points'] ?? 'N/A' }}</p>
                 <p><strong><i class="fas fa-medal"></i> Plaats dit seizoen:</strong> 
                     @foreach ($standings as $index => $standing)

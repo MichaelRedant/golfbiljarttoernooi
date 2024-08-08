@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container mt-4">
-    <h1 class="mb-4"><i class="fas fa-layer-group"></i> Kies een Divisie</h1>
+    <h1 class="mb-4"><i class="fas fa-layer-group"></i> Kies een reeks</h1>
     <div class="row">
         @forelse($divisions as $division)
             <div class="col-md-4 mb-4">
@@ -14,7 +14,7 @@
                                 <i class="fas fa-users"></i> Team Rankings
                             </a>
                             <a href="{{ route('rankings.players', ['division' => $division->id, 'season_id' => $currentSeasonId]) }}" class="btn btn-secondary btn-block  mt-2">
-                                <i class="fas fa-user"></i> Player Rankings
+                                <i class="fas fa-user"></i> Speler Rankings
                             </a>
                         @else
                             <p class="text-muted">Geen gespeelde wedstrijden gevonden.</p>
@@ -24,7 +24,7 @@
             </div>
         @empty
             <div class="col-12">
-                <p class="text-center">Geen divisies gevonden.</p>
+                <p class="text-center">Geen reeks gevonden.</p>
             </div>
         @endforelse
     </div>

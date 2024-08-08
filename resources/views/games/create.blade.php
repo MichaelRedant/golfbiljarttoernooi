@@ -18,9 +18,9 @@
         @csrf
 
         <div class="form-group mb-3">
-            <label for="division_id"><i class="fas fa-layer-group"></i> Kies een divisie:</label>
+            <label for="division_id"><i class="fas fa-layer-group"></i> Kies een reeks:</label>
             <select id="division_id" name="division_id" class="form-control">
-                <option value="" {{ old('division_id', $selectedDivisionId) == '' ? 'selected' : '' }}>Selecteer een divisie</option>
+                <option value="" {{ old('division_id', $selectedDivisionId) == '' ? 'selected' : '' }}>Selecteer een reeks</option>
                 @foreach ($divisions as $division)
                     <option value="{{ $division->id }}" {{ old('division_id', $selectedDivisionId) == $division->id ? 'selected' : '' }}>
                         {{ $division->name }}

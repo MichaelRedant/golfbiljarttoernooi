@@ -12,9 +12,9 @@
             <small class="form-text text-muted">Klik op "Toon Teams" om de zoekresultaten te zien.</small>
         </div>
         <div class="mb-3">
-            <label for="division" class="form-label"><i class="fas fa-layer-group"></i> Selecteer een divisie:</label>
+            <label for="division" class="form-label"><i class="fas fa-layer-group"></i> Selecteer een reeks:</label>
             <select id="division" name="division" class="form-select form-control">
-                <option value="">Alle divisies</option>
+                <option value="">Alle reeksen</option>
                 @foreach($divisions as $division)
                     <option value="{{ $division->id }}" {{ request('division') == $division->id ? 'selected' : '' }}>{{ $division->name }}</option>
                 @endforeach
@@ -25,16 +25,37 @@
 
     @if ($teams->isNotEmpty())
         <div class="mt-4">
-            <h2>{{ $divisionName ?? 'Geselecteerde divisie' }}</h2>
+            <h2>{{ $divisionName ?? 'Geselecteerde reeks' }}</h2>
             <div class="card">
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th><i class="fas fa-users"></i> Naam</th>
-                                    <th><i class="fas fa-map-marker-alt"></i> Locatie</th>
-                                    <th><i class="fas fa-building"></i> Club</th>
+                                    <th>
+                                        <a href="{{ route('teams.index', array_merge(request()->except('page'), ['sort_field' => 'name', 'sort_order' => request('sort_order', 'asc') == 'asc' ? 'desc' : 'asc'])) }}">
+                                            <i class="fas fa-users"></i> Naam
+                                            @if (request('sort_field') == 'name')
+                                                <i class="fas fa-sort-{{ request('sort_order', 'asc') == 'asc' ? 'down' : 'up' }}"></i>
+                                            @endif
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="{{ route('teams.index', array_merge(request()->except('page'), ['sort_field' => 'location', 'sort_order' => request('sort_order', 'asc') == 'asc' ? 'desc' : 'asc'])) }}">
+                                            <i class="fas fa-map-marker-alt"></i> Locatie
+                                            @if (request('sort_field') == 'location')
+                                                <i class="fas fa-sort-{{ request('sort_order', 'asc') == 'asc' ? 'down' : 'up' }}"></i>
+                                            @endif
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="{{ route('teams.index', array_merge(request()->except('page'), ['sort_field' => 'club_name', 'sort_order' => request('sort_order', 'asc') == 'asc' ? 'desc' : 'asc'])) }}">
+                                            <i class="fas fa-building"></i> Club
+                                            @if (request('sort_field') == 'club_name')
+                                                <i class="fas fa-sort-{{ request('sort_order', 'asc') == 'asc' ? 'down' : 'up' }}"></i>
+                                            @endif
+                                        </a>
+                                    </th>
                                     @if(auth()->user() && auth()->user()->role === 'admin')
                                         <th><i class="fas fa-cogs"></i> Acties</th>
                                     @endif

@@ -2,16 +2,16 @@
 
 @section('content')
     <div class="container mt-4">
-        <h1><i class="fas fa-layer-group"></i> Divisies</h1>
+        <h1><i class="fas fa-layer-group"></i> Reeksen</h1>
         
         @if(auth()->user() && auth()->user()->role === 'admin')
             <a href="{{ route('divisions.create') }}" class="btn btn-primary mb-2">
-                <i class="fas fa-plus"></i> Nieuwe Divisie Toevoegen
+                <i class="fas fa-plus"></i> Nieuwe Reeks Toevoegen
             </a>
         @endif
 
         @if ($divisions->isEmpty())
-            <p>Er zijn geen divisies beschikbaar.</p>
+            <p>Er zijn geen reeksen beschikbaar.</p>
         @else
             <div class="accordion" id="divisionAccordion">
                 @foreach ($divisions as $division)
@@ -29,7 +29,7 @@
                                         <a href="{{ route('divisions.edit', $division) }}" class="btn btn-warning btn-sm">
                                             <i class="fas fa-edit"></i> Bewerken
                                         </a>
-                                        <button class="btn btn-danger btn-sm" onclick="event.preventDefault(); if(confirm('Weet je zeker dat je deze divisie wilt verwijderen?')) document.getElementById('delete-division-{{ $division->id }}').submit();">
+                                        <button class="btn btn-danger btn-sm" onclick="event.preventDefault(); if(confirm('Weet je zeker dat je deze reeks wilt verwijderen?')) document.getElementById('delete-division-{{ $division->id }}').submit();">
                                             <i class="fas fa-trash-alt"></i> Verwijderen
                                         </button>
                                         <form id="delete-division-{{ $division->id }}" action="{{ route('divisions.destroy', $division) }}" method="POST" style="display: none;">
@@ -43,7 +43,7 @@
 
                         <div id="collapse{{ $division->id }}" class="collapse" aria-labelledby="heading{{ $division->id }}" data-parent="#divisionAccordion">
                             <div class="card-body">
-                                <h5><i class="fas fa-users"></i> Teams in deze Divisie</h5>
+                                <h5><i class="fas fa-users"></i> Teams in deze reeks</h5>
                                 <ul class="list-group">
                                     @foreach ($division->teams as $team)
                                         <li class="list-group-item d-flex justify-content-between align-items-center">

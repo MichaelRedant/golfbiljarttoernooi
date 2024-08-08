@@ -31,7 +31,7 @@
                             </a>
                         @endforeach
                     @else
-                        <p>Geen seizoenen of divisies beschikbaar.</p>
+                        <p>Geen seizoenen of reeksen beschikbaar.</p>
                     @endif
                 </div>
             </div>
@@ -50,7 +50,7 @@
                 </div>
             </div>
         </div>
-
+ 
         <!-- New section for quick access to edit seasons, clubs, divisions, teams, and players -->
         <div class="col-md-12">
             <div class="card mb-4 shadow-sm">

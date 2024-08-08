@@ -13,78 +13,90 @@ use Illuminate\Support\Facades\Log;
 class PlayerController extends Controller
 {
     public function index(Request $request)
-    {
-        Log::info('Index method called');
-        Log::info('Request data:', $request->all());
+{
+    Log::info('Index method called');
+    Log::info('Request data:', $request->all());
 
-        try {
-            $query = $request->input('query');
-            $divisionId = $request->input('division_id');
-            $teamId = $request->input('team_id');
+    try {
+        $query = $request->input('query');
+        $divisionId = $request->input('division_id');
+        $teamId = $request->input('team_id');
+        $sortOrder = $request->input('sort', 'asc');
 
-            $divisions = Division::all();
-            $teams = collect();
-            $players = collect();
+        $divisions = Division::all();
+        $teams = collect();
+        $players = collect();
 
-            if ($divisionId) {
-                $teams = Team::whereHas('divisions', function ($query) use ($divisionId) {
+        if ($divisionId) {
+            $teams = Team::whereHas('divisions', function ($query) use ($divisionId) {
+                $query->where('divisions.id', $divisionId);
+            })->get();
+
+            $players = Player::with('team')
+                ->whereHas('team.divisions', function ($query) use ($divisionId) {
                     $query->where('divisions.id', $divisionId);
-                })->get();
-            }
+                })
+                ->orderBy('last_name', $sortOrder)
+                ->orderBy('first_name', $sortOrder)
+                ->get();
 
             if ($teamId) {
-                $players = Player::with('team')
-                                ->where('team_id', $teamId)
-                                ->get();
-
-                if ($players->isNotEmpty()) {
-                    $divisionIds = $players->first()->team->divisions->pluck('id')->toArray() ?? [];
-                    $currentSeasonId = Season::latest('id')->first()->id;
-                    $standings = $divisionIds ? $this->calculatePlayerStandings($divisionIds, $currentSeasonId) : [];
-
-                    $players = $players->map(function ($player) use ($standings) {
-                        $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
-                        return (object) [
-                            'id' => $player->id,
-                            'name' => $player->first_name . ' ' . $player->last_name,
-                            'team_name' => $player->team->name ?? 'Geen team',
-                            'team_id' => $player->team->id ?? null,
-                            'rank' => $rank,
-                        ];
-                    });
-                }
+                $players = $players->filter(function ($player) use ($teamId) {
+                    return $player->team_id == $teamId;
+                });
             }
 
-            if ($query) {
-                $players = Player::with('team')
-                                ->where('first_name', 'LIKE', "%{$query}%")
-                                ->orWhere('last_name', 'LIKE', "%{$query}%")
-                                ->get();
+            if ($players->isNotEmpty()) {
+                $divisionIds = $players->first()->team->divisions->pluck('id')->toArray() ?? [];
+                $currentSeasonId = Season::latest('id')->first()->id;
+                $standings = $divisionIds ? $this->calculatePlayerStandings($divisionIds, $currentSeasonId) : [];
 
-                if ($players->isNotEmpty()) {
-                    $divisionIds = $players->first()->team->divisions->pluck('id')->toArray() ?? [];
-                    $currentSeasonId = Season::latest('id')->first()->id;
-                    $standings = $divisionIds ? $this->calculatePlayerStandings($divisionIds, $currentSeasonId) : [];
-
-                    $players = $players->map(function ($player) use ($standings) {
-                        $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
-                        return (object) [
-                            'id' => $player->id,
-                            'name' => $player->first_name . ' ' . $player->last_name,
-                            'team_name' => $player->team->name ?? 'Geen team',
-                            'team_id' => $player->team->id ?? null,
-                            'rank' => $rank,
-                        ];
-                    });
-                }
+                $players = $players->map(function ($player) use ($standings) {
+                    $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
+                    return (object) [
+                        'id' => $player->id,
+                        'name' => $player->first_name . ' ' . $player->last_name,
+                        'team_name' => $player->team->name ?? 'Geen team',
+                        'team_id' => $player->team->id ?? null,
+                        'rank' => $rank,
+                    ];
+                });
             }
-
-            return view('players.index', compact('players', 'divisions', 'teams'));
-        } catch (\Exception $e) {
-            Log::error('Error fetching players: ' . $e->getMessage());
-            return back()->withErrors('Er is een fout opgetreden bij het ophalen van de spelerslijst.');
         }
+
+        if ($query) {
+            $players = Player::with('team')
+                ->where('first_name', 'LIKE', "%{$query}%")
+                ->orWhere('last_name', 'LIKE', "%{$query}%")
+                ->orderBy('last_name', $sortOrder)
+                ->orderBy('first_name', $sortOrder)
+                ->get();
+
+            if ($players->isNotEmpty()) {
+                $divisionIds = $players->first()->team->divisions->pluck('id')->toArray() ?? [];
+                $currentSeasonId = Season::latest('id')->first()->id;
+                $standings = $divisionIds ? $this->calculatePlayerStandings($divisionIds, $currentSeasonId) : [];
+
+                $players = $players->map(function ($player) use ($standings) {
+                    $rank = array_search($player->id, array_column($standings, 'player_id')) + 1;
+                    return (object) [
+                        'id' => $player->id,
+                        'name' => $player->first_name . ' ' . $player->last_name,
+                        'team_name' => $player->team->name ?? 'Geen team',
+                        'team_id' => $player->team->id ?? null,
+                        'rank' => $rank,
+                    ];
+                });
+            }
+        }
+
+        return view('players.index', compact('players', 'divisions', 'teams', 'sortOrder'));
+    } catch (\Exception $e) {
+        Log::error('Error fetching players: ' . $e->getMessage());
+        return back()->withErrors('Er is een fout opgetreden bij het ophalen van de spelerslijst.');
     }
+}
+
 
     public function create()
     {

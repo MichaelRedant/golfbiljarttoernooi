@@ -8,6 +8,7 @@
     <form action="{{ route('players.index') }}" method="GET" class="mb-3">
         <div class="input-group">
             <input type="text" name="query" id="searchInput" class="form-control" placeholder="Voer spelernaam in..." value="{{ request('query') }}">
+            <input type="hidden" name="sort" value="{{ request('sort', 'asc') }}">
             <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Zoek</button>
         </div>
         <small class="form-text text-muted">Klik op "Zoek" om de zoekresultaten te zien.</small>
@@ -15,19 +16,21 @@
 
     <!-- Division selection -->
     <form action="{{ route('players.index') }}" method="GET" id="divisionForm" class="mb-3">
-        <label for="divisionSelect" class="form-label"><i class="fas fa-layer-group"></i> Kies een divisie:</label>
+        <label for="divisionSelect" class="form-label"><i class="fas fa-layer-group"></i> Kies een reeks:</label>
         <select name="division_id" id="divisionSelect" class="form-select form-control" onchange="document.getElementById('divisionForm').submit()">
-            <option value="">Kies een divisie</option>
+            <option value="">Kies een reeks</option>
             @foreach ($divisions as $division)
                 <option value="{{ $division->id }}" {{ request('division_id') == $division->id ? 'selected' : '' }}>{{ $division->name }}</option>
             @endforeach
         </select>
+        <input type="hidden" name="sort" value="{{ request('sort', 'asc') }}">
     </form>
 
     <!-- Team selection -->
     @if(request('division_id'))
         <form action="{{ route('players.index') }}" method="GET" id="teamForm" class="mb-3">
             <input type="hidden" name="division_id" value="{{ request('division_id') }}">
+            <input type="hidden" name="sort" value="{{ request('sort', 'asc') }}">
             <label for="teamSelect" class="form-label"><i class="fas fa-users-cog"></i> Kies een team:</label>
             <select name="team_id" id="teamSelect" class="form-select form-control" onchange="document.getElementById('teamForm').submit()">
                 <option value="">Selecteer een team</option>
@@ -46,8 +49,17 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th>Plaats Dit Seizoen</th>
-                        <th>Naam</th>
+                        <th>Plaats dit seizoen</th>
+                        <th>
+                            <a href="{{ route('players.index', array_merge(request()->except('page'), ['sort' => request('sort', 'asc') == 'asc' ? 'desc' : 'asc'])) }}">
+                                Naam
+                                @if (request('sort', 'asc') == 'asc')
+                                    <i class="fas fa-sort-alpha-up"></i>
+                                @else
+                                    <i class="fas fa-sort-alpha-down"></i>
+                                @endif
+                            </a>
+                        </th>
                         <th>Team</th>
                         @if(auth()->user() && auth()->user()->role === 'admin')
                         <th>Acties</th>

@@ -11,7 +11,7 @@
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDivisions" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Divisies
+                        Reeksen
                     </a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdownDivisions">
                         @foreach ($divisions as $division)
@@ -32,7 +32,7 @@
                         Informatie
                     </a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdownInfo">
-                        <a class="dropdown-item" href="{{ route('divisions.index') }}">Divisies</a>
+                        <a class="dropdown-item" href="{{ route('divisions.index') }}">Reeksen</a>
                         <a class="dropdown-item" href="{{ route('clubs.index') }}">Clubs</a>
                         <a class="dropdown-item" href="{{ route('teams.index') }}">Teams</a>
                         <a class="dropdown-item" href="{{ route('players.index') }}">Spelers</a>
@@ -50,7 +50,7 @@
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item" href="{{ route('players.create') }}">Nieuwe Speler Toevoegen</a>
                                 <a class="dropdown-item" href="{{ route('teams.create') }}">Nieuw Team Toevoegen</a>
-                                <a class="dropdown-item" href="{{ route('divisions.create') }}">Nieuwe Divisie Toevoegen</a>
+                                <a class="dropdown-item" href="{{ route('divisions.create') }}">Nieuwe Reeks Toevoegen</a>
                                 <a class="dropdown-item" href="{{ route('clubs.create') }}">Nieuwe Club Toevoegen</a>
                                 <a class="dropdown-item" href="{{ route('seasons.create') }}">Nieuw Seizoen Toevoegen</a>
                                 <a class="dropdown-item" href="{{ route('game.create') }}">Nieuwe Wedstrijd</a>

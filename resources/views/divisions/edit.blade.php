@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container mt-4">
-    <h1><i class="fas fa-edit"></i> Divisie Bewerken: {{ $division->name }}</h1>
+    <h1><i class="fas fa-edit"></i>{{ $division->name }} bewerken </h1>
 
     <form action="{{ route('divisions.update', $division) }}" method="POST">
         @csrf
@@ -13,7 +13,7 @@
         </div>
 
         <div class="form-group">
-            <label for="teams"><i class="fas fa-users"></i> Teams in deze Divisie:</label>
+            <label for="teams"><i class="fas fa-users"></i> Teams in deze reeks:</label>
             <div class="row">
                 <div class="col-md-5">
                     <h5>Beschikbare Teams</h5>

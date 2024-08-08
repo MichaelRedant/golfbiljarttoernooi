@@ -22,31 +22,42 @@ class TeamController extends Controller
     }
 
     public function index(Request $request)
-    {
-        $search = $request->input('search');
-        $divisionId = $request->input('division');
-    
-        $teams = Team::with('club'); // Voeg eager loading toe voor de club-relatie
-    
-        if ($search) {
-            $teams = $teams->where('name', 'LIKE', '%' . $search . '%');
-        }
-    
-        if ($divisionId) {
-            $teams = $teams->whereHas('divisions', function ($query) use ($divisionId) {
-                $query->where('division_id', $divisionId);
-            });
-            $division = Division::find($divisionId);
-            $divisionName = $division ? $division->name : 'Geselecteerde divisie';
-        } else {
-            $divisionName = 'Alle divisies';
-        }
-    
-        $teams = $teams->get();
-        $divisions = Division::all();
-    
-        return view('teams.index', compact('teams', 'divisions', 'divisionName'));
+{
+    $search = $request->input('search');
+    $divisionId = $request->input('division');
+    $sortField = $request->input('sort_field', 'name');
+    $sortOrder = $request->input('sort_order', 'asc');
+
+    $teams = Team::with('club');
+
+    if ($search) {
+        $teams = $teams->where('name', 'LIKE', '%' . $search . '%');
     }
+
+    if ($divisionId) {
+        $teams = $teams->whereHas('divisions', function ($query) use ($divisionId) {
+            $query->where('division_id', $divisionId);
+        });
+        $division = Division::find($divisionId);
+        $divisionName = $division ? $division->name : 'Geselecteerde reeks';
+    } else {
+        $divisionName = 'Alle reeksen';
+    }
+
+    if ($sortField == 'club_name') {
+        $teams = $teams->leftJoin('clubs', 'teams.club_id', '=', 'clubs.id')
+                       ->orderBy('clubs.name', $sortOrder)
+                       ->select('teams.*');
+    } else {
+        $teams = $teams->orderBy($sortField, $sortOrder);
+    }
+
+    $teams = $teams->get();
+    $divisions = Division::all();
+
+    return view('teams.index', compact('teams', 'divisions', 'divisionName', 'sortField', 'sortOrder'));
+}
+
 
     
     public function create(Request $request)

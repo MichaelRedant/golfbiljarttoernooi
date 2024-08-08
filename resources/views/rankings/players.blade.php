@@ -21,11 +21,11 @@
 
             @if ($players->isEmpty())
                 <div class="alert alert-warning" role="alert">
-                    Geen spelers gevonden voor de geselecteerde divisie en seizoen.
+                    Geen spelers gevonden voor de geselecteerde reeks en seizoen.
                 </div>
             @elseif ($standings->isEmpty())
                 <div class="alert alert-warning" role="alert">
-                    Geen klassement beschikbaar voor de geselecteerde divisie en seizoen.
+                    Geen klassement beschikbaar voor de geselecteerde reeks en seizoen.
                 </div>
             @else
                 <table class="table table-hover">

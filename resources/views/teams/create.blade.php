@@ -29,7 +29,7 @@
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label for="division_ids" class="form-label">Divisies</label>
+                    <label for="division_ids" class="form-label">Reeksen</label>
                     <div id="division_ids">
                         @foreach ($divisions as $division)
                             <div class="form-check">

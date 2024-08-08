@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="container mt-4">
-        <h1>Divisie: {{ $division->name }}</h1>
+        <h1>Reeks: {{ $division->name }}</h1>
 
         @if(session('error'))
             <div class="alert alert-danger">
@@ -69,6 +69,7 @@
         <table class="table table-bordered table-striped">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>Team</th>
                     <th>Gewonnen</th>
                     <th>Verloren</th>
@@ -77,8 +78,9 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($standings as $standing)
+                @foreach ($standings as $index => $standing)
                     <tr>
+                        <td>{{ $index + 1 }}</td>
                         <td><a href="{{ route('teams.show', ['team' => $standing['team_id']]) }}">{{ $standing['team_name'] }}</a></td>
                         <td>{{ $standing['games_won'] }}</td>
                         <td>{{ $standing['games_lost'] }}</td>

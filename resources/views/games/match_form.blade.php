@@ -25,7 +25,7 @@
         <input type="hidden" name="season_id" value="{{ $game->season_id }}">
 
         <div class="form-group">
-            <label for="forfeit_team">Forfeit by:</label>
+            <label for="forfeit_team">Forfeit:</label>
             <select class="form-control" id="forfeit_team" name="forfeit_team">
                 <option value="">Select team</option>
                 <option value="home">{{ $game->homeTeam->name }}</option>
