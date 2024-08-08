@@ -22,10 +22,9 @@
         </select>
     </div>
 
-
     @if ($upcomingGames->isNotEmpty())
         @php
-            $matchDays = $upcomingGames->keys()->sortDesc();
+            $matchDays = $upcomingGames->keys()->sort();
         @endphp
         @foreach ($matchDays as $matchDay)
             <div class="card mb-4">

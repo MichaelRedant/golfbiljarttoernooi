@@ -78,6 +78,7 @@ class DashboardController extends Controller
         }
     }
 
+
     private function getTeamRanking($teamId, $seasonId)
     {
         Log::info('Getting team ranking', ['teamId' => $teamId, 'seasonId' => $seasonId]);

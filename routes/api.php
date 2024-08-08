@@ -1,10 +1,11 @@
 <?php
 
+use App\Models\Season;
+use App\Models\Division;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\DivisionController;
-use App\Models\Division;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -24,4 +25,12 @@ Route::get('/divisions/{division}/teams', [DivisionController::class, 'getTeamsB
 
 Route::get('/divisions/{division}/teams', function (Division $division) {
     return response()->json($division->teams);
+});
+Route::get('/api/division/{division_id}/seasons', function($division_id) {
+    $seasons = Season::all();
+    $currentSeasonId = Season::latest('id')->value('id');
+    return response()->json([
+        'seasons' => $seasons,
+        'currentSeasonId' => $currentSeasonId
+    ]);
 });

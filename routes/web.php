@@ -26,6 +26,8 @@ Route::get('/get-players-by-team', [PlayerController::class, 'getPlayersByTeam']
 Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
 Route::get('/games/fetchLiveScores', [GameController::class, 'fetchLiveScores'])->name('games.fetchLiveScores');
 Route::get('/scores/stream', [GameController::class, 'streamScores'])->name('scores.stream');
+Route::get('/kalender', [GameController::class, 'showCalendar'])->name('games.kalender');
+
 
 Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');
 Route::get('/rankings/{division}/teams', [RankingController::class, 'teamRankings'])->name('rankings.teams');
@@ -42,9 +44,12 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // News routes
+Route::get('/news', [NewsController::class, 'index'])->name('news.index');
 Route::get('/news/create', [NewsController::class, 'create'])->name('news.create');
 Route::post('/news', [NewsController::class, 'store'])->name('news.store');
-Route::get('/news', [NewsController::class, 'index'])->name('news.index');
+Route::get('/news/{news}/edit', [NewsController::class, 'edit'])->name('news.edit');
+Route::patch('/news/{news}', [NewsController::class, 'update'])->name('news.update');
+Route::delete('/news/{news}', [NewsController::class, 'destroy'])->name('news.destroy');
 Route::patch('/news/{news}/toggle-sticky', [NewsController::class, 'toggleSticky'])->name('news.toggleSticky');
 
 // Middleware-protected routes

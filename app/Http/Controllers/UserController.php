@@ -7,15 +7,13 @@ use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
     public function index()
     {
         // Haal alle gebruikers op, behalve de eerste twee
-        $users = User::with('team')->where('id', '>', 2)->get();
+        $users = User::with('team')->whereNotIn('id', [1, 2])->get();
         return view('users.index', compact('users'));
     }
 
@@ -79,12 +77,6 @@ class UserController extends Controller
             }
         }
 
-        /* if (!empty($validatedData['password'])) {
-            $validatedData['password'] = Hash::make($validatedData['password']);
-        } else {
-            unset($validatedData['password']);
-        } */
-
         if (!empty($validatedData['password'])) {
             $validatedData['password'] = $validatedData['password']; // Sla wachtwoord als plain text op
         } else {
@@ -106,3 +98,4 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'Gebruiker succesvol verwijderd');
     }
 }
+

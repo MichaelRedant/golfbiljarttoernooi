@@ -482,45 +482,94 @@ public function store(Request $request)
         })->sortByDesc('points')->values()->all();
     }
 
+    public function showCalendar(Request $request)
+{
+    $divisions = Division::all();
+    $seasons = Season::all();
+    $latestSeason = Season::latest('id')->first();
+    
+    // Get selected division and season or default to the latest season
+    $selectedDivisionId = $request->input('division_id', $divisions->first()->id ?? null);
+    $selectedSeasonId = $request->input('season_id', $latestSeason->id ?? null);
+
+    // Validate selected division
+    $division = Division::find($selectedDivisionId);
+    if (!$division) {
+        return redirect()->route('games.kalender')->with('error', 'Reeks niet gevonden.');
+    }
+
+    // Validate selected season
+    $season = Season::find($selectedSeasonId);
+    if (!$season) {
+        return redirect()->route('games.kalender')->with('error', 'Seizoen niet gevonden.');
+    }
+
+    $currentDateTime = Carbon::now();
+
+    // Fetch upcoming games for the selected division and season
+    $upcomingGames = Game::with(['homeTeam', 'awayTeam'])
+                         ->where('division_id', $division->id)
+                         ->where('season_id', $season->id)
+                         ->where('date', '>=', $currentDateTime)
+                         ->whereNull('bye_team_id')
+                         ->orderBy('date', 'asc')
+                         ->get()
+                         ->groupBy(function($game) {
+                             return \Carbon\Carbon::parse($game->date)->format('d-m-Y');
+                         });
+
+    // Fetch past games
+    $pastGames = Game::with(['homeTeam', 'awayTeam'])
+                     ->where('division_id', $division->id)
+                     ->where('season_id', $season->id)
+                     ->where('date', '<', $currentDateTime)
+                     ->whereNull('bye_team_id')
+                     ->orderBy('date', 'desc')
+                     ->get();
+
+    return view('games.kalender', compact('divisions', 'seasons', 'upcomingGames', 'pastGames', 'selectedDivisionId', 'selectedSeasonId', 'currentDateTime'));
+}
+
+
     public function showGamesForDivisionAndSeason(Request $request, $division_id, $season_id = null)
-    {
-        $division = Division::find($division_id);
-        if (!$division) {
-            return redirect()->route('dashboard')->with('error', 'Division not found.');
-        }
+{
+    $division = Division::find($division_id);
+    if (!$division) {
+        return redirect()->route('dashboard')->with('error', 'Division not found.');
+    }
 
-        $seasons = Season::all();
-        $season = $season_id ? Season::find($season_id) : Season::latest('id')->first();
+    $seasons = Season::all();
+    $season = $season_id ? Season::find($season_id) : Season::latest('id')->first();
 
-        if (!$season) {
-            return redirect()->route('dashboard')->with('error', 'Season not found.');
-        }
+    if (!$season) {
+        return redirect()->route('dashboard')->with('error', 'Season not found.');
+    }
 
-        $currentDateTime = Carbon::now();
+    $currentDateTime = Carbon::now();
 
-        // Fetch upcoming games for the current division and selected season
-        $upcomingGames = Game::with(['homeTeam', 'awayTeam'])
-                             ->where('division_id', $division_id)
-                             ->where('season_id', $season->id)
-                             ->where('date', '>=', $currentDateTime)
-                             ->whereNull('bye_team_id')
-                             ->orderBy('date', 'asc')
-                             ->get()
-                             ->groupBy(function($game) {
-                                 return \Carbon\Carbon::parse($game->date)->format('d-m-Y');
-                             });
-
-        // Fetch past games
-        $pastGames = Game::with(['homeTeam', 'awayTeam'])
+    // Fetch upcoming games for the current division and selected season
+    $upcomingGames = Game::with(['homeTeam', 'awayTeam'])
                          ->where('division_id', $division_id)
                          ->where('season_id', $season->id)
-                         ->where('date', '<', $currentDateTime)
+                         ->where('date', '>=', $currentDateTime)
                          ->whereNull('bye_team_id')
-                         ->orderBy('date', 'desc')
-                         ->get();
+                         ->orderBy('date', 'asc')
+                         ->get()
+                         ->groupBy(function($game) {
+                             return \Carbon\Carbon::parse($game->date)->format('Y-m-d');
+                         });
 
-        return view('games.list', compact('division', 'upcomingGames', 'pastGames', 'seasons', 'season', 'currentDateTime'));
-    }
+    // Fetch past games
+    $pastGames = Game::with(['homeTeam', 'awayTeam'])
+                     ->where('division_id', $division_id)
+                     ->where('season_id', $season->id)
+                     ->where('date', '<', $currentDateTime)
+                     ->whereNull('bye_team_id')
+                     ->orderBy('date', 'desc')
+                     ->get();
+
+    return view('games.list', compact('division', 'upcomingGames', 'pastGames', 'seasons', 'season', 'currentDateTime'));
+}
 
     public function generateMatches()
     {

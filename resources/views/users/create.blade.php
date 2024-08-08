@@ -24,15 +24,15 @@
         </div>
         <div class="mb-3">
             <label for="role" class="form-label"><i class="fas fa-user-tag"></i> Rol:</label>
-            <select id="role" name="role" class="form-select" required>
+            <select id="role" name="role" class="form-select" required onchange="toggleTeamField()">
                 <option value="user">Gebruiker</option>
                 <option value="team">Team</option>
                 <option value="admin">Admin</option>
             </select>
         </div>
-        <div class="mb-3">
+        <div class="mb-3" id="teamField" style="display: none;">
             <label for="team_id" class="form-label"><i class="fas fa-users"></i> Team:</label>
-            <select id="team_id" name="team_id" class="form-select" required>
+            <select id="team_id" name="team_id" class="form-select">
                 <option value="" disabled selected>Selecteer een team</option>
                 @foreach ($teams as $team)
                     <option value="{{ $team->id }}">{{ $team->name }}</option>
@@ -42,4 +42,24 @@
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Gebruiker Aanmaken</button>
     </form>
 </div>
+
+<script>
+    function toggleTeamField() {
+        var role = document.getElementById('role').value;
+        var teamField = document.getElementById('teamField');
+        var teamSelect = document.getElementById('team_id');
+
+        if (role === 'team') {
+            teamField.style.display = 'block';
+            teamSelect.required = true;
+        } else {
+            teamField.style.display = 'none';
+            teamSelect.required = false;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleTeamField(); // Call the function on page load in case the default role is 'team'
+    });
+</script>
 @endsection

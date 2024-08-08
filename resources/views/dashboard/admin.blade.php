@@ -21,11 +21,11 @@
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title"><i class="fas fa-calendar-alt"></i> Wedstrijden</h5>
-                    @if(isset($divisions) && $divisions->isNotEmpty() && isset($currentSeason))
+                    @if(isset($currentSeason))
+                        <a href="{{ route('game.create', ['season_id' => $currentSeason->id]) }}" class="btn btn-outline-secondary d-block mb-2">
+                            <i class="fas fa-calendar-plus"></i> Plan Wedstrijd
+                        </a>
                         @foreach($divisions as $division)
-                            <a href="{{ route('game.create', ['division_id' => $division->id, 'season_id' => $currentSeason->id]) }}" class="btn btn-outline-secondary d-block mb-2">
-                                <i class="fas fa-calendar-plus"></i> Plan Wedstrijd
-                            </a>
                             <a href="{{ route('games.for-division-season', ['division_id' => $division->id, 'season_id' => $currentSeason->id]) }}" class="btn btn-outline-secondary d-block mb-2">
                                 <i class="fas fa-eye"></i> Bekijk Wedstrijden van {{ $division->name }}
                             </a>
@@ -50,8 +50,7 @@
                 </div>
             </div>
         </div>
- 
-        <!-- New section for quick access to edit seasons, clubs, divisions, teams, and players -->
+
         <div class="col-md-12">
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
@@ -75,7 +74,6 @@
             </div>
         </div>
 
-        <!-- New section for news management -->
         <div class="col-md-12">
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
@@ -90,7 +88,6 @@
             </div>
         </div>
 
-        <!-- New section for sponsor management -->
         <div class="col-md-12">
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
@@ -108,39 +105,47 @@
         <div class="col-md-12 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-check"></i> Wachtende Goedkeuringen</h5>
-                    @if($pendingGames->isEmpty())
-                        <p>Geen wedstrijden wachten op goedkeuring.</p>
-                    @else
-                        <form action="{{ route('games.bulkApprove') }}" method="POST">
-                            @csrf
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="selectAll">
-                                <label class="form-check-label" for="selectAll">Selecteer alles</label>
-                            </div>
-                            <ul class="list-group list-group-flush">
-                                @foreach($pendingGames as $pendingGame)
-                                    @if($pendingGame->homeTeam && $pendingGame->awayTeam)
-                                    <li class="list-group-item d-flex justify-content-between align-items-center p-1">
-                                        <input type="checkbox" name="game_ids[]" value="{{ $pendingGame->id }}">
-                                        <span>
-                                            <a href="{{ route('teams.show', $pendingGame->homeTeam->id) }}" class="{{ $pendingGame->home_score > $pendingGame->away_score ? 'font-weight-bold' : '' }}">
-                                                {{ $pendingGame->homeTeam->name }}
-                                            </a>
-                                            vs
-                                            <a href="{{ route('teams.show', $pendingGame->awayTeam->id) }}" class="{{ $pendingGame->away_score > $pendingGame->home_score ? 'font-weight-bold' : '' }}">
-                                                {{ $pendingGame->awayTeam->name }}
-                                            </a>
-                                            ({{ $pendingGame->home_score }} - {{ $pendingGame->away_score }})
-                                        </span>
-                                        <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Bekijk Details</a>
-                                    </li>
-                                    @endif
-                                @endforeach
-                            </ul>
-                            <button type="submit" class="btn btn-success mt-3">Goedkeuren Geselecteerde Wedstrijden</button>
-                        </form>
-                    @endif
+                    <h5 class="card-title">
+                        <i class="fas fa-check"></i> Wachtende Goedkeuringen
+                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#pendingGamesList" aria-expanded="false" aria-controls="pendingGamesList">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </h5>
+                    <div class="collapse" id="pendingGamesList">
+                        @if($pendingGames->isEmpty())
+                            <p>Geen wedstrijden wachten op goedkeuring.</p>
+                        @else
+                            <form action="{{ route('games.bulkApprove') }}" method="POST">
+                                @csrf
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                    <label class="form-check-label" for="selectAll">Selecteer alles</label>
+                                </div>
+                                <ul class="list-group list-group-flush">
+                                    @foreach($pendingGames as $pendingGame)
+                                        @if($pendingGame->homeTeam && $pendingGame->awayTeam)
+                                        <li class="list-group-item d-flex justify-content-between align-items-center p-1">
+                                            <input type="checkbox" name="game_ids[]" value="{{ $pendingGame->id }}">
+                                            <span>
+                                                <a href="{{ route('teams.show', $pendingGame->homeTeam->id) }}" class="{{ $pendingGame->home_score > $pendingGame->away_score ? 'font-weight-bold' : '' }}">
+                                                    {{ $pendingGame->homeTeam->name }}
+                                                </a>
+                                                vs
+                                                <a href="{{ route('teams.show', $pendingGame->awayTeam->id) }}" class="{{ $pendingGame->away_score > $pendingGame->home_score ? 'font-weight-bold' : '' }}">
+                                                    {{ $pendingGame->awayTeam->name }}
+                                                </a>
+                                                ({{ $pendingGame->home_score }} - {{ $pendingGame->away_score }})
+                                                <span class="ml-2">{{ \Carbon\Carbon::parse($pendingGame->date)->format('d-m-Y') }}</span>
+                                            </span>
+                                            <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Bekijk Details</a>
+                                        </li>
+                                        @endif
+                                    @endforeach
+                                </ul>
+                                <button type="submit" class="btn btn-success mt-3">Goedkeuren Geselecteerde Wedstrijden</button>
+                            </form>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
