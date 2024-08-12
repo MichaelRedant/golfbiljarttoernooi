@@ -45,6 +45,17 @@
             </select>
         </div>
 
+        <div class="form-group">
+            <label for="password">Nieuw Wachtwoord:</label>
+            <input type="password" id="password" name="password" class="form-control">
+            <small class="form-text text-muted">Laat dit veld leeg als je het wachtwoord niet wilt wijzigen.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="password_confirmation">Bevestig Nieuw Wachtwoord:</label>
+            <input type="password" id="password_confirmation" name="password_confirmation" class="form-control">
+        </div>
+
         <button type="submit" class="btn btn-primary">Bijwerken</button>
     </form>
 </div>

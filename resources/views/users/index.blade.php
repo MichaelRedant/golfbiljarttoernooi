@@ -33,21 +33,31 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Naam</th>
+                        <th>
+                            <a href="{{ route('users.index', ['sort' => 'name', 'direction' => $sortColumn == 'name' && $sortDirection == 'asc' ? 'desc' : 'asc']) }}">
+                                Naam
+                                @if ($sortColumn == 'name')
+                                    <i class="fas fa-sort-{{ $sortDirection == 'asc' ? 'up' : 'down' }}"></i>
+                                @endif
+                            </a>
+                        </th>
                         <th>Email</th>
-                        <th>Rol</th>
-                        <th>Team</th>
+                        <th>
+                            <a href="{{ route('users.index', ['sort' => 'team_id', 'direction' => $sortColumn == 'team_id' && $sortDirection == 'asc' ? 'desc' : 'asc']) }}">
+                                Team
+                                @if ($sortColumn == 'team_id')
+                                    <i class="fas fa-sort-{{ $sortDirection == 'asc' ? 'up' : 'down' }}"></i>
+                                @endif
+                            </a>
+                        </th>
                         <th>Acties</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($users as $user)
                         <tr>
-                            <td>{{ $user->id }}</td>
                             <td>{{ $user->name }}</td>
                             <td>{{ $user->email }}</td>
-                            <td>{{ $user->role }}</td>
                             <td>{{ $user->team ? $user->team->name : '-' }}</td>
                             <td>
                                 <a href="{{ route('users.edit', $user) }}" class="btn btn-warning btn-sm">

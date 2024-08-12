@@ -10,11 +10,18 @@ use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Haal alle gebruikers op, behalve de eerste twee
-        $users = User::with('team')->whereNotIn('id', [1, 2])->get();
-        return view('users.index', compact('users'));
+        $sortColumn = $request->input('sort', 'name'); // Standaard sorteren op 'name'
+        $sortDirection = $request->input('direction', 'asc'); // Standaard sorteer richting is 'asc'
+
+        // Haal alleen gebruikers met de rol 'team' op, gesorteerd op de geselecteerde kolom en richting
+        $users = User::with('team')
+            ->where('role', 'team')
+            ->orderBy($sortColumn, $sortDirection)
+            ->get();
+
+        return view('users.index', compact('users', 'sortColumn', 'sortDirection'));
     }
 
     public function create()
@@ -25,25 +32,51 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        Log::info('Entering store method');
+
+    // Probeer te valideren en log of de validatie slaagt of faalt
+    try {
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => 'required|string|email|max:255',
             'password' => 'required|string|min:8|confirmed',
             'role' => 'required|string|max:255',
             'team_id' => 'nullable|exists:teams,id',
         ]);
 
-        Log::info('Storing user with raw password', ['password' => $request->password]);
- 
-        User::create([
+        Log::info('Validated data', $validatedData);
+    } catch (\Exception $e) {
+        Log::error('Validation failed', ['exception' => $e->getMessage()]);
+        return redirect()->back()->with('error', 'Er is een fout opgetreden bij de validatie.');
+    }
+
+    try {
+        // Log de gebruiker aanmaak informatie
+        Log::info('Attempting to create user', [
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
-            'password' => $request->password,
             'role' => $validatedData['role'],
-            'team_id' => $validatedData['team_id']
+            'team_id' => $validatedData['team_id'],
         ]);
 
+        // Maak de gebruiker aan zonder wachtwoord hashing
+        $user = User::create([
+            'name' => $validatedData['name'],
+            'email' => $validatedData['email'],
+            'password' => $validatedData['password'], // Sla het wachtwoord op als platte tekst
+            'role' => $validatedData['role'],
+            'team_id' => $validatedData['team_id'],
+            'username' => $validatedData['username'] ?? $validatedData['name'], // Voeg de username toe
+        ]);
+
+        Log::info('User created successfully', ['user_id' => $user->id]);
+
         return redirect()->route('users.index')->with('success', 'Gebruiker succesvol aangemaakt');
+
+    } catch (\Exception $e) {
+        Log::error('Error creating user', ['exception' => $e->getMessage()]);
+        return redirect()->back()->with('error', 'Er is een fout opgetreden bij het aanmaken van de gebruiker.');
+    }
     }
 
     public function edit(User $user)
@@ -58,34 +91,40 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        if ($user->id <= 2) {
-            return redirect()->route('users.index')->with('error', 'Deze gebruiker kan niet worden bijgewerkt.');
-        }
-
+        Log::info('Entering update method');
+    
+    try {
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'required|string|email|max:255',
             'password' => 'nullable|string|min:8|confirmed',
-            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'role' => 'required|string|max:255',
+            'team_id' => 'nullable|exists:teams,id',
         ]);
+        Log::info('Validation passed', $validatedData);
+    } catch (\Exception $e) {
+        Log::error('Validation failed', ['exception' => $e->getMessage()]);
+        return back()->withErrors($e->getMessage());
+    }
 
-        if ($request->hasFile('profile_photo')) {
-            if ($request->file('profile_photo')->isValid()) {
-                $imageName = time() . '.' . $request->file('profile_photo')->getClientOriginalExtension();
-                $path = $request->file('profile_photo')->storeAs('profile_photos', $imageName, 'public');
-                $validatedData['profile_photo_path'] = $path;
-            }
-        }
+    $user->update([
+        'name' => $validatedData['name'],
+        'email' => $validatedData['email'],
+        'role' => $validatedData['role'],
+        'team_id' => $validatedData['team_id'],
+    ]);
 
-        if (!empty($validatedData['password'])) {
-            $validatedData['password'] = $validatedData['password']; // Sla wachtwoord als plain text op
-        } else {
-            unset($validatedData['password']);
-        }
+    if (!empty($validatedData['password'])) {
+        Log::info('Updating password for user', ['user_id' => $user->id]);
+        $user->update(['password' => $validatedData['password']]);
+    } else {
+        Log::info('No password provided, skipping update', ['user_id' => $user->id]);
+    }
 
-        $user->update($validatedData);
+    Log::info('User updated successfully', ['user_id' => $user->id]);
 
-        return redirect()->route('dashboard')->with('success', 'Profiel bijgewerkt');
+    return redirect()->route('users.index')->with('success', 'Gebruiker succesvol bijgewerkt');
+    
     }
 
     public function destroy(User $user)

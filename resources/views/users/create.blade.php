@@ -42,7 +42,7 @@
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Gebruiker Aanmaken</button>
     </form>
 </div>
-
+ 
 <script>
     function toggleTeamField() {
         var role = document.getElementById('role').value;

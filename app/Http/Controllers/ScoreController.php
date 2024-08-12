@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class ScoreController extends Controller
 {
-    
+     
     public function updateScore(Request $request)
     {
         $validatedData = $request->validate([

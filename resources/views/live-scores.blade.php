@@ -12,35 +12,47 @@
         @if($matches->isEmpty())
             <p class="text-center">Er zijn momenteel geen live wedstrijden.</p>
         @else
-            @foreach($matches as $match)
-                @if($match->homeTeam && $match->awayTeam)
-                    <div class="card mb-3 shadow-sm">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0">
-                                <a href="{{ route('teams.show', $match->homeTeam->id) }}" class="text-decoration-none text-dark">{{ $match->homeTeam->name }}</a>
-                                <span class="mx-2">vs</span>
-                                <a href="{{ route('teams.show', $match->awayTeam->id) }}" class="text-decoration-none text-dark">{{ $match->awayTeam->name }}</a>
-                            </h5>
-                            <button class="btn btn-sm btn-outline-secondary toggle-match" data-match-id="{{ $match->id }}">Toggle</button>
-                        </div>
-                        <div class="card-body match-details" data-match-id="{{ $match->id }}">
-                            <p class="card-text text-center">
-                                <strong>Score:</strong> 
-                                <span class="home-score" data-match-id="{{ $match->id }}">{{ $match->home_score }}</span> - 
-                                <span class="away-score" data-match-id="{{ $match->id }}">{{ $match->away_score }}</span>
-                            </p>
-                            @if ($match->forfeit_by)
-                                <p class="card-text text-center text-danger forfeit" data-match-id="{{ $match->id }}">
-                                    <strong>Forfeit by:</strong>
-                                    {{ $match->forfeit_by === 'home' ? $match->homeTeam->name : $match->awayTeam->name }}
-                                </p>
-                            @endif
-                            <p class="card-text text-center">
-                                <small class="text-muted">Laatste update: <span class="last-updated" data-match-id="{{ $match->id }}">{{ $match->updated_at->setTimezone('Europe/Brussels')->format('H:i:s') }}</span></small>
-                            </p>
-                        </div>
+            @foreach($matches->groupBy('division.name') as $division => $divisionMatches)
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">
+                            {{ $division }}
+                        </h4>
+                        <button class="btn btn-sm btn-outline-secondary toggle-division" data-division="{{ Str::slug($division) }}">Toggle</button>
                     </div>
-                @endif
+                    <div class="card-body division-details" data-division="{{ Str::slug($division) }}">
+                        @foreach($divisionMatches as $match)
+                            @if($match->homeTeam && $match->awayTeam)
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">
+                                            <a href="{{ route('teams.show', $match->homeTeam->id) }}" class="text-decoration-none text-dark">{{ $match->homeTeam->name }}</a>
+                                            <span class="mx-2">vs</span>
+                                            <a href="{{ route('teams.show', $match->awayTeam->id) }}" class="text-decoration-none text-dark">{{ $match->awayTeam->name }}</a>
+                                        </h5>
+                                    </div>
+                                    <div class="mt-2">
+                                        <p class="card-text text-center">
+                                            <strong>Score:</strong> 
+                                            <span class="home-score" data-match-id="{{ $match->id }}">{{ $match->home_score }}</span> - 
+                                            <span class="away-score" data-match-id="{{ $match->id }}">{{ $match->away_score }}</span>
+                                        </p>
+                                        @if ($match->forfeit_by)
+                                            <p class="card-text text-center text-danger forfeit" data-match-id="{{ $match->id }}">
+                                                <strong>Forfeit by:</strong>
+                                                {{ $match->forfeit_by === 'home' ? $match->homeTeam->name : $match->awayTeam->name }}
+                                            </p>
+                                        @endif
+                                        <p class="card-text text-center">
+                                            <small class="text-muted">Laatste update: <span class="last-updated" data-match-id="{{ $match->id }}">{{ $match->updated_at->setTimezone('Europe/Brussels')->format('H:i:s') }}</span></small>
+                                        </p>
+                                    </div>
+                                </div>
+                                <hr>
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
             @endforeach
         @endif
     </div>
@@ -92,12 +104,12 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(fetchLiveScores, 10000); // Refresh every 10 seconds
     fetchLiveScores(); // Initial fetch to populate scores on page load
 
-    document.querySelectorAll('.toggle-match').forEach(button => {
+    document.querySelectorAll('.toggle-division').forEach(button => {
         button.addEventListener('click', function() {
-            const matchId = this.getAttribute('data-match-id');
-            const matchDetails = document.querySelector(`.match-details[data-match-id="${matchId}"]`);
-            if (matchDetails) {
-                matchDetails.classList.toggle('d-none');
+            const divisionSlug = this.getAttribute('data-division');
+            const divisionDetails = document.querySelector(`.division-details[data-division="${divisionSlug}"]`);
+            if (divisionDetails) {
+                divisionDetails.classList.toggle('d-none');
             }
         });
     });
