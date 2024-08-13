@@ -19,27 +19,36 @@ class GameController extends Controller
     public function index(Request $request)
     {
         $divisionId = $request->query('division_id');
-        $seasonId = $request->query('season_id');
+    $seasonId = $request->query('season_id');
+    $today = Carbon::today(); // Haal de huidige datum op
 
-        $upcomingGames = Game::with(['homeTeam', 'awayTeam'])
-                            ->where('division_id', $divisionId)
-                            ->where('season_id', $seasonId)
-                            ->where('date', '>=', now())
-                            ->orderBy('date', 'asc')
-                            ->get();
+    // Haal de wedstrijden van vandaag op
+    $todayGames = Game::with(['homeTeam', 'awayTeam'])
+                        ->where('division_id', $divisionId)
+                        ->where('season_id', $seasonId)
+                        ->whereDate('date', Carbon::today())
+                        ->orderBy('date', 'asc')
+                        ->get();
 
-        $pastGames = Game::with(['homeTeam', 'awayTeam'])
-                         ->where('division_id', $divisionId)
-                         ->where('season_id', $seasonId)
-                         ->where('date', '<', now())
-                         ->orderBy('date', 'desc')
-                         ->paginate(5);
+    $upcomingGames = Game::with(['homeTeam', 'awayTeam'])
+                        ->where('division_id', $divisionId)
+                        ->where('season_id', $seasonId)
+                        ->where('date', '>', $today)
+                        ->orderBy('date', 'asc')
+                        ->get();
 
-        $divisions = Division::all();
-        $seasons = Season::all();
-        $currentSeasonId = $seasonId ?? Season::latest('id')->value('id');
+    $pastGames = Game::with(['homeTeam', 'awayTeam'])
+                     ->where('division_id', $divisionId)
+                     ->where('season_id', $seasonId)
+                     ->where('date', '<', $today)
+                     ->orderBy('date', 'desc')
+                     ->paginate(5);
 
-        return view('games.index', compact('upcomingGames', 'pastGames', 'divisions', 'seasons', 'currentSeasonId'));
+    $divisions = Division::all();
+    $seasons = Season::all();
+    $currentSeasonId = $seasonId ?? Season::latest('id')->value('id');
+
+    return view('games.index', compact('todayGames', 'upcomingGames', 'pastGames', 'divisions', 'seasons', 'currentSeasonId'));
     }
 
     public function create(Request $request, $division_id = null, $season_id = null)
@@ -210,11 +219,18 @@ public function store(Request $request)
 
     public function approve(Request $request, Game $game)
     {
+        // Controleer of er een score is geregistreerd of er sprake is van een forfait
+        if ($game->home_score === null && $game->away_score === null && !$game->forfeit_by) {
+            return redirect()->back()->withErrors(['msg' => 'Wedstrijd kan niet worden goedgekeurd zonder geregistreerde score, tenzij er sprake is van een forfait.']);
+        }
+
+        // Pas goedkeuring toe
         $user = auth()->user();
         if ($user->team_id == $game->away_team_id || $user->role == 'admin') {
             $game->update(['away_team_approved' => true]);
             return redirect()->route('dashboard')->with('success', 'Wedstrijd succesvol goedgekeurd!');
         }
+
         return redirect()->route('games.index')->withErrors(['msg' => 'You are not authorized to approve this game.']);
     }
 
@@ -433,54 +449,61 @@ public function store(Request $request)
         return view('dashboard', compact('divisions', 'currentSeason', 'seasons'));
     }
 
-    private function calculateDivisionStandings(Division $division, $seasonId)
-    {
-        $teams = $division->teams()->with([
-            'gamesHome' => function ($query) use ($seasonId) {
-                $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
-            },
-            'gamesAway' => function ($query) use ($seasonId) {
-                $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
+    public function calculateDivisionStandings(Division $division, $seasonId)
+{
+    $teams = $division->teams()->with([
+        'gamesHome' => function ($query) use ($seasonId) {
+            $query->where('season_id', $seasonId)
+                  ->whereNotNull('home_score')
+                  ->whereNotNull('away_score');
+        },
+        'gamesAway' => function ($query) use ($seasonId) {
+            $query->where('season_id', $seasonId)
+                  ->whereNotNull('home_score')
+                  ->whereNotNull('away_score');
+        }
+    ])->get();
+
+    return $teams->map(function ($team) {
+        $gamesWon = 0;
+        $gamesLost = 0;
+        $gamesDraw = 0;
+
+        // Iterate over home games
+        foreach ($team->gamesHome as $game) {
+            if ($game->home_score > $game->away_score) {
+                $gamesWon++;
+            } elseif ($game->home_score == $game->away_score) {
+                $gamesDraw++;
+            } else {
+                $gamesLost++;
             }
-        ])->get();
+        }
 
-        return $teams->map(function ($team) {
-            $gamesWon = 0;
-            $gamesLost = 0;
-            $gamesDraw = 0;
-
-            // Iterate over home games
-            foreach ($team->gamesHome as $game) {
-                if ($game->home_score > $game->away_score) {
-                    $gamesWon++;
-                } elseif ($game->home_score == $game->away_score) {
-                    $gamesDraw++;
-                } else {
-                    $gamesLost++;
-                }
+        // Iterate over away games
+        foreach ($team->gamesAway as $game) {
+            if ($game->away_score > $game->home_score) {
+                $gamesWon++;
+            } elseif ($game->away_score == $game->home_score) {
+                $gamesDraw++;
+            } else {
+                $gamesLost++;
             }
+        }
 
-            // Iterate over away games
-            foreach ($team->gamesAway as $game) {
-                if ($game->away_score > $game->home_score) {
-                    $gamesWon++;
-                } elseif ($game->away_score == $game->home_score) {
-                    $gamesDraw++;
-                } else {
-                    $gamesLost++;
-                }
-            }
+        // Points: 2 for a win, 1 for a draw, 0 for a loss
+        return [
+            'team_id' => $team->id,
+            'team_name' => $team->name,
+            'games_won' => $gamesWon,
+            'games_lost' => $gamesLost,
+            'games_draw' => $gamesDraw,
+            'points' => $gamesWon * 2 + $gamesDraw
+        ];
+    })->sortByDesc('points')->values()->all();
+}
 
-            return [
-                'team_id' => $team->id,
-                'team_name' => $team->name,
-                'games_won' => $gamesWon,
-                'games_lost' => $gamesLost,
-                'games_draw' => $gamesDraw,
-                'points' => $gamesWon * 3 + $gamesDraw // 3 points for a win, 1 point for a draw
-            ];
-        })->sortByDesc('points')->values()->all();
-    }
+
 
     public function showCalendar(Request $request)
 {
@@ -531,7 +554,7 @@ public function store(Request $request)
 }
 
 
-    public function showGamesForDivisionAndSeason(Request $request, $division_id, $season_id = null)
+public function showGamesForDivisionAndSeason(Request $request, $division_id, $season_id = null)
 {
     $division = Division::find($division_id);
     if (!$division) {
@@ -547,28 +570,33 @@ public function store(Request $request)
 
     $currentDateTime = Carbon::now();
 
-    // Fetch upcoming games for the current division and selected season
+    // Fetch games scheduled for today
+    $todayGames = Game::with(['homeTeam', 'awayTeam'])
+        ->where('division_id', $division_id)
+        ->where('season_id', $season->id)
+        ->whereDate('date', $currentDateTime->format('Y-m-d'))
+        ->get();
+
+    // Fetch upcoming games excluding today's games
     $upcomingGames = Game::with(['homeTeam', 'awayTeam'])
-                         ->where('division_id', $division_id)
-                         ->where('season_id', $season->id)
-                         ->where('date', '>=', $currentDateTime)
-                         ->whereNull('bye_team_id')
-                         ->orderBy('date', 'asc')
-                         ->get()
-                         ->groupBy(function($game) {
-                             return \Carbon\Carbon::parse($game->date)->format('Y-m-d');
-                         });
+        ->where('division_id', $division_id)
+        ->where('season_id', $season->id)
+        ->where('date', '>', $currentDateTime)
+        ->orderBy('date', 'asc')
+        ->get()
+        ->groupBy(function($game) {
+            return \Carbon\Carbon::parse($game->date)->format('Y-m-d');
+        });
 
-    // Fetch past games
+    // Fetch past games excluding today's games
     $pastGames = Game::with(['homeTeam', 'awayTeam'])
-                     ->where('division_id', $division_id)
-                     ->where('season_id', $season->id)
-                     ->where('date', '<', $currentDateTime)
-                     ->whereNull('bye_team_id')
-                     ->orderBy('date', 'desc')
-                     ->get();
+        ->where('division_id', $division_id)
+        ->where('season_id', $season->id)
+        ->where('date', '<', $currentDateTime)
+        ->orderBy('date', 'desc')
+        ->get();
 
-    return view('games.list', compact('division', 'upcomingGames', 'pastGames', 'seasons', 'season', 'currentDateTime'));
+    return view('games.list', compact('division', 'todayGames', 'upcomingGames', 'pastGames', 'seasons', 'season', 'currentDateTime'));
 }
 
     public function generateMatches()

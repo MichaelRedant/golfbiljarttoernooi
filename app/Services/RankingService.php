@@ -48,7 +48,7 @@ class RankingService
                 'games_won' => $gamesWon,
                 'games_lost' => $gamesLost,
                 'games_draw' => $gamesDraw,
-                'points' => $gamesWon * 3 + $gamesDraw
+                'points' => $gamesWon * 2 + $gamesDraw *1
             ];
         })->sortByDesc('points')->values()->all();
     }

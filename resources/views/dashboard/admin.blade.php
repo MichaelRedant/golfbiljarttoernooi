@@ -134,10 +134,14 @@
                                                 <a href="{{ route('teams.show', $pendingGame->awayTeam->id) }}" class="{{ $pendingGame->away_score > $pendingGame->home_score ? 'font-weight-bold' : '' }}">
                                                     {{ $pendingGame->awayTeam->name }}
                                                 </a>
-                                                ({{ $pendingGame->home_score }} - {{ $pendingGame->away_score }})
+                                                ({{ $pendingGame->home_score ?? 0 }} - {{ $pendingGame->away_score ?? 0 }})
                                                 <span class="ml-2">{{ \Carbon\Carbon::parse($pendingGame->date)->format('d-m-Y') }}</span>
                                             </span>
-                                            <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Bekijk Details</a>
+                                            @if($pendingGame->home_score !== null || $pendingGame->away_score !== null || $pendingGame->forfeit_by)
+                                                <a href="{{ route('games.approve', $pendingGame->id) }}" class="btn btn-primary btn-sm">Goedkeuren</a>
+                                            @else
+                                                <button class="btn btn-secondary btn-sm" disabled>Goedkeuren niet mogelijk</button>
+                                            @endif
                                         </li>
                                         @endif
                                     @endforeach
@@ -149,10 +153,11 @@
                 </div>
             </div>
         </div>
+        
     </div>
 </div>
 @endsection
-
+ 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('selectAll').addEventListener('change', function (e) {

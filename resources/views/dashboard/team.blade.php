@@ -29,13 +29,13 @@
                             </select>
                         </div>
                     </form>
-                    @if(isset($teamRanking) && $teamRanking)
+                    @if(isset($currentTeamStanding))
                         <ul class="list-group">
-                            <li class="list-group-item"><i class="fas fa-users"></i> <strong>Team Naam:</strong> {{ $teamRanking['team_name'] }}</li>
-                            <li class="list-group-item"><i class="fas fa-trophy"></i> <strong>Punten:</strong> {{ $teamRanking['points'] }}</li>
-                            <li class="list-group-item"><i class="fas fa-check-circle"></i> <strong>Gewonnen:</strong> {{ $teamRanking['games_won'] }}</li>
-                            <li class="list-group-item"><i class="fas fa-times-circle"></i> <strong>Verloren:</strong> {{ $teamRanking['games_lost'] }}</li>
-                            <li class="list-group-item"><i class="fas fa-handshake"></i> <strong>Gelijkspel:</strong> {{ $teamRanking['games_drawn'] }}</li>
+                            <li class="list-group-item"><i class="fas fa-users"></i> <strong>Team Naam:</strong> {{ $team->name }}</li>
+                            <li class="list-group-item"><i class="fas fa-trophy"></i> <strong>Punten:</strong> {{ $currentTeamStanding['points'] }}</li>
+                            <li class="list-group-item"><i class="fas fa-check-circle"></i> <strong>Gewonnen:</strong> {{ $currentTeamStanding['games_won'] }}</li>
+                            <li class="list-group-item"><i class="fas fa-times-circle"></i> <strong>Verloren:</strong> {{ $currentTeamStanding['games_lost'] }}</li>
+                            <li class="list-group-item"><i class="fas fa-handshake"></i> <strong>Gelijkspel:</strong> {{ $currentTeamStanding['games_draw'] }}</li>
                         </ul>
                     @else
                         <p>Geen ranking gegevens beschikbaar.</p>

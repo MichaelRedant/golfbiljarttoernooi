@@ -10,9 +10,18 @@ use App\Models\Division;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use App\Services\RankingService;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
+    protected $rankingService;
+
+    public function __construct(RankingService $rankingService)
+    {
+        $this->rankingService = $rankingService;
+    }
+
     public function index(Request $request)
     {
         Log::info('DashboardController@index reached');
@@ -35,8 +44,12 @@ class DashboardController extends Controller
         $currentSeason = $currentSeasonId ? Season::find($currentSeasonId) : null;
         Log::info('Current season', ['currentSeason' => $currentSeason]);
 
+        $today = Carbon::today(); // Huidige datum
+
         if ($user->role === 'admin') {
-            $pendingGames = Game::where('away_team_approved', false)->get();
+            $pendingGames = Game::where('away_team_approved', false)
+                ->whereDate('date', $today)
+                ->get();
             Log::info('Pending games for admin', ['pending_games_count' => $pendingGames->count()]);
             return view('dashboard.admin', compact('divisions', 'currentSeason', 'pendingGames', 'seasons'));
         } elseif ($user->role === 'team') {
@@ -56,13 +69,16 @@ class DashboardController extends Controller
 
             $teamRanking = $this->getTeamRanking($team->id, $currentSeason ? $currentSeason->id : null);
             $upcomingGames = Game::where('date', '>', now())
-                                ->where(function($query) use ($team) {
-                                    $query->where('home_team_id', $team->id)
-                                          ->orWhere('away_team_id', $team->id);
-                                })->get();
+                ->where(function($query) use ($team) {
+                    $query->where('home_team_id', $team->id)
+                        ->orWhere('away_team_id', $team->id);
+                })
+                ->get();
+
             $pendingGames = Game::where('away_team_id', $team->id)
-                                ->where('away_team_approved', false)
-                                ->get();
+                ->where('away_team_approved', false)
+                ->whereDate('date', $today) // Voeg deze regel toe om alleen de wedstrijden van vandaag te krijgen
+                ->get();
 
             Log::info('Team dashboard data', [
                 'team' => $team,
@@ -77,6 +93,7 @@ class DashboardController extends Controller
             return view('dashboard.default');
         }
     }
+
 
 
     private function getTeamRanking($teamId, $seasonId)
@@ -136,28 +153,69 @@ class DashboardController extends Controller
 
         return $teamRanking;
     }
+    
 
-    public function teamDashboard()
-    {
-        $user = Auth::user();
-        $teamId = $user->team_id;
-        $currentSeasonId = request()->query('season_id', Season::latest('id')->value('id'));
+    public function teamDashboard(Request $request)
+{
+    $user = Auth::user();
+    $team = $user->team;
 
-        $seasons = Season::all();
-        $currentSeason = Season::find($currentSeasonId);
-
-        $teamRanking = $this->getTeamRanking($teamId, $currentSeasonId);
-        $upcomingGames = Game::where(function ($query) use ($teamId) {
-                                $query->where('home_team_id', $teamId)
-                                      ->orWhere('away_team_id', $teamId);
-                            })
-                            ->where('date', '>=', now())
-                            ->get();
-
-        $pendingGames = Game::where('away_team_id', $teamId)
-                            ->where('away_team_approved', false)
-                            ->get();
-
-        return view('dashboard.team', compact('seasons', 'currentSeasonId', 'teamRanking', 'upcomingGames', 'pendingGames', 'currentSeason'));
+    if (!$team) {
+        return redirect()->back()->withErrors('Er is geen team gekoppeld aan deze gebruiker.');
     }
+
+    // Haal het laatste seizoen op en gebruik dit als standaardwaarde
+    $latestSeason = Season::latest()->first();
+    if (!$latestSeason) {
+        return view('dashboard.team', [
+            'error' => 'Geen actief seizoen gevonden. Zorg ervoor dat er minstens één seizoen is toegevoegd.'
+        ]);
+    }
+
+    $currentSeasonId = $request->query('season_id', $latestSeason->id);
+
+    // Haal alle seizoenen op
+    $seasons = Season::all();
+
+    // Bereken teamstatistieken
+    $defaultStats = [
+        'games_won' => 0,
+        'games_lost' => 0,
+        'games_draw' => 0,
+        'points' => 0
+    ];
+
+    $teamStats = $team->calculateStatsForSeason($currentSeasonId);
+    $teamStats = array_merge($defaultStats, $teamStats ?? []);
+
+    // Haal aankomende en pending wedstrijden op
+    $upcomingGames = Game::where(function ($query) use ($team) {
+                            $query->where('home_team_id', $team->id)
+                                  ->orWhere('away_team_id', $team->id);
+                        })
+                        ->where('date', '>=', now())
+                        ->where('season_id', $currentSeasonId)
+                        ->get();
+
+    $pendingGames = Game::where('away_team_id', $team->id)
+                        ->where('away_team_approved', false)
+                        ->where('season_id', $currentSeasonId)
+                        ->get();
+
+    // Haal de divisie op waarin het team speelt
+    $division = $team->divisions()->first();
+
+    // Haal de ranglijst van de divisie op
+    $standings = $this->rankingService->calculateDivisionStandings($division, $currentSeasonId);
+    $currentTeamStanding = collect($standings)->firstWhere('team_id', $team->id);
+
+    return view('dashboard.team', compact(
+        'seasons', 'currentSeasonId', 'teamStats', 'currentTeamStanding',
+        'upcomingGames', 'pendingGames', 'team'
+    ));
 }
+
+
+
+}
+ 

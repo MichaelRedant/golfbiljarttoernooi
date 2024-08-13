@@ -22,6 +22,72 @@
         </select>
     </div>
 
+    @if (isset($todayGames) && $todayGames->isNotEmpty())
+    <h2>Wedstrijden van Vandaag ({{ \Carbon\Carbon::today()->format('d-m-Y') }})</h2>
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Thuis Team</th>
+                <th>Uit Team</th>
+                <th>Actie</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($todayGames as $game)
+                <tr>
+                    <td>{{ \Carbon\Carbon::parse($game->date)->format('d-m-Y') }}</td>
+                    <td>
+                        @if ($game->bye_team_id)
+                            {{ $game->byeTeam->name }} heeft een bye
+                        @else
+                            @if ($game->homeTeam)
+                                <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
+                            @else
+                                Bye
+                            @endif
+                        @endif
+                    </td>
+                    <td>
+                        @if ($game->awayTeam)
+                            <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
+                        @else
+                            @if (!$game->bye_team_id)
+                                Bye
+                            @endif
+                        @endif
+                    </td>
+                    <td>
+                        @if (!$game->bye_team_id)
+                            @if (!$game->played)
+                                <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-play-circle"></i> Wedstrijd Spelen
+                                </a>
+                            @endif
+                            <a href="{{ route('games.edit', $game->id) }}" class="btn btn-sm btn-info">
+                                <i class="fas fa-pencil-alt"></i> Wedstrijd Bewerken
+                            </a>
+                        @endif
+                        <a href="{{ $game->played ? route('games.show', $game->id) : '#' }}" class="btn btn-sm btn-primary {{ !$game->played ? 'disabled' : '' }}">
+                            <i class="fas fa-eye"></i> Bekijk
+                        </a>
+                        <form action="{{ route('games.destroy', $game->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Weet je zeker dat je deze wedstrijd wilt verwijderen?');">
+                            @csrf
+                            @method('DELETE')
+                            <input type="hidden" name="redirect_to" value="{{ url()->current() }}">
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash-alt"></i> Verwijder
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+@endif
+
+
+    <h2>Aankomende Wedstrijden</h2>
     @if ($upcomingGames->isNotEmpty())
         @php
             $matchDays = $upcomingGames->keys()->sort();
@@ -36,27 +102,20 @@
                         <li class="list-group-item">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    @if ($game->homeTeam)
-                                        <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
+                                    @if ($game->bye_team_id)
+                                        {{ $game->byeTeam->name }} heeft een bye
                                     @else
-                                        Bye - {{ $game->byeTeam ? $game->byeTeam->name : 'Geen Thuis Team' }}
-                                    @endif
-                                    vs
-                                    @if ($game->awayTeam)
-                                        <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
-                                    @else
-                                        Bye - {{ $game->byeTeam ? $game->byeTeam->name : 'Geen Uit Team' }}
+                                        @if ($game->homeTeam)
+                                            <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
+                                        @endif
+                                        vs
+                                        @if ($game->awayTeam)
+                                            <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
+                                        @endif
                                     @endif
                                 </div>
                                 <div>
-                                    @if ($game->bye_team_id)
-                                        <button class="btn btn-sm btn-secondary" disabled>
-                                            <i class="fas fa-play-circle"></i> Wedstrijd Spelen
-                                        </button>
-                                        <button class="btn btn-sm btn-info" disabled>
-                                            <i class="fas fa-pencil-alt"></i> Wedstrijd Bewerken
-                                        </button>
-                                    @else
+                                    @if (!$game->bye_team_id)
                                         @if (!$game->played)
                                             <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-secondary">
                                                 <i class="fas fa-play-circle"></i> Wedstrijd Spelen
@@ -105,22 +164,28 @@
                     <tr>
                         <td>{{ \Carbon\Carbon::parse($game->date)->format('d-m-Y') }}</td>
                         <td>
-                            @if ($game->homeTeam)
-                                <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
+                            @if ($game->bye_team_id)
+                                {{ $game->byeTeam->name }} heeft een bye
                             @else
-                                Bye
+                                @if ($game->homeTeam)
+                                    <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
+                                @else
+                                    Bye
+                                @endif
                             @endif
                         </td>
                         <td>
                             @if ($game->awayTeam)
                                 <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
                             @else
-                                Bye
+                                @if (!$game->bye_team_id)
+                                    Bye
+                                @endif
                             @endif
                         </td>
                         <td>{{ $game->home_score ?? '' }} : {{ $game->away_score ?? '' }}</td>
                         <td>
-                            @if ($game->homeTeam && $game->awayTeam)
+                            @if (!$game->bye_team_id)
                                 <a href="{{ route('games.show', $game->id) }}" class="btn btn-primary btn-sm">
                                     <i class="fas fa-eye"></i> Bekijk
                                 </a>

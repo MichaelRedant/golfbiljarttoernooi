@@ -14,7 +14,7 @@
             {{ $error }}
         </div>
     @endisset
-
+ 
     <div class="card mb-4">
         <div class="card-header">
             <h1 class="d-flex align-items-center">
@@ -46,9 +46,9 @@
                         </select>
                     </div>
                 </form>
-                <p><strong><i class="fas fa-trophy"></i>Gewonnen:</strong> {{ $currentTeamStanding['games_won'] ?? 'N/A' }}</p>
-                <p><strong><i class="fas fa-thumbs-down"></i>Verloren:</strong> {{ $currentTeamStanding['games_lost'] ?? 'N/A' }}</p>
-                <p><strong><i class="fas fa-handshake"></i>Gelijk:</strong> {{ $currentTeamStanding['games_draw'] ?? 'N/A' }}</p>
+                <p><strong><i class="fas fa-trophy"></i> Gewonnen:</strong> {{ $currentTeamStanding['games_won'] ?? 'N/A' }}</p>
+                <p><strong><i class="fas fa-thumbs-down"></i> Verloren:</strong> {{ $currentTeamStanding['games_lost'] ?? 'N/A' }}</p>
+                <p><strong><i class="fas fa-handshake"></i > Gelijk:</strong> {{ $currentTeamStanding['games_draw'] ?? 'N/A' }}</p>
                 <p><strong><i class="fas fa-star"></i> Totaal Punten:</strong> {{ $currentTeamStanding['points'] ?? 'N/A' }}</p>
                 <p><strong><i class="fas fa-medal"></i> Plaats dit seizoen:</strong> 
                     @foreach ($standings as $index => $standing)
