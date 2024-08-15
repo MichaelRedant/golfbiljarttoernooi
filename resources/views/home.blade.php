@@ -8,7 +8,7 @@
         <div class="col-md-9">
             <div class="d-flex align-items-center my-4">
                 <img src="{{ asset('images/logoGVA.png') }}" alt="GVA Logo" class="logo mr-3">
-                <h1 class="text-center">Welkom bij onze Golfbiljart Applicatie</h1>
+                <h1 class="text-center">Welkom bij Golfbiljart Verbond Aalst</h1>
             </div>
             <p class="text-justify">
                 Golfbiljart is een fascinerende sport die precisie, tactiek en vaardigheid combineert. Het wordt gespeeld op een speciale biljarttafel, waarbij het doel is om de ballen in een specifieke volgorde te raken en punten te scoren. Onze applicatie helpt liefhebbers van de sport om wedstrijden te organiseren, scores bij te houden en meer te leren over verschillende teams en spelers.
