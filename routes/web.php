@@ -24,6 +24,7 @@ Route::get('/get-teams', [PlayerController::class, 'getTeams'])->name('get-teams
 Route::get('/get-players-by-team', [PlayerController::class, 'getPlayersByTeam'])->name('get-players-by-team');
 
 Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
+Route::get('/games/{game}', [GameController::class, 'showGame'])->name('games.show');
 Route::get('/games/fetchLiveScores', [GameController::class, 'fetchLiveScores'])->name('games.fetchLiveScores');
 Route::get('/scores/stream', [GameController::class, 'streamScores'])->name('scores.stream');
 Route::get('/kalender', [GameController::class, 'showCalendar'])->name('games.kalender');
@@ -35,6 +36,9 @@ Route::get('/rankings/{division}/players', [RankingController::class, 'playerRan
 
 Route::get('/live-scores', [GameController::class, 'showLiveScores'])->name('live-scores');
 Route::put('/games/{game}/update-live-score', [GameController::class, 'updateLiveScore'])->name('games.updateLiveScore');
+Route::post('/games/{temporaryApproval}/confirm', [GameController::class, 'confirmApproval'])->name('games.confirmApproval');
+
+
 
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
@@ -67,6 +71,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/games/{game}/play', [GameController::class, 'play'])->name('games.play');
     Route::get('/games/{game}/request-approval', [GameController::class, 'requestApproval'])->name('games.requestApproval');
     Route::post('/games/{game}/approve', [GameController::class, 'approve'])->name('games.approve');
+    Route::post('/games/{game}/reject', [GameController::class, 'reject'])->name('games.reject');
+    Route::post('/games/{game}/resubmit', [GameController::class, 'resubmit'])->name('games.resubmit');
+    Route::get('/games/{game}/edit', [GameController::class, 'editForm'])->name('games.edit');
     Route::post('/games/{game}/forfeit', [GameController::class, 'forfeitRequest'])->name('games.forfeit')->middleware('ensureTeamIsAuthorized');
     Route::post('/games/{game}/confirm-forfeit', [GameController::class, 'confirmForfeit'])->name('games.confirm-forfeit');
 

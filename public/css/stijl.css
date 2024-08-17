@@ -518,14 +518,20 @@ body.night-mode .table td {
 }
 
 .sponsor-image {
-  max-height: 100px; /* Set the maximum height */
+  max-height: 100px; /* Set maximum height for the image */
   width: auto; /* Maintain aspect ratio */
   display: block;
-  margin: auto; /* Center the image */
+  margin: auto;
 }
 
-.carousel-control-prev,
-.carousel-control-next {
-  display: none; /* Hide the carousel controls */
+@media (max-width: 768px) {
+  .sponsor-image {
+      max-height: 80px; /* Adjust size for smaller screens */
+  }
 }
 
+@media (max-width: 576px) {
+  .sponsor-image {
+      max-height: 60px; /* Further adjust size for mobile screens */
+  }
+}

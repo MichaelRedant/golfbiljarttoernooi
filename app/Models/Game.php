@@ -42,7 +42,7 @@ class Game extends Model
 
     public function manches()
     {
-        return $this->hasMany(Manche::class);
+        return $this->hasMany(Manche::class,'game_id');
     }
 
     public function belles()

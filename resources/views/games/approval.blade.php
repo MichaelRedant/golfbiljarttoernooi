@@ -21,7 +21,7 @@
                 <td>
                     <a href="{{ route('teams.show', $game->homeTeam->id) }}">
                         {{ $game->homeTeam->name }}
-                        @if($game->home_score > $game->away_score)
+                        @if($liveData && $liveData['home_score'] > $liveData['away_score'])
                             <i class="fas fa-trophy" style="color: gold;"></i>
                         @endif
                     </a>
@@ -38,13 +38,13 @@
                 <td>
                     <a href="{{ route('teams.show', $game->awayTeam->id) }}">
                         {{ $game->awayTeam->name }}
-                        @if($game->away_score > $game->home_score)
+                        @if($liveData && $liveData['away_score'] > $liveData['home_score'])
                             <i class="fas fa-trophy" style="color: gold;"></i>
                         @endif
                     </a>
                 </td>
             </tr>
-            <tr>
+            <tr> 
                 <th>Locatie</th>
                 <td>
                     <i class="fas fa-map-marker-alt"></i> {{ $game->homeTeam->location }}
@@ -57,12 +57,61 @@
             <tr>
                 <th>Wedstrijdscore</th>
                 <td>
-                    <span class="badge bg-primary">{{ $game->home_score }}</span> - 
-                    <span class="badge bg-danger">{{ $game->away_score }}</span>
+                    @if($liveData)
+                        <span class="badge bg-primary">{{ $liveData['home_score'] ?? 'N/A' }}</span> - 
+                        <span class="badge bg-danger">{{ $liveData['away_score'] ?? 'N/A' }}</span>
+                    @else
+                        <span class="badge bg-primary">{{ $game->home_score }}</span> - 
+                        <span class="badge bg-danger">{{ $game->away_score }}</span>
+                    @endif
                 </td>
+            </tr>
+            <tr>
+                <th>Kapitein Thuis</th>
+                <td>{{ $liveData['home_captain_name'] ?? 'N/A' }}</td>
+            </tr>
+            <tr>
+                <th>Kapitein Uit</th>
+                <td>{{ $liveData['away_captain_name'] ?? 'N/A' }}</td>
+            </tr>
+            <tr>
+                <th>Reservespeler Thuis</th>
+                <td>{{ $liveData['home_reserve_name'] ?? 'N/A' }}</td>
+            </tr>
+            <tr>
+                <th>Reservespeler Uit</th>
+                <td>{{ $liveData['away_reserve_name'] ?? 'N/A' }}</td>
             </tr>
         </tbody>
     </table>
+
+    @if(!empty($scores))
+    <div class="mt-4">
+        <h4>Individuele Manches</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Speler Thuis</th>
+                    <th>Speler Uit</th>
+                    <th>1M</th>
+                    <th>2M</th>
+                    <th>Belle</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($scores as $score)
+                    <tr>
+                        <td>{{ $score['home_player_name'] ?? 'Onbekend' }}</td>
+                        <td>{{ $score['away_player_name'] ?? 'Onbekend' }}</td>
+                        <td>{{ $score['1M'] ?? 'N/A' }}</td>
+                        <td>{{ $score['2M'] ?? 'N/A' }}</td>
+                        <td>{{ $score['Belle'] ?? 'N/A' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
 
     <div class="mt-4">
         @if($game->division)

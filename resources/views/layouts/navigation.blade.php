@@ -38,6 +38,9 @@
                         <a class="dropdown-item" href="{{ route('teams.index') }}">Teams</a>
                         <a class="dropdown-item" href="{{ route('players.index') }}">Spelers</a>
                         <a class="dropdown-item" href="{{ route('teams.addresses') }}">Adressen</a>
+                        <a class="dropdown-item" href="{{ asset('uploads/informatie/speelregelement.pdf') }}" download>
+                            Download regelement
+                        </a>
                     </div>
                 </li>
                 @auth

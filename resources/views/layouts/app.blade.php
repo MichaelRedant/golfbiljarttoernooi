@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Golfbiljart') }}</title>
+    <title>{{ config('app.name', 'Golfbiljart Verbond Aalst') }}</title>
     <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon"/>
     <!-- Fonts en Styles -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito">
@@ -14,6 +14,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
      <!-- CKEditor CDN -->
      <script src="https://cdn.ckeditor.com/4.16.0/standard/ckeditor.js"></script>
+     <!-- Created by Michaël Redant van Xinudesign in samenwerking en in opdracht van Pixapop -->
 </head>
 <body class="font-sans antialiased">
     <!-- Navigation -->

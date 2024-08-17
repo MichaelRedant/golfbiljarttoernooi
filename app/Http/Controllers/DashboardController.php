@@ -188,7 +188,7 @@ class DashboardController extends Controller
     $teamStats = $team->calculateStatsForSeason($currentSeasonId);
     $teamStats = array_merge($defaultStats, $teamStats ?? []);
 
-    // Haal aankomende en pending wedstrijden op
+    // Haal aankomende wedstrijden op
     $upcomingGames = Game::where(function ($query) use ($team) {
                             $query->where('home_team_id', $team->id)
                                   ->orWhere('away_team_id', $team->id);
@@ -197,6 +197,16 @@ class DashboardController extends Controller
                         ->where('season_id', $currentSeasonId)
                         ->get();
 
+    // Haal wedstrijden van vandaag op waarin het team speelt
+    $todayGames = Game::whereDate('date', Carbon::today())
+        ->where(function ($query) use ($team) {
+            $query->where('home_team_id', $team->id)
+                  ->orWhere('away_team_id', $team->id);
+        })
+        ->where('season_id', $currentSeasonId)
+        ->get();
+
+    // Haal pending wedstrijden op
     $pendingGames = Game::where('away_team_id', $team->id)
                         ->where('away_team_approved', false)
                         ->where('season_id', $currentSeasonId)
@@ -211,9 +221,10 @@ class DashboardController extends Controller
 
     return view('dashboard.team', compact(
         'seasons', 'currentSeasonId', 'teamStats', 'currentTeamStanding',
-        'upcomingGames', 'pendingGames', 'team'
+        'upcomingGames', 'pendingGames', 'team', 'todayGames'
     ));
 }
+
 
 
 

@@ -13,6 +13,47 @@
             <h1>Welkom {{ auth()->user()->name }}</h1>
         </div>
 
+        @if(isset($todayGames) && $todayGames->isNotEmpty())
+            <div class="col-md-12 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-calendar-day"></i> Wedstrijden van Vandaag ({{ \Carbon\Carbon::today()->format('d-m-Y') }})</h5>
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Datum</th>
+                                    <th>Thuis Team</th>
+                                    <th>Uit Team</th>
+                                    <th>Actie</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($todayGames as $game)
+                                    <tr>
+                                        <td>{{ \Carbon\Carbon::parse($game->date)->format('d-m-Y') }}</td>
+                                        <td>
+                                            <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
+                                        </td>
+                                        <td>
+                                            <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
+                                        </td>
+                                        <td>
+                                            @if(auth()->check() && auth()->user()->team_id == $game->home_team_id)
+                                                <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-play"></i> Start Wedstrijd
+                                                </a>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Existing code for team ranking, upcoming games, etc. -->
         <div class="col-md-6 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">
@@ -31,7 +72,7 @@
                     </form>
                     @if(isset($currentTeamStanding))
                         <ul class="list-group">
-                            <li class="list-group-item"><i class="fas fa-users"></i> <strong>Team Naam:</strong> {{ $team->name }}</li>
+                            <li class="list-group-item"><i class="fas fa-users"></i> {{ $team->name }}</li>
                             <li class="list-group-item"><i class="fas fa-trophy"></i> <strong>Punten:</strong> {{ $currentTeamStanding['points'] }}</li>
                             <li class="list-group-item"><i class="fas fa-check-circle"></i> <strong>Gewonnen:</strong> {{ $currentTeamStanding['games_won'] }}</li>
                             <li class="list-group-item"><i class="fas fa-times-circle"></i> <strong>Verloren:</strong> {{ $currentTeamStanding['games_lost'] }}</li>
@@ -81,8 +122,8 @@
                             <ul class="list-group">
                                 @foreach($pendingGames as $pendingGame)
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        {{ $pendingGame->homeTeam->name }} vs {{ $pendingGame->awayTeam->name }}
-                                        <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Goedkeuren</a>
+                                        {{ $pendingGame->homeTeam->name }} vs {{ $pendingGame->awayTeam->name }} 
+                                        <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Goedkeuren/Afkeuren</a>
                                     </li>
                                 @endforeach
                             </ul>

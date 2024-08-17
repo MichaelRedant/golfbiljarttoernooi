@@ -1,61 +1,117 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-4">
-    <h1>Wedstrijddetails voor 
-        <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a> 
-        vs 
-        <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
-    </h1>
-    <div>
-        <a href="{{ route('clubs.show', $game->homeTeam->club->id) }}">{{ $game->homeTeam->club->name }}</a>
-        <p>Thuisploeg: 
-            <a href="{{ route('teams.show', $game->homeTeam->id) }}">
-                {{ $game->homeTeam->name }}
-                @if($game->home_score > $game->away_score)
-                    <i class="fas fa-trophy" style="color: gold;"></i>
-                @endif
-            </a>
-        </p>
-        <a href="{{ route('clubs.show', $game->awayTeam->club->id) }}">{{ $game->awayTeam->club->name }}</a>
-        <p>Bezoekers: 
-            <a href="{{ route('teams.show', $game->awayTeam->id) }}">
-                {{ $game->awayTeam->name }}
-                @if($game->away_score > $game->home_score)
-                    <i class="fas fa-trophy" style="color: gold;"></i>
-                @endif
-            </a>
-        </p>
-        <p>
-            <i class="fas fa-map-marker-alt"></i> {{ $game->homeTeam->location }}
-        </p>
-        <p>Datum: {{ \Carbon\Carbon::parse($game->date)->format('d-m-Y') }}</p>
-        <p>Wedstrijdscore: <strong>{{ $game->home_score }} - {{ $game->away_score }}</strong></p>
+<div class="container">
+    <h3 class="text-center">Wedstrijddetails</h3>
 
-        <table class="table">
+    <div class="row">
+        <div class="col-md-6">
+            <h4 class="text-center">{{ $game->homeTeam->name }}</h4>
+            <p class="text-center">
+                <a href="{{ route('clubs.show', $game->homeTeam->club->id) }}">
+                    {{ $game->homeTeam->club->name }}
+                </a>
+            </p>
+        </div>
+        <div class="col-md-6">
+            <h4 class="text-center">{{ $game->awayTeam->name }}</h4>
+            <p class="text-center">
+                <a href="{{ route('clubs.show', $game->awayTeam->club->id) }}">
+                    {{ $game->awayTeam->club->name }}
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="row">
+        <div class="col-md-6 text-center">
+            <strong>Locatie:</strong>
+            <p>{{ $game->homeTeam->location }}</p>
+        </div>
+        <div class="col-md-6 text-center">
+            <strong>Datum:</strong>
+            <p>{{ \Carbon\Carbon::parse($game->date)->format('d-m-Y') }}</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 text-center">
+            <h5 class="mb-3">
+                <span class="badge">{{ $liveData['home_score'] ?? $game->home_score }}</span> - 
+                <span class="badge">{{ $liveData['away_score'] ?? $game->away_score }}</span>
+            </h5>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 text-center">
+            <strong>Kapitein:</strong>
+            <p><a href="#">{{ $liveData['home_captain_name'] ?? 'Onbekend' }}</a></p>
+        </div>
+        <div class="col-md-6 text-center">
+            <strong>Kapitein:</strong>
+            <p><a href="#">{{ $liveData['away_captain_name'] ?? 'Onbekend' }}</a></p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 text-center">
+            <strong>Reservespeler:</strong>
+            <p><a href="#">{{ $liveData['home_reserve_name'] ?? 'Onbekend' }}</a></p>
+        </div>
+        <div class="col-md-6 text-center">
+            <strong>Reservespeler:</strong>
+            <p><a href="#">{{ $liveData['away_reserve_name'] ?? 'Onbekend' }}</a></p>
+        </div>
+    </div>
+
+    @if(!empty($scores))
+    <div class="mt-4">
+        <h4 class="text-center">Scores</h4>
+        <table class="table table-striped">
             <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Thuis Speler</th>
-                    <th>Uit Speler</th>
+                <tr class="text-center">
+                    <th>Speler {{ $game->homeTeam->name }}</th>
+                    <th style="font-size: 0.9em;">Team Thuis</th>
+                    <th>Speler {{ $game->awayTeam->name }}</th>
+                    <th style="font-size: 0.9em;">Team Uit</th>
                     <th>1M</th>
                     <th>2M</th>
                     <th>Belle</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($game->manches as $manche)
-                <tr>
-                    <td>{{ $loop->index + 1 }}</td>
-                    <td><a href="{{ route('players.show', $manche->player1->id) }}">{{ $manche->player1->first_name }} {{ $manche->player1->last_name }}</a></td>
-                    <td><a href="{{ route('players.show', $manche->player2->id) }}">{{ $manche->player2->first_name }} {{ $manche->player2->last_name }}</a></td>
-                    <td>{{ $manche->score1 }}</td>
-                    <td>{{ $manche->score2 }}</td>
-                    <td>{{ $manche->belle_score ?? '' }}</td>
-                </tr>
+                @foreach($scores as $score)
+                    <tr class="text-center">
+                        <td>{{ $score['home_player_name'] }}</td>
+                        <td style="font-size: 0.9em;">{{ $score['home_player_team'] }}</td>
+                        <td>{{ $score['away_player_name'] }}</td>
+                        <td style="font-size: 0.9em;">{{ $score['away_player_team'] }}</td>
+                        <td>{{ $score['1M'] }}</td>
+                        <td>{{ $score['2M'] }}</td>
+                        <td>{{ $score['Belle'] }}</td>
+                    </tr>
                 @endforeach
             </tbody>
         </table>
     </div>
+    @endif
+
+    <div class="text-center mt-4">
+        @if($game->division)
+            <a href="{{ route('divisions.show', ['division' => $game->division->id]) }}" class="btn btn-primary">Terug naar Wedstrijdkalender</a>
+        @else
+            <a href="#" onclick="history.back()" class="btn btn-primary">Terug</a>
+        @endif
+    </div>
+
+    @if(!$game->away_team_approved)
+    <form action="{{ route('games.approve', $game->id) }}" method="POST" class="text-center mt-4">
+        @csrf
+        <button type="submit" class="btn btn-success">Goedkeuren</button>
+    </form>
+    @endif
 </div>
 @endsection
