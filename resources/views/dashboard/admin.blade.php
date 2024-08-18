@@ -137,12 +137,23 @@
                                                 ({{ $pendingGame->home_score ?? 0 }} - {{ $pendingGame->away_score ?? 0 }})
                                                 <span class="ml-2">{{ \Carbon\Carbon::parse($pendingGame->date)->format('d-m-Y') }}</span>
                                             </span>
-                                            @if($pendingGame->home_score !== null || $pendingGame->away_score !== null || $pendingGame->forfeit_by)
-                                                <a href="{{ route('games.approve', $pendingGame->id) }}" class="btn btn-primary btn-sm">Goedkeuren</a>
+                                        
+                                            @php
+                                                $liveScore = \App\Models\LiveScore::where('game_id', $pendingGame->id)->first();
+                                                $forfeitTeam = $liveScore ? json_decode($liveScore->data, true)['forfeit_team'] ?? null : null;
+                                            @endphp
+                                        
+                                            @if($pendingGame->home_score !== null || $pendingGame->away_score !== null || $forfeitTeam)
+                                                <form action="{{ route('games.approve', $pendingGame->id) }}" method="POST" style="display:inline;">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-primary btn-sm">Goedkeuren</button>
+                                                </form>
                                             @else
                                                 <button class="btn btn-secondary btn-sm" disabled>Goedkeuren niet mogelijk</button>
                                             @endif
                                         </li>
+                                        
+                                        
                                         @endif
                                     @endforeach
                                 </ul>

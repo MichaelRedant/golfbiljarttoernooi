@@ -57,12 +57,20 @@
             <tr>
                 <th>Wedstrijdscore</th>
                 <td>
-                    @if($liveData)
-                        <span class="badge bg-primary">{{ $liveData['home_score'] ?? 'N/A' }}</span> - 
-                        <span class="badge bg-danger">{{ $liveData['away_score'] ?? 'N/A' }}</span>
+                    @if($liveData && isset($liveData['forfeit_team']))
+                        @if($liveData['forfeit_team'] === 'home')
+                            <span class="badge">0</span> - 
+                            <span class="badge">6 (Forfait)</span>
+                        @elseif($liveData['forfeit_team'] === 'away')
+                            <span class="badge">6 (Forfait)</span> - 
+                            <span class="badge">0</span>
+                        @endif
+                    @elseif($liveData)
+                        <span class="badge">{{ $liveData['home_score'] ?? 'N/A' }}</span> - 
+                        <span class="badge ">{{ $liveData['away_score'] ?? 'N/A' }}</span>
                     @else
-                        <span class="badge bg-primary">{{ $game->home_score }}</span> - 
-                        <span class="badge bg-danger">{{ $game->away_score }}</span>
+                        <span class="badge">{{ $game->home_score }}</span> - 
+                        <span class="badge ">{{ $game->away_score }}</span>
                     @endif
                 </td>
             </tr>

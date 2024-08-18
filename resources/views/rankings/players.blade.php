@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container mt-4">
-    <h1 class="mb-4"><i class="fas fa-trophy"></i> Speler Klassement</h1>
+    <h1 class="mb-4 text-center"><i class="fas fa-trophy"></i> Speler Klassement</h1>
 
     <div class="card">
         <div class="card-body">
@@ -28,36 +28,38 @@
                     Geen klassement beschikbaar voor de geselecteerde reeks en seizoen.
                 </div>
             @else
-                <table class="table table-hover">
-                    <thead class="thead-dark">
-                        <tr>
-                            <th>#</th>
-                            <th>Speler</th>
-                            <th>Team</th>
-                            <th>Gewonnen</th>
-                            <th>Verloren</th>
-                            <th>Punten</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($standings as $index => $standing)
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="thead-dark">
                             <tr>
-                                <td>{{ $index + 1 }}</td>
-                                <td><a href="{{ route('players.show', ['player' => $standing['player_id']]) }}">{{ $standing['player_name'] }}</a></td>
-                                <td><a href="{{ route('teams.show', ['team' => $standing['team_id']]) }}">{{ $standing['team_name'] }}</a></td>
-                                <td>{{ $standing['matches_won'] }}</td>
-                                <td>{{ $standing['matches_lost']}}</td>
-                                <td>{{ $standing['points'] }}</td>
+                                <th>#</th>
+                                <th>Speler</th>
+                                <th>Team</th>
+                                <th>Gewonnen</th>
+                                <th>Verloren</th>
+                                <th>Punten</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach ($standings as $index => $standing)
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td><a href="{{ route('players.show', ['player' => $standing['player_id']]) }}">{{ $standing['player_name'] }}</a></td>
+                                    <td><a href="{{ route('teams.show', ['team' => $standing['team_id']]) }}">{{ $standing['team_name'] }}</a></td>
+                                    <td>{{ $standing['matches_won'] }}</td>
+                                    <td>{{ $standing['matches_lost']}}</td>
+                                    <td>{{ $standing['points'] }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             @endif
         </div>
     </div>
 
     <div class="mt-4 text-center">
-        <a href="{{ route('rankings.index') }}" class="btn btn-secondary btn-lg"><i class="fas fa-arrow-left"></i> Terug naar Overzicht</a>
+        <a href="{{ route('rankings.index') }}" class="btn btn-secondary btn-lg w-100"><i class="fas fa-arrow-left"></i> Terug naar Overzicht</a>
     </div>
 </div>
 @endsection

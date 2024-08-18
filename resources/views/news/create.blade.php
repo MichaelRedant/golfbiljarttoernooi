@@ -19,9 +19,9 @@
             <textarea name="content" class="form-control" id="content" rows="10" required></textarea>
         </div>
 
-        <div class="form-group mb-3">
-            <label for="is_sticky"><i class="fas fa-thumbtack"></i> Sticky:</label>
+        <div class="form-group mb-3 form-check form-check-inline">
             <input type="checkbox" name="is_sticky" id="is_sticky" class="form-check-input">
+            <label class="form-check-label" for="is_sticky"><i class="fas fa-thumbtack"></i> Sticky</label>
         </div>
 
         <div class="d-flex justify-content-between">

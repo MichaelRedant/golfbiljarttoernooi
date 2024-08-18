@@ -14,7 +14,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
      <!-- CKEditor CDN -->
      <script src="https://cdn.ckeditor.com/4.16.0/standard/ckeditor.js"></script>
-     <!-- Created by Michaël Redant van Xinudesign in samenwerking en in opdracht van Pixapop -->
 </head>
 <body class="font-sans antialiased">
     <!-- Navigation -->

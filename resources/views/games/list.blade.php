@@ -64,9 +64,7 @@
                                     <i class="fas fa-play-circle"></i> Wedstrijd Spelen
                                 </a>
                             @endif
-                            <a href="{{ route('games.edit', $game->id) }}" class="btn btn-sm btn-info">
-                                <i class="fas fa-pencil-alt"></i> Wedstrijd Bewerken
-                            </a>
+                            
                         @endif
                         <a href="{{ $game->played ? route('games.show', $game->id) : '#' }}" class="btn btn-sm btn-primary {{ !$game->played ? 'disabled' : '' }}">
                             <i class="fas fa-eye"></i> Bekijk
