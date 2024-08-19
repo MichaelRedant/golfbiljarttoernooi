@@ -70,4 +70,10 @@ class Game extends Model
     {
         return $this->hasMany(Score::class);
     }
+
+    public function liveScore()
+{
+    return $this->hasOne(LiveScore::class);
+}
+
 }

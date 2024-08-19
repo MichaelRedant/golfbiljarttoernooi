@@ -115,58 +115,39 @@
                         @if($pendingGames->isEmpty())
                             <p>Geen wedstrijden wachten op goedkeuring.</p>
                         @else
-                            <form action="{{ route('games.bulkApprove') }}" method="POST">
-                                @csrf
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="checkbox" id="selectAll">
-                                    <label class="form-check-label" for="selectAll">Selecteer alles</label>
-                                </div>
-                                <ul class="list-group list-group-flush">
-                                    @foreach($pendingGames as $pendingGame)
-                                        @if($pendingGame->homeTeam && $pendingGame->awayTeam)
-                                        <li class="list-group-item d-flex justify-content-between align-items-center p-1">
-                                            <input type="checkbox" name="game_ids[]" value="{{ $pendingGame->id }}">
-                                            <span>
-                                                <a href="{{ route('teams.show', $pendingGame->homeTeam->id) }}" class="{{ $pendingGame->home_score > $pendingGame->away_score ? 'font-weight-bold' : '' }}">
-                                                    {{ $pendingGame->homeTeam->name }}
-                                                </a>
-                                                vs
-                                                <a href="{{ route('teams.show', $pendingGame->awayTeam->id) }}" class="{{ $pendingGame->away_score > $pendingGame->home_score ? 'font-weight-bold' : '' }}">
-                                                    {{ $pendingGame->awayTeam->name }}
-                                                </a>
-                                                ({{ $pendingGame->home_score ?? 0 }} - {{ $pendingGame->away_score ?? 0 }})
-                                                <span class="ml-2">{{ \Carbon\Carbon::parse($pendingGame->date)->format('d-m-Y') }}</span>
-                                            </span>
-                                        
-                                            @php
-                                                $liveScore = \App\Models\LiveScore::where('game_id', $pendingGame->id)->first();
-                                                $forfeitTeam = $liveScore ? json_decode($liveScore->data, true)['forfeit_team'] ?? null : null;
-                                            @endphp
-                                        
-                                            @if($pendingGame->home_score !== null || $pendingGame->away_score !== null || $forfeitTeam)
-                                                <form action="{{ route('games.approve', $pendingGame->id) }}" method="POST" style="display:inline;">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-primary btn-sm">Goedkeuren</button>
-                                                </form>
-                                            @else
-                                                <button class="btn btn-secondary btn-sm" disabled>Goedkeuren niet mogelijk</button>
-                                            @endif
-                                        </li>
-                                        
-                                        
-                                        @endif
-                                    @endforeach
-                                </ul>
-                                <button type="submit" class="btn btn-success mt-3">Goedkeuren Geselecteerde Wedstrijden</button>
-                            </form>
+                            <ul class="list-group list-group-flush">
+                                @foreach($pendingGames as $pendingGame)
+                                    @if($pendingGame->homeTeam && $pendingGame->awayTeam)
+                                    <li class="list-group-item d-flex justify-content-between align-items-center p-1">
+                                        <span>
+                                            <a href="{{ route('teams.show', $pendingGame->homeTeam->id) }}" class="{{ $pendingGame->home_score > $pendingGame->away_score ? 'font-weight-bold' : '' }}">
+                                                {{ $pendingGame->homeTeam->name }}
+                                            </a>
+                                            vs
+                                            <a href="{{ route('teams.show', $pendingGame->awayTeam->id) }}" class="{{ $pendingGame->away_score > $pendingGame->home_score ? 'font-weight-bold' : '' }}">
+                                                {{ $pendingGame->awayTeam->name }}
+                                            </a>
+                                            ({{ $pendingGame->home_score ?? 0 }} - {{ $pendingGame->away_score ?? 0 }})
+                                            <span class="ml-2">{{ \Carbon\Carbon::parse($pendingGame->date)->format('d-m-Y') }}</span>
+                                        </span>
+                                    
+                                        @php
+                                            $liveScore = \App\Models\LiveScore::where('game_id', $pendingGame->id)->first();
+                                            $forfeitTeam = $liveScore ? json_decode($liveScore->data, true)['forfeit_team'] ?? null : null;
+                                        @endphp
+                                    
+                                        <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Goedkeuren</a>
+                                    </li>
+                                    @endif
+                                @endforeach
+                            </ul>
                         @endif
                     </div>
                 </div>
             </div>
         </div>
         
-    </div>
-</div>
+        
 @endsection
  
 <script>

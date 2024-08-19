@@ -422,7 +422,7 @@ public function approve(Request $request, Game $game)
                             'player2_id' => $this->getPlayerIdByName($score['away_player_name']),
                             'score1' => $score['1M'],
                             'score2' => $score['2M'],
-                            'belle_score' => $score['Belle'] !== 'N/A' ? $score['Belle'] : null,
+                            'belle_score' => $score['Belle'] !== '' ? $score['Belle'] : null,
                             'winner_id' => $this->determineWinnerId($score),
                         ]
                     );
@@ -433,7 +433,7 @@ public function approve(Request $request, Game $game)
                         'player2_id' => $this->getPlayerIdByName($score['away_player_name']),
                         'score1' => $score['1M'],
                         'score2' => $score['2M'],
-                        'belle_score' => $score['Belle'] !== 'N/A' ? $score['Belle'] : null,
+                        'belle_score' => $score['Belle'] !== '' ? $score['Belle'] : null,
                         'winner_id' => $this->determineWinnerId($score),
                     ]);
                 }
@@ -458,6 +458,8 @@ public function approve(Request $request, Game $game)
 
     return redirect()->route('games.index')->withErrors(['msg' => 'Je bent niet bevoegd om deze wedstrijd goed te keuren of af te wijzen.']);
 }
+
+
 
 
 
@@ -770,45 +772,50 @@ public function updateLiveScore(Request $request, Game $game)
 
 public function showLiveScores()
 {
-    $liveScores = LiveScore::all();
+    $currentDate = Carbon::now()->format('Y-m-d');
 
-    if ($liveScores->isEmpty()) {
-        return view('live-scores', ['message' => 'Er zijn momenteel geen live gegevens beschikbaar.']);
-    }
+    // Haal alle wedstrijden van vandaag op, ongeacht de status
+    $games = Game::with(['homeTeam', 'awayTeam', 'division'])
+                 ->whereDate('date', $currentDate)
+                 ->get();
 
-    $currentDate = Carbon::now()->format('Y-m-d'); // Haal de huidige datum op
+    // Haal alle live scores op voor de wedstrijden van vandaag
+    $liveScores = LiveScore::whereIn('game_id', $games->pluck('id'))->get()->keyBy('game_id');
 
-    $liveData = $liveScores->filter(function ($liveScore) use ($currentDate) {
-        $data = json_decode($liveScore->data, true);
-        $gameDate = Carbon::parse($data['game_date'] ?? '')->format('Y-m-d');
-        return $gameDate === $currentDate; // Alleen wedstrijden van vandaag tonen
-    })->map(function($liveScore) {
-        $data = json_decode($liveScore->data, true);
+    // Combineer de live scores met de basisgegevens van de wedstrijd
+    $liveData = $games->map(function ($game) use ($liveScores) {
+        // Haal de bijbehorende live score op
+        $data = $liveScores->get($game->id) ? json_decode($liveScores->get($game->id)->data, true) : [];
+        
+        // Voeg basisinformatie van de wedstrijd toe
+        $data['home_team_name'] = $game->homeTeam->name;
+        $data['away_team_name'] = $game->awayTeam->name;
+        $data['division_name'] = $game->division->name;
+        $data['game_date'] = $game->date->format('Y-m-d');
+        $data['home_score'] = $data['home_score'] ?? null;
+        $data['away_score'] = $data['away_score'] ?? null;
+        $data['forfeit_team'] = $data['forfeit_team'] ?? null;
 
-        $game = Game::with(['homeTeam', 'awayTeam'])->find($liveScore->game_id);
-        if ($game) {
+        // Verwerk de scores voor de spelers
+        if (isset($data['scores'])) {
             foreach ($data['scores'] as &$score) {
-                // Zoek de juiste teamnaam voor de speler
                 $score['home_player_team'] = $this->getPlayerActualTeamName($score['home_player_name']);
                 $score['away_player_team'] = $this->getPlayerActualTeamName($score['away_player_name']);
             }
-            $data['division_name'] = $game->division->name;
-            $data['game_date'] = $game->date->format('Y-m-d');
-        } else {
-            Log::error('Game niet gevonden voor live score', ['game_id' => $liveScore->game_id]);
         }
-
-        Log::info('Live data for game', ['game_id' => $liveScore->game_id, 'data' => $data]);
 
         return $data;
     });
 
+    // Controleer of er live data is en stuur dit door naar de view
     if ($liveData->isEmpty()) {
         return view('live-scores', ['message' => 'Er zijn geen live wedstrijden beschikbaar voor vandaag.']);
     }
 
     return view('live-scores', ['liveData' => $liveData]);
 }
+
+
 
 
 
