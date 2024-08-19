@@ -122,40 +122,30 @@ public function store(Request $request)
         $awayWins = 0;
 
         foreach ($validatedData['scores'] as $index => $score) {
-            $matchResult = $this->calculateMatchResult($score);
+            // Controleer of alle vereiste velden voor de manche correct zijn ingevuld
+            if (!empty($score['1M']) && !empty($score['2M']) && (!isset($score['Belle']) || !empty($score['Belle']))) {
+                $matchResult = $this->calculateMatchResult($score);
 
-            if ($matchResult == 1) {
-                $homeWins++;
-            } elseif ($matchResult == 2) {
-                $awayWins++;
+                if ($matchResult == 1) {
+                    $homeWins++;
+                } elseif ($matchResult == 2) {
+                    $awayWins++;
+                }
+
+                Manche::create([
+                    'game_id' => $game->id,
+                    'player1_id' => $score['home_player'],
+                    'player2_id' => $score['away_player'],
+                    'number' => $index + 1,
+                    'score1' => $score['1M'],
+                    'score2' => $score['2M'],
+                    'belle_score' => $score['Belle'] ?? null,
+                    'winner_id' => $matchResult == 1 ? $score['home_player'] : ($matchResult == 2 ? $score['away_player'] : null),
+                ]);
             }
-
-            Manche::create([
-                'game_id' => $game->id,
-                'player1_id' => $score['home_player'],
-                'player2_id' => $score['away_player'],
-                'number' => $index + 1,
-                'score1' => $score['1M'],
-                'score2' => $score['2M'],
-                'belle_score' => $score['Belle'] ?? null,
-                'winner_id' => $matchResult == 1 ? $score['home_player'] : ($matchResult == 2 ? $score['away_player'] : null),
-            ]);
-
-            Log::info('Manche created:', [
-                'game_id' => $game->id,
-                'player1_id' => $score['home_player'],
-                'player2_id' => $score['away_player'],
-                'number' => $index + 1,
-                'score1' => $score['1M'],
-                'score2' => $score['2M'],
-                'belle_score' => $score['Belle'] ?? null,
-                'winner_id' => $matchResult == 1 ? $score['home_player'] : ($matchResult == 2 ? $score['away_player'] : null),
-            ]);
         }
 
-        Log::info('Home Wins: ' . $homeWins);
-        Log::info('Away Wins: ' . $awayWins);
-
+        // Alleen bijwerken van de wedstrijdscore als er ten minste één complete manche is ingevuld
         $game->update([
             'home_score' => $homeWins,
             'away_score' => $awayWins,
@@ -437,6 +427,8 @@ public function approve(Request $request, Game $game)
                         'winner_id' => $this->determineWinnerId($score),
                     ]);
                 }
+
+                $this->updatePlayerStats($game);
             }
 
             // Gebruik calculateDivisionStandings om de teamstand te herberekenen
@@ -508,50 +500,66 @@ protected function determineWinnerId($score)
     }
 
     protected function calculateMatchResult(array $scoreData)
-    {
-        $homePoints = $scoreData['1M'];
-        $awayPoints = $scoreData['2M'];
+{
+    $homePoints = 0;
+    $awayPoints = 0;
+
+    // Controleer of de vereiste scores zijn ingevuld
+    if (isset($scoreData['1M']) && isset($scoreData['2M'])) {
+        if ($scoreData['1M'] == 1) $homePoints++;
+        if ($scoreData['2M'] == 2) $awayPoints++;
+        if ($scoreData['1M'] == 2) $awayPoints++;
+        if ($scoreData['2M'] == 1) $homePoints++;
+
+        if ($homePoints == $awayPoints && isset($scoreData['Belle'])) {
+            if ($scoreData['Belle'] == 1) $homePoints++;
+            if ($scoreData['Belle'] == 2) $awayPoints++;
+        }
 
         if ($homePoints > $awayPoints) {
-            return 1;
+            return 1; // Thuis team wint
         } elseif ($awayPoints > $homePoints) {
-            return 2;
-        } elseif (isset($scoreData['Belle'])) {
-            return $scoreData['Belle'] == 1 ? 1 : 2;
-        }
-
-        return 0;
-    }
-
-    protected function updatePlayerStats(Game $game)
-    {
-        $manches = Manche::where('game_id', $game->id)->get();
-
-        foreach ($manches as $manche) {
-            $player1 = Player::find($manche->player1_id);
-            $player2 = Player::find($manche->player2_id);
-
-            // Update statistics for player1
-            if ($manche->winner_id == $manche->player1_id) {
-                $player1->increment('matches_won');
-            } else {
-                $player1->increment('matches_lost');
-            }
-
-            $player1->increment('manches_won', ($manche->score1 > $manche->score2) ? 1 : 0);
-            $player1->increment('manches_lost', ($manche->score1 < $manche->score2) ? 1 : 0);
-
-            // Update statistics for player2
-            if ($manche->winner_id == $manche->player2_id) {
-                $player2->increment('matches_won');
-            } else {
-                $player2->increment('matches_lost');
-            }
-
-            $player2->increment('manches_won', ($manche->score2 > $manche->score1) ? 1 : 0);
-            $player2->increment('manches_lost', ($manche->score2 < $manche->score1) ? 1 : 0);
+            return 2; // Uit team wint
         }
     }
+
+    return 0; // Geen winnaar of niet alle vereiste velden zijn ingevuld
+}
+
+protected function updatePlayerStats(Game $game)
+{
+    $manches = Manche::where('game_id', $game->id)->get();
+
+    foreach ($manches as $manche) {
+        $player1 = Player::find($manche->player1_id);
+        $player2 = Player::find($manche->player2_id);
+
+        if ($manche->winner_id == $manche->player1_id) {
+            $player1->increment('matches_won');
+            $player1->increment('points', 1); // 1 punt voor het winnen van een manche
+            $player2->increment('matches_lost');
+        } elseif ($manche->winner_id == $manche->player2_id) {
+            $player2->increment('matches_won');
+            $player2->increment('points', 1); // 1 punt voor het winnen van een manche
+            $player1->increment('matches_lost');
+        }
+
+        // Update statistieken voor gewonnen en verloren manches
+        if ($manche->score1 > $manche->score2) {
+            $player1->increment('manches_won');
+            $player2->increment('manches_lost');
+        } elseif ($manche->score1 < $manche->score2) {
+            $player2->increment('manches_won');
+            $player1->increment('manches_lost');
+        }
+
+        // Sla de bijgewerkte statistieken op
+        $player1->save();
+        $player2->save();
+    }
+}
+
+
 
     public function show(Request $request, Division $division, Game $game)
     {

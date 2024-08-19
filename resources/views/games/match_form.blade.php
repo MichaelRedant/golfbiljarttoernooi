@@ -305,21 +305,20 @@
     });
 
     function updateResults() {
-        let homeWins = 0;
-        let awayWins = 0;
+    let homeWins = 0;
+    let awayWins = 0;
 
-        rows.forEach(row => {
-            const manche1Input = row.querySelector('input[name*="[1M]"]');
-            const manche2Input = row.querySelector('input[name*="[2M]"]');
-            const belleInput = row.querySelector('input[name*="[Belle]"]');
-            const resultInput = row.querySelector('input.result');
+    rows.forEach(row => {
+        const manche1Input = row.querySelector('input[name*="[1M]"]');
+        const manche2Input = row.querySelector('input[name*="[2M]"]');
+        const belleInput = row.querySelector('input[name*="[Belle]"]');
+        const resultInput = row.querySelector('input.result');
 
-            let homePoints = 0;
-            let awayPoints = 0;
+        let homePoints = 0;
+        let awayPoints = 0;
 
-            if (manche1Input.value < 1 || manche1Input.value > 2) manche1Input.value = '';
-            if (manche2Input.value < 1 || manche2Input.value > 2) manche2Input.value = '';
-
+        // Controleer of de vereiste velden zijn ingevuld
+        if (manche1Input.value && manche2Input.value) {
             if (parseInt(manche1Input.value) === 1) homePoints++;
             if (parseInt(manche2Input.value) === 2) awayPoints++;
             if (parseInt(manche1Input.value) === 2) awayPoints++;
@@ -327,30 +326,37 @@
 
             if (homePoints === awayPoints) {
                 belleInput.removeAttribute('readonly');
+                if (belleInput.value) {
+                    if (parseInt(belleInput.value) === 1) homePoints++;
+                    if (parseInt(belleInput.value) === 2) awayPoints++;
+                }
             } else {
                 belleInput.setAttribute('readonly', true);
                 belleInput.value = ""; // Reset belle input if not a draw
             }
 
-            if (belleInput.value === "1") homePoints++;
-            if (belleInput.value === "2") awayPoints++;
-
             resultInput.value = `${homePoints} - ${awayPoints}`;
 
             if (homePoints > awayPoints) homeWins++;
             if (awayPoints > homePoints) awayWins++;
-        });
-
-        homeScoreInput.value = homeWins;
-        awayScoreInput.value = awayWins;
-    }
-
-    rows.forEach(row => {
-        const inputs = row.querySelectorAll('.manche, .belle');
-        inputs.forEach(input => {
-            input.addEventListener('input', updateResults);
-        });
+        } else {
+            // Reset de uitslag als niet alle velden zijn ingevuld
+            resultInput.value = "";
+        }
     });
+
+    homeScoreInput.value = homeWins;
+    awayScoreInput.value = awayWins;
+}
+
+// Event listener voor het bijwerken van de uitslag bij invoer
+rows.forEach(row => {
+    const inputs = row.querySelectorAll('.manche, .belle');
+    inputs.forEach(input => {
+        input.addEventListener('input', updateResults);
+    });
+});
+
 
     document.querySelectorAll('.player-select').forEach(select => {
         select.addEventListener('change', function() {
