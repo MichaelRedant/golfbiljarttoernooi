@@ -160,12 +160,6 @@
         </div>
 
         <div class="text-center mt-4 mb-4">
-            @if(auth()->user()->team_id == $game->away_team_id || auth()->user()->role == 'admin')
-                <form action="{{ route('games.approve', $game) }}" method="POST" style="display:inline;">
-                    @csrf
-                    <button type="submit" class="btn btn-success">Goedkeuren</button>
-                </form>
-            @endif
             <div class="text-center mt-4 mb-4">
                 <button type="submit" class="btn btn-primary btn-lg btn-block" id="saveButton">Wedstrijd laten goedkeuren</button>
             </div>
@@ -187,10 +181,12 @@
     const playersAndScoresSection = document.querySelector('.card:nth-child(4)'); // Spelers en Scores kaart
     
     const gameId = {{ $game->id }}; // Zorg ervoor dat je het game ID gebruikt
-    const EXPIRY_TIME = 18000000; // 5 uur in milliseconden
+    const EXPIRY_TIME = 32400000; // 9 uur in milliseconden
+
 
     // Load saved form data from localStorage
     loadFormData();
+    
 
     // Save form data on input change
     form.addEventListener('input', function() {
@@ -366,6 +362,7 @@ rows.forEach(row => {
             const rowIndex = this.dataset.rowIndex;
             document.getElementById(`${playerType}-team-${rowIndex}`).textContent = teamName;
             updateAvailableOptions();
+            updateTeamNames(); 
         });
     });
 
@@ -450,27 +447,43 @@ rows.forEach(row => {
 
     // Load form data from localStorage with expiry check
     function loadFormData() {
-        const savedData = localStorage.getItem(`matchFormData_${gameId}`);
-        const expiry = localStorage.getItem(`matchFormDataExpiry_${gameId}`);
-        if (savedData && expiry && Date.now() < expiry) {
-            const data = JSON.parse(savedData);
-            Object.keys(data).forEach(key => {
-                const element = form.querySelector(`[name="${key}"]`);
-                if (element) {
-                    if (element.type === 'checkbox' || element.type === 'radio') {
-                        element.checked = data[key];
-                    } else {
-                        element.value = data[key];
-                    }
+    const savedData = localStorage.getItem(`matchFormData_${gameId}`);
+    const expiry = localStorage.getItem(`matchFormDataExpiry_${gameId}`);
+    if (savedData && expiry && Date.now() < expiry) {
+        const data = JSON.parse(savedData);
+        Object.keys(data).forEach(key => {
+            const element = form.querySelector(`[name="${key}"]`);
+            if (element) {
+                if (element.type === 'checkbox' || element.type === 'radio') {
+                    element.checked = data[key];
+                } else {
+                    element.value = data[key];
                 }
-            });
-            updateResults();
-        } else {
-            localStorage.removeItem(`matchFormData_${gameId}`);
-            localStorage.removeItem(`matchFormDataExpiry_${gameId}`);
-        }
+            }
+        });
+        updateResults();
+        updateTeamNames();  // Zorg ervoor dat teamnamen correct worden ingesteld na het laden van gegevens
+    } else {
+        localStorage.removeItem(`matchFormData_${gameId}`);
+        localStorage.removeItem(`matchFormDataExpiry_${gameId}`);
     }
+}
 
+
+function updateTeamNames() {
+    document.querySelectorAll('.player-select').forEach(select => {
+        const selectedOption = select.options[select.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            const teamName = selectedOption.text.split(' - ')[1] || 'Geen team gevonden';
+            const playerType = select.dataset.playerType;
+            const rowIndex = select.dataset.rowIndex;
+            const teamCell = document.getElementById(`${playerType}-team-${rowIndex}`);
+            if (teamCell) {
+                teamCell.textContent = teamName;
+            }
+        }
+    });
+}
     updateResults();
     updateAvailableOptions();
 });

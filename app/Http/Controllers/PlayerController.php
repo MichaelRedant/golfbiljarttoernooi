@@ -257,40 +257,21 @@ class PlayerController extends Controller
 
     protected function calculatePlayerStandings($divisionId, $currentSeasonId)
 {
-    $players = Player::where('division_id', $divisionId)
-        ->with(['team.gamesHome' => function ($query) use ($currentSeasonId) {
-            $query->where('season_id', $currentSeasonId)->whereNotNull('home_score')->whereNotNull('away_score');
-        }, 'team.gamesAway' => function ($query) use ($currentSeasonId) {
-            $query->where('season_id', $currentSeasonId)->whereNotNull('home_score')->whereNotNull('away_score');
-        }])
-        ->get();
+    $players = Player::where('division_id', $divisionId)->get();
 
     $standings = [];
     foreach ($players as $player) {
-        $teamGames = $player->team->gamesHome->merge($player->team->gamesAway);
-
-        $matchesWon = 0;
-        $matchesLost = 0;
-
-        foreach ($teamGames as $game) {
-            foreach ($game->manches as $manche) {
-                if ($manche->winner_id == $player->id) {
-                    $matchesWon++;
-                } else {
-                    $matchesLost++;
-                }
-            }
-        }
-
-        $points = $matchesWon * 1; // 1 point per win
+        $points = $player->matches_won * 1; // 1 point per win
 
         $standings[] = [
             'player_id' => $player->id,
             'player_name' => $player->first_name . ' ' . $player->last_name,
             'team_id' => $player->team->id,
             'team_name' => $player->team->name,
-            'matches_won' => $matchesWon,
-            'matches_lost' => $matchesLost,
+            'matches_won' => $player->matches_won,
+            'matches_lost' => $player->matches_lost,
+            'manches_won' => $player->manches_won,
+            'manches_lost' => $player->manches_lost,
             'points' => $points,
         ];
     }
@@ -301,6 +282,7 @@ class PlayerController extends Controller
 
     return $standings;
 }
+
 
     public function getPlayersByTeam(Request $request)
     {

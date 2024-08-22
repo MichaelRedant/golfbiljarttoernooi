@@ -37,8 +37,8 @@ Route::get('/rankings/{division}/players', [RankingController::class, 'playerRan
 Route::get('/live-scores', [GameController::class, 'showLiveScores'])->name('live-scores');
 Route::put('/games/{game}/update-live-score', [GameController::class, 'updateLiveScore'])->name('games.updateLiveScore');
 Route::post('/games/{temporaryApproval}/confirm', [GameController::class, 'confirmApproval'])->name('games.confirmApproval');
-
-
+Route::get('/update-all-player-stats', [GameController::class, 'updateAllPlayerStats']);
+Route::match(['get', 'post'], 'games/{game}/approve', [GameController::class, 'approve'])->name('games.approve');
 
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);

@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Notifications\GameApprovalNotification;
+use Exception;
 
 class GameController extends Controller
 {
@@ -360,6 +361,7 @@ public function requestApproval(Game $game)
 public function approve(Request $request, Game $game)
 {
     $user = auth()->user();
+    $isDryRun = $request->has('dry_run');
 
     if ($user->team_id == $game->away_team_id || $user->role == 'admin') {
 
@@ -379,45 +381,34 @@ public function approve(Request $request, Game $game)
             if (isset($liveData['forfeit_team'])) {
                 $forfeitTeam = $liveData['forfeit_team'];
                 if ($forfeitTeam === 'home') {
-                    $game->update([
-                        'home_score' => 0,
-                        'away_score' => 6,
-                        'away_team_approved' => true,
-                    ]);
+                    $game->home_score = 0;
+                    $game->away_score = 6;
                 } elseif ($forfeitTeam === 'away') {
+                    $game->home_score = 6;
+                    $game->away_score = 0;
+                }
+
+                // In Dry Run-modus geen wijzigingen opslaan
+                if (!$isDryRun) {
+                    Manche::where('game_id', $game->id)->delete();
                     $game->update([
-                        'home_score' => 6,
-                        'away_score' => 0,
+                        'home_score' => $game->home_score,
+                        'away_score' => $game->away_score,
                         'away_team_approved' => true,
                     ]);
                 }
 
-                Manche::where('game_id', $game->id)->delete();
-
             } else {
-                $game->update([
-                    'home_score' => $liveData['home_score'],
-                    'away_score' => $liveData['away_score'],
-                    'away_team_approved' => true,
-                ]);
+                $game->home_score = $liveData['home_score'];
+                $game->away_score = $liveData['away_score'];
+
+                if (!$isDryRun) {
+                    $game->update(['away_team_approved' => true]);
+                }
 
                 foreach ($liveData['scores'] as $index => $score) {
-                    Manche::updateOrCreate(
-                        [
-                            'game_id' => $game->id,
-                            'number' => $index + 1,
-                        ],
-                        [
-                            'player1_id' => $this->getPlayerIdByName($score['home_player_name']),
-                            'player2_id' => $this->getPlayerIdByName($score['away_player_name']),
-                            'score1' => $score['1M'],
-                            'score2' => $score['2M'],
-                            'belle_score' => $score['Belle'] !== '' ? $score['Belle'] : null,
-                            'winner_id' => $this->determineWinnerId($score),
-                        ]
-                    );
-
-                    Log::info('Manche Data:', [
+                    // Simuleer de manche updates
+                    Log::info('Simulating Manche Data Update:', [
                         'game_id' => $game->id,
                         'player1_id' => $this->getPlayerIdByName($score['home_player_name']),
                         'player2_id' => $this->getPlayerIdByName($score['away_player_name']),
@@ -426,21 +417,47 @@ public function approve(Request $request, Game $game)
                         'belle_score' => $score['Belle'] !== '' ? $score['Belle'] : null,
                         'winner_id' => $this->determineWinnerId($score),
                     ]);
+
+                    if (!$isDryRun) {
+                        Manche::updateOrCreate(
+                            [
+                                'game_id' => $game->id,
+                                'number' => $index + 1,
+                            ],
+                            [
+                                'player1_id' => $this->getPlayerIdByName($score['home_player_name']),
+                                'player2_id' => $this->getPlayerIdByName($score['away_player_name']),
+                                'score1' => $score['1M'],
+                                'score2' => $score['2M'],
+                                'belle_score' => $score['Belle'] !== '' ? $score['Belle'] : null,
+                                'winner_id' => $this->determineWinnerId($score),
+                            ]
+                        );
+                    }
                 }
 
-                $this->updatePlayerStats($game);
+                if (!$isDryRun) {
+                    $this->updatePlayerStats($game);
+                }
             }
 
-            // Gebruik calculateDivisionStandings om de teamstand te herberekenen
+            // Gebruik calculateDivisionStandings om de teamstand te simuleren of daadwerkelijk te herberekenen
             $division = $game->division;
             $seasonId = $game->season_id;
 
             $standings = $this->calculateDivisionStandings($division, $seasonId);
-            Log::info('Updated Division Standings:', ['standings' => $standings]);
+            Log::info('Updated Division Standings (Simulated):', ['standings' => $standings]);
 
-            DB::commit();
+            // Rollback transactie bij Dry Run zodat er niets in de database wordt opgeslagen
+            if ($isDryRun) {
+                DB::rollBack();
+                return redirect()->route('games.show', $game->id)
+                    ->with('success', 'Dry Run voltooid: wedstrijdgegevens gesimuleerd en niet opgeslagen.');
+            } else {
+                DB::commit();
+                return redirect()->route('home')->with('success', 'Wedstrijd succesvol goedgekeurd!');
+            }
 
-            return redirect()->route('home')->with('success', 'Wedstrijd succesvol goedgekeurd!');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error tijdens goedkeuring van de wedstrijd:', ['error' => $e->getMessage()]);
@@ -470,22 +487,35 @@ protected function getPlayerIdByName($name)
 
 protected function determineWinnerId($score)
 {
-    $homePoints = $score['1M'] ?? 0;
-    $awayPoints = $score['2M'] ?? 0;
+    // Controleer of de benodigde scores zijn ingevuld
+    if (!isset($score['1M']) || !isset($score['2M'])) {
+        return null; // Ontbrekende gegevens, geen winnaar
+    }
 
+    $homePoints = 0;
+    $awayPoints = 0;
+
+    // Tel de punten op voor beide manches
+    if ($score['1M'] == 1) $homePoints++;
+    if ($score['2M'] == 2) $awayPoints++;
+    if ($score['1M'] == 2) $awayPoints++;
+    if ($score['2M'] == 1) $homePoints++;
+
+    // Controleer of er een gelijkspel is en of een belle nodig is
+    if ($homePoints == $awayPoints && isset($score['Belle'])) {
+        if ($score['Belle'] == 1) $homePoints++;
+        if ($score['Belle'] == 2) $awayPoints++;
+    }
+
+    // Bepaal de winnaar
     if ($homePoints > $awayPoints) {
         return $this->getPlayerIdByName($score['home_player_name']);
     } elseif ($awayPoints > $homePoints) {
         return $this->getPlayerIdByName($score['away_player_name']);
-    } elseif (isset($score['Belle'])) {
-        return $score['Belle'] == 1 
-            ? $this->getPlayerIdByName($score['home_player_name']) 
-            : $this->getPlayerIdByName($score['away_player_name']);
     }
 
-    return null;
+    return null; // Gelijkspel of geen winnaar
 }
-
 
     public function bulkApprove(Request $request)
     {
@@ -526,37 +556,122 @@ protected function determineWinnerId($score)
     return 0; // Geen winnaar of niet alle vereiste velden zijn ingevuld
 }
 
-protected function updatePlayerStats(Game $game)
+public function updatePlayerStats(Game $game)
 {
-    $manches = Manche::where('game_id', $game->id)->get();
+    Log::info('Starting updatePlayerStats', ['game_id' => $game->id]);
 
-    foreach ($manches as $manche) {
-        $player1 = Player::find($manche->player1_id);
-        $player2 = Player::find($manche->player2_id);
+   // Initialiseer arrays om statistieken per speler bij te houden
+$playerMatchStats = [];
+$playerMancheStats = [];
 
-        if ($manche->winner_id == $manche->player1_id) {
-            $player1->increment('matches_won');
-            $player1->increment('points', 1); // 1 punt voor het winnen van een manche
-            $player2->increment('matches_lost');
-        } elseif ($manche->winner_id == $manche->player2_id) {
-            $player2->increment('matches_won');
-            $player2->increment('points', 1); // 1 punt voor het winnen van een manche
-            $player1->increment('matches_lost');
-        }
+foreach ($game->manches as $manche) {
+    // Bepaal de winnaar en verliezer van de manche
+    $winnerId = $manche->winner_id;
+    $loserId = $winnerId === $manche->player1_id ? $manche->player2_id : $manche->player1_id;
 
-        // Update statistieken voor gewonnen en verloren manches
-        if ($manche->score1 > $manche->score2) {
-            $player1->increment('manches_won');
-            $player2->increment('manches_lost');
-        } elseif ($manche->score1 < $manche->score2) {
-            $player2->increment('manches_won');
-            $player1->increment('manches_lost');
-        }
+    Log::info('Processing manche', [
+        'manche_id' => $manche->id,
+        'winner_id' => $winnerId,
+        'loser_id' => $loserId,
+    ]);
 
-        // Sla de bijgewerkte statistieken op
-        $player1->save();
-        $player2->save();
+    // Initialiseer statistieken voor de winnaar als deze nog niet bestaat
+    if (!isset($playerMancheStats[$winnerId])) {
+        $playerMancheStats[$winnerId] = ['manches_won' => 0, 'manches_lost' => 0];
     }
+    // Initialiseer statistieken voor de verliezer als deze nog niet bestaat
+    if (!isset($playerMancheStats[$loserId])) {
+        $playerMancheStats[$loserId] = ['manches_won' => 0, 'manches_lost' => 0];
+    }
+
+    // Update manches statistieken
+    $playerMancheStats[$winnerId]['manches_won'] += 1;
+    $playerMancheStats[$loserId]['manches_lost'] += 1;
+
+    Log::info('Updated manche stats', [
+        'winner_id' => $winnerId,
+        'manches_won' => $playerMancheStats[$winnerId]['manches_won'],
+        'loser_id' => $loserId,
+        'manches_lost' => $playerMancheStats[$loserId]['manches_lost'],
+    ]);
+
+    // Initialiseer match statistieken voor de winnaar als deze nog niet bestaat
+    if (!isset($playerMatchStats[$winnerId])) {
+        $playerMatchStats[$winnerId] = ['matches_won' => 0, 'matches_lost' => 0];
+    }
+    // Initialiseer match statistieken voor de verliezer als deze nog niet bestaat
+    if (!isset($playerMatchStats[$loserId])) {
+        $playerMatchStats[$loserId] = ['matches_won' => 0, 'matches_lost' => 0];
+    }
+
+    // Update matches statistieken
+    $playerMatchStats[$winnerId]['matches_won'] += 1;
+    $playerMatchStats[$loserId]['matches_lost'] += 1;
+
+    Log::info('Updated match stats', [
+        'winner_id' => $winnerId,
+        'matches_won' => $playerMatchStats[$winnerId]['matches_won'],
+        'loser_id' => $loserId,
+        'matches_lost' => $playerMatchStats[$loserId]['matches_lost'],
+    ]);
+}
+
+// Update de statistieken van elke speler in de database
+foreach ($playerMancheStats as $playerId => $stats) {
+    $player = Player::find($playerId);
+    if ($player) {
+        $player->increment('manches_won', $stats['manches_won']);
+        $player->increment('manches_lost', $stats['manches_lost']);
+
+        Log::info('Database updated for manches', [
+            'player_id' => $playerId,
+            'manches_won' => $stats['manches_won'],
+            'manches_lost' => $stats['manches_lost'],
+        ]);
+    }
+}
+
+foreach ($playerMatchStats as $playerId => $stats) {
+    $player = Player::find($playerId);
+    if ($player) {
+        $player->increment('matches_won', $stats['matches_won']);
+        $player->increment('matches_lost', $stats['matches_lost']);
+
+        Log::info('Database updated for matches', [
+            'player_id' => $playerId,
+            'matches_won' => $stats['matches_won'],
+            'matches_lost' => $stats['matches_lost'],
+        ]);
+    }
+}
+
+Log::info('Finished updatePlayerStats', ['game_id' => $game->id]);
+
+}
+
+
+
+
+
+
+
+
+
+public function updateAllPlayerStats()
+{
+    Log::info('Starting updateAllPlayerStats for all games.');
+
+    // Haal alle wedstrijden op
+    $games = Game::all();
+
+    foreach ($games as $game) {
+        // Update de statistieken voor elke wedstrijd
+        $this->updatePlayerStats($game);
+    }
+
+    Log::info('Finished updating all player stats.');
+
+    return response()->json(['success' => 'Alle spelersstatistieken zijn bijgewerkt.']);
 }
 
 

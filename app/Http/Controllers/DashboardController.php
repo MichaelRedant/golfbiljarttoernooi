@@ -46,8 +46,12 @@ class DashboardController extends Controller
 
     $today = Carbon::today(); // Huidige datum
 
+    // Voeg wedstrijden van vandaag en goedkeuringen toe aan de standaard gegevens
+    $todayGames = collect();
+    $pendingGames = collect();
+
     if ($user->role === 'admin') {
-        // Haal wedstrijden van vandaag op die wachten op goedkeuring
+        // Admin-specific logica
         $pendingGames = Game::with('liveScore')
             ->where('away_team_approved', false)
             ->whereDate('date', $today)
@@ -84,8 +88,18 @@ class DashboardController extends Controller
                 $query->where('home_team_id', $team->id)
                     ->orWhere('away_team_id', $team->id);
             })
+            ->where('season_id', $currentSeasonId)
             ->get();
 
+        // Haal wedstrijden van vandaag op, ongeacht het gekozen seizoen
+        $todayGames = Game::where(function($query) use ($team) {
+            $query->where('home_team_id', $team->id)
+                ->orWhere('away_team_id', $team->id);
+        })
+        ->whereDate('date', $today)
+        ->get();
+
+        // Haal goedkeuringen op voor het team
         $pendingGames = Game::with('liveScore')
             ->where('away_team_id', $team->id)
             ->where('away_team_approved', false)
@@ -104,16 +118,16 @@ class DashboardController extends Controller
             'team' => $team,
             'teamRanking' => $teamRanking,
             'upcomingGames' => $upcomingGames,
-            'pendingGames' => $pendingGames
+            'pendingGames' => $pendingGames,
+            'todayGames' => $todayGames
         ]);
 
-        return view('dashboard.team', compact('team', 'currentSeason', 'seasons', 'teamRanking', 'upcomingGames', 'currentSeasonId', 'pendingGames'));
+        return view('dashboard.team', compact('team', 'currentSeason', 'seasons', 'teamRanking', 'upcomingGames', 'currentSeasonId', 'pendingGames', 'todayGames'));
     } else {
         Log::info('Default dashboard');
         return view('dashboard.default');
     }
 }
-
 
 
 
@@ -210,7 +224,7 @@ class DashboardController extends Controller
     $teamStats = $team->calculateStatsForSeason($currentSeasonId);
     $teamStats = array_merge($defaultStats, $teamStats ?? []);
 
-    // Haal aankomende wedstrijden op
+    // Haal aankomende wedstrijden op voor het geselecteerde seizoen
     $upcomingGames = Game::where(function ($query) use ($team) {
                             $query->where('home_team_id', $team->id)
                                   ->orWhere('away_team_id', $team->id);
@@ -219,19 +233,17 @@ class DashboardController extends Controller
                         ->where('season_id', $currentSeasonId)
                         ->get();
 
-    // Haal wedstrijden van vandaag op waarin het team speelt
+    // Haal wedstrijden van vandaag op waarin het team speelt, ongeacht het seizoen
     $todayGames = Game::whereDate('date', Carbon::today())
         ->where(function ($query) use ($team) {
             $query->where('home_team_id', $team->id)
                   ->orWhere('away_team_id', $team->id);
         })
-        ->where('season_id', $currentSeasonId)
         ->get();
 
-    // Haal pending wedstrijden op
+    // Haal pending wedstrijden op waarin het team speelt, ongeacht het seizoen
     $pendingGames = Game::where('away_team_id', $team->id)
                         ->where('away_team_approved', false)
-                        ->where('season_id', $currentSeasonId)
                         ->get();
 
     // Haal de divisie op waarin het team speelt
@@ -241,13 +253,23 @@ class DashboardController extends Controller
     $standings = $this->rankingService->calculateDivisionStandings($division, $currentSeasonId);
     $currentTeamStanding = collect($standings)->firstWhere('team_id', $team->id);
 
+    // Logging
+    Log::info('Loaded team dashboard data', [
+        'team_id' => $team->id,
+        'todayGames_count' => $todayGames->count(),
+        'pendingGames_count' => $pendingGames->count(),
+        'upcomingGames_count' => $upcomingGames->count(),
+        'currentSeasonId' => $currentSeasonId,
+        'pendingGames_count' => $pendingGames->count(),
+        'latestSeasonId' => $latestSeason->id
+    ]);
+    
+
     return view('dashboard.team', compact(
         'seasons', 'currentSeasonId', 'teamStats', 'currentTeamStanding',
         'upcomingGames', 'pendingGames', 'team', 'todayGames'
     ));
 }
-
-
 
 
 }

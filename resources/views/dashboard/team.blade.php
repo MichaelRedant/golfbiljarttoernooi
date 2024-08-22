@@ -51,9 +51,17 @@
                     </div>
                 </div>
             </div>
+        @else
+            <div class="col-md-12 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-calendar-day"></i> Geen wedstrijden vandaag</h5>
+                        <p>Er zijn geen wedstrijden gepland voor vandaag.</p>
+                    </div>
+                </div>
+            </div>
         @endif
 
-        <!-- Existing code for team ranking, upcoming games, etc. -->
         <div class="col-md-6 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">
@@ -128,6 +136,15 @@
                                 @endforeach
                             </ul>
                         @endif
+                    </div>
+                </div>
+            </div>
+        @else
+            <div class="col-md-12 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-check"></i> Geen wachtende goedkeuringen</h5>
+                        <p>Er zijn geen wedstrijden die goedkeuring vereisen.</p>
                     </div>
                 </div>
             </div>
