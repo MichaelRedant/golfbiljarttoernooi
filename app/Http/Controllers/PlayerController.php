@@ -2,16 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Player;
-use App\Models\Division;
 use App\Models\Team;
+use App\Models\Player;
 use App\Models\Season;
+use App\Models\Division;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use App\Services\RankingService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class PlayerController extends Controller
 {
+    protected $rankingService;
+    public function __construct(RankingService $rankingService)
+    {
+        $this->rankingService = $rankingService;
+    }
+    
     public function index(Request $request)
 {
     Log::info('Index method called');
@@ -143,60 +150,64 @@ class PlayerController extends Controller
         }
     }
 
-    public function show(Player $player, Request $request)
-    {
-        try {
-            $imageUrl = Storage::url('photos/' . $player->photo);
-            $seasons = Season::all();
-            $currentSeasonId = $request->input('season_id', Season::latest('id')->first()->id);
+    public function show(Player $player, Request $request, RankingService $rankingService)
+{
+    Log::info('Entering show method for PlayerController.', ['player_id' => $player->id]);
 
-            $teamGamesHome = $player->team->gamesHome()->where('season_id', $currentSeasonId)->whereNotNull('home_score')->whereNotNull('away_score')->get();
-            $teamGamesAway = $player->team->gamesAway()->where('season_id', $currentSeasonId)->whereNotNull('home_score')->whereNotNull('away_score')->get();
-            $teamGames = $teamGamesHome->merge($teamGamesAway);
+    try {
+        $imageUrl = Storage::url('photos/' . $player->photo);
+        Log::info('Player image URL generated.', ['image_url' => $imageUrl]);
 
-            $gamesWon = $teamGames->reduce(function ($carry, $game) use ($player) {
-                return $carry + (($game->winner_id == $player->team_id) ? 1 : 0);
-            }, 0);
-            $gamesLost = $teamGames->reduce(function ($carry, $game) use ($player) {
-                return $carry + (($game->loser_id == $player->team_id) ? 1 : 0);
-            }, 0);
-            $gamesDraw = $teamGames->reduce(function ($carry, $game) {
-                return $carry + (($game->home_score === $game->away_score) ? 1 : 0);
-            }, 0);
+        $seasons = Season::all();
+        Log::info('Seasons loaded.', ['season_count' => $seasons->count()]);
 
-            $matchesWon = 0;
-            $matchesLost = 0;
-            foreach ($teamGames as $game) {
-                foreach ($game->manches as $manche) {
-                    if ($manche->winner_id == $player->id) {
-                        $matchesWon++;
-                    } else {
-                        $matchesLost++;
-                    }
+        $currentSeasonId = $request->input('season_id', Season::latest('id')->first()->id);
+        Log::info('Current season ID determined.', ['current_season_id' => $currentSeasonId]);
+
+        $standings = $rankingService->calculatePlayerStandings($player->division_id, $currentSeasonId);
+        Log::info('Player standings calculated.', ['standings_count' => count($standings)]);
+
+        $playerRank = array_search($player->id, array_column($standings, 'player_id')) + 1;
+        Log::info('Player rank calculated.', ['player_rank' => $playerRank]);
+
+        $teamGamesHome = $player->team->gamesHome()->where('season_id', $currentSeasonId)->whereNotNull('home_score')->whereNotNull('away_score')->get();
+        $teamGamesAway = $player->team->gamesAway()->where('season_id', $currentSeasonId)->whereNotNull('home_score')->whereNotNull('away_score')->get();
+        Log::info('Team games loaded.', ['home_games' => $teamGamesHome->count(), 'away_games' => $teamGamesAway->count()]);
+
+        $teamGames = $teamGamesHome->merge($teamGamesAway);
+        Log::info('Team games merged.', ['total_games' => $teamGames->count()]);
+
+        $matchesWon = 0;
+        $matchesLost = 0;
+        foreach ($teamGames as $game) {
+            foreach ($game->manches as $manche) {
+                if ($manche->winner_id == $player->id) {
+                    $matchesWon++;
+                } else {
+                    $matchesLost++;
                 }
             }
-
-            $standings = $this->calculatePlayerStandings($player->division_id, $currentSeasonId);
-            $playerRank = array_search($player->id, array_column($standings, 'player_id')) + 1;
-
-            return view('players.show', compact(
-                'player',
-                'seasons',
-                'currentSeasonId',
-                'gamesWon',
-                'gamesLost',
-                'gamesDraw',
-                'matchesWon',
-                'matchesLost',
-                'imageUrl',
-                'standings',
-                'playerRank'
-            ));
-        } catch (\Exception $e) {
-            Log::error('Error showing player: ' . $e->getMessage());
-            return back()->withErrors('Er is een fout opgetreden bij het ophalen van de speler.');
         }
+        Log::info('Matches won and lost calculated.', ['matches_won' => $matchesWon, 'matches_lost' => $matchesLost]);
+
+        return view('players.show', compact(
+            'player',
+            'seasons',
+            'currentSeasonId',
+            'matchesWon',
+            'matchesLost',
+            'imageUrl',
+            'standings',
+            'playerRank'
+        ));
+    } catch (\Exception $e) {
+        Log::error('Error in show method of PlayerController: ' . $e->getMessage(), ['player_id' => $player->id]);
+        return back()->withErrors('Er is een fout opgetreden bij het ophalen van de speler.');
     }
+}
+
+
+
 
     public function edit(Player $player)
     {
@@ -255,23 +266,49 @@ class PlayerController extends Controller
         }
     }
 
-    protected function calculatePlayerStandings($divisionId, $currentSeasonId)
+    protected function calculatePlayerStandings($divisionId, $seasonId)
 {
     $players = Player::where('division_id', $divisionId)->get();
 
     $standings = [];
     foreach ($players as $player) {
-        $points = $player->matches_won * 1; // 1 point per win
+        // Bereken de punten voor de geselecteerde seizoen
+        $teamGamesHome = $player->team->gamesHome()
+                             ->where('season_id', $seasonId)
+                             ->whereNotNull('home_score')
+                             ->whereNotNull('away_score')
+                             ->get();
+
+        $teamGamesAway = $player->team->gamesAway()
+                             ->where('season_id', $seasonId)
+                             ->whereNotNull('home_score')
+                             ->whereNotNull('away_score')
+                             ->get();
+
+        $teamGames = $teamGamesHome->merge($teamGamesAway);
+
+        $matchesWon = 0;
+        $matchesLost = 0;
+
+        foreach ($teamGames as $game) {
+            foreach ($game->manches as $manche) {
+                if ($manche->winner_id == $player->id) {
+                    $matchesWon++;
+                } else {
+                    $matchesLost++;
+                }
+            }
+        }
+
+        $points = $matchesWon * 1; // 1 punt per gewonnen manche
 
         $standings[] = [
             'player_id' => $player->id,
             'player_name' => $player->first_name . ' ' . $player->last_name,
             'team_id' => $player->team->id,
             'team_name' => $player->team->name,
-            'matches_won' => $player->matches_won,
-            'matches_lost' => $player->matches_lost,
-            'manches_won' => $player->manches_won,
-            'manches_lost' => $player->manches_lost,
+            'matches_won' => $matchesWon,
+            'matches_lost' => $matchesLost,
             'points' => $points,
         ];
     }

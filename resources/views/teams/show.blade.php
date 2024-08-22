@@ -14,7 +14,7 @@
             {{ $error }}
         </div>
     @endisset
- 
+  
     <div class="card mb-4">
         <div class="card-header">
             <h1 class="d-flex align-items-center">

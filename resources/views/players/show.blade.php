@@ -22,11 +22,28 @@
                     </select>
                 </div>
             </form>
-            <div>
-                <p><strong><i class="fas fa-trophy"></i> Gewonnen:</strong> {{ $matchesWon }}</p>
-                <p><strong><i class="fas fa-thumbs-down"></i> Verloren:</strong> {{ $matchesLost }}</p>
-                <p><strong><i class="fas fa-list-ol"></i> Plaats dit seizoen:</strong> {{ $playerRank }}</p>
-            </div>
+            
+            @php
+                $playerStanding = null;
+                foreach ($standings as $standing) {
+                    if ($standing['player_id'] == $player->id) {
+                        $playerStanding = $standing;
+                        break;
+                    }
+                }
+            @endphp
+
+            @if($playerStanding)
+                <div>
+                    <p><strong><i class="fas fa-trophy"></i> Gewonnen:</strong> {{ $matchesWon }}</p>
+<p><strong><i class="fas fa-thumbs-down"></i> Verloren:</strong> {{ $matchesLost }}</p>
+<p><strong><i class="fas fa-list-ol"></i> Plaats dit seizoen:</strong> {{ $playerRank }}</p>
+
+                </div>
+            @else
+                <p>Geen gegevens beschikbaar voor deze speler in dit seizoen.</p>
+            @endif
+
             @if(auth()->user() && (auth()->user()->role === 'admin' || auth()->user()->role === 'speler'))
                 <a href="{{ route('players.edit', $player->id) }}" class="btn btn-primary"><i class="fas fa-edit"></i> Bewerk Speler</a>
             @endif
