@@ -19,42 +19,38 @@
                 </div>
             </form>
 
-            @if ($players->isEmpty())
-                <div class="alert alert-warning" role="alert">
-                    Geen spelers gevonden voor de geselecteerde reeks en seizoen.
-                </div>
-            @elseif ($standings->isEmpty())
-                <div class="alert alert-warning" role="alert">
-                    Geen klassement beschikbaar voor de geselecteerde reeks en seizoen.
-                </div>
-            @else
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="thead-dark">
-                            <tr>
-                                <th>#</th>
-                                <th>Speler</th>
-                                <th>Team</th>
-                                <th>Gewonnen</th>
-                                <th>Verloren</th>
-                                <th>Punten</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($standings as $index => $standing)
-                                <tr>
-                                    <td>{{ $index + 1 }}</td>
-                                    <td><a href="{{ route('players.show', ['player' => $standing['player_id']]) }}">{{ $standing['player_name'] }}</a></td>
-                                    <td><a href="{{ route('teams.show', ['team' => $standing['team_id']]) }}">{{ $standing['team_name'] }}</a></td>
-                                    <td>{{ $standing['matches_won'] }}</td>
-                                    <td>{{ $standing['matches_lost']}}</td>
-                                    <td>{{ $standing['points'] }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
+            @if (empty($standings))
+    <div class="alert alert-warning" role="alert">
+        Geen klassement beschikbaar voor de geselecteerde reeks en seizoen.
+    </div>
+@else
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Speler</th>
+                    <th>Team</th>
+                    <th>Gewonnen</th>
+                    <th>Verloren</th>
+                    <th>Punten</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($standings as $index => $standing)
+                    <tr>
+                        <td>{{ $index + 1 }}</td>
+                        <td><a href="{{ route('players.show', ['player' => $standing['player_id']]) }}">{{ $standing['player_name'] }}</a></td>
+                        <td><a href="{{ route('teams.show', ['team' => $standing['team_id']]) }}">{{ $standing['team_name'] }}</a></td>
+                        <td>{{ $standing['matches_won'] }}</td>
+                        <td>{{ $standing['matches_lost']}}</td>
+                        <td>{{ $standing['points'] }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+@endif
         </div>
     </div>
 

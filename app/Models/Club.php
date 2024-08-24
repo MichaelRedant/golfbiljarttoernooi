@@ -16,6 +16,12 @@ class Club extends Model
         return $this->hasMany(Team::class);
     }
 
+    public function divisions()
+    {
+        // Veronderstellend dat een club meerdere divisies kan hebben
+        return $this->hasMany(Division::class);
+    }
+
     
 }
 

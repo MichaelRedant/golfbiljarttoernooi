@@ -45,60 +45,15 @@ class RankingController extends Controller
         $seasonId = $request->input('season_id', Season::latest()->first()->id);
         $seasons = Season::all();
 
-        // Controleer of er spelers zijn in de divisie
-        $players = Player::where('division_id', $division->id)->get();
-        $standings = collect(); // Voeg deze regel toe om een lege collectie te initialiseren
+        // Bereken de spelersklassementen via de RankingService
+        $standings = $this->rankingService->calculatePlayerStandings($division->id, $seasonId);
 
-        if ($players->isNotEmpty()) {
-            $players = $players->load(['team.gamesHome' => function($query) use ($seasonId) {
-                $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
-            }, 'team.gamesAway' => function($query) use ($seasonId) {
-                $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
-            }]);
-
-            $standings = $players->map(function ($player) {
-                $teamGames = $player->team->gamesHome->merge($player->team->gamesAway);
-
-                // Initialize statistics
-                $matchesWon = 0;
-                $matchesLost = 0;
-
-                foreach ($teamGames as $game) {
-                    foreach ($game->manches as $manche) {
-                        if ($manche->winner_id == $player->id) {
-                            $matchesWon++;
-                        } else if ($manche->player1_id == $player->id || $manche->player2_id == $player->id) {
-                            $matchesLost++;
-                        }
-                    }
-                }
-
-                // Puntensysteem: 1 punt per gewonnen manche
-                $points = $matchesWon;
-
-                return [
-                    'player_id' => $player->id,
-                    'player_name' => $player->first_name . ' ' . $player->last_name,
-                    'team_id' => $player->team->id,
-                    'team_name' => $player->team->name,
-                    'matches_won' => $matchesWon,
-                    'matches_lost' => $matchesLost,
-                    'points' => $points,
-                ];
-            });
-
-            // Sorteer de standings op punten (van hoog naar laag)
-            $standings = $standings->sortByDesc('points')->values();
-        }
-
-        return view('rankings.players', compact('division', 'players', 'seasonId', 'seasons', 'standings'));
+        return view('rankings.players', compact('division', 'seasonId', 'seasons', 'standings'));
     } catch (\Exception $e) {
         Log::error('Error in playerRankings method: ' . $e->getMessage());
         return back()->withErrors('Er is een fout opgetreden bij het ophalen van het spelersklassement.');
     }
 }
-
-    
 
     
 }

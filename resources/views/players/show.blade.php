@@ -35,10 +35,9 @@
 
             @if($playerStanding)
                 <div>
-                    <p><strong><i class="fas fa-trophy"></i> Gewonnen:</strong> {{ $matchesWon }}</p>
-<p><strong><i class="fas fa-thumbs-down"></i> Verloren:</strong> {{ $matchesLost }}</p>
-<p><strong><i class="fas fa-list-ol"></i> Plaats dit seizoen:</strong> {{ $playerRank }}</p>
-
+                    <p><strong><i class="fas fa-trophy"></i> Gewonnen:</strong> {{ $playerStanding['matches_won'] }}</p>
+                    <p><strong><i class="fas fa-thumbs-down"></i> Verloren:</strong> {{ $playerStanding['matches_lost'] }}</p>
+                    <p><strong><i class="fas fa-list-ol"></i> Plaats dit seizoen:</strong> {{ $playerRank }}</p>
                 </div>
             @else
                 <p>Geen gegevens beschikbaar voor deze speler in dit seizoen.</p>

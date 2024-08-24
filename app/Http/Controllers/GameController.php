@@ -874,6 +874,7 @@ public function updateLiveScore(Request $request, Game $game)
 {
     Log::info('Received request to update live score.', $request->all());
 
+    // Validatie van de binnenkomende gegevens
     $validatedData = $request->validate([
         'home_score' => 'required|integer',
         'away_score' => 'required|integer',
@@ -885,6 +886,7 @@ public function updateLiveScore(Request $request, Game $game)
         'forfeit_team' => 'nullable|string|in:home,away',
     ]);
 
+    // Verzamelen van alle speler-ID's die nodig zijn voor de update
     $playerIds = array_map('intval', array_filter(array_merge(
         [$validatedData['home_captain'], $validatedData['away_captain'], $validatedData['home_reserve'], $validatedData['away_reserve']],
         array_column($validatedData['scores'], 'home_player'),
@@ -893,11 +895,12 @@ public function updateLiveScore(Request $request, Game $game)
 
     Log::info('Player IDs to search:', $playerIds);
 
-    // Haal spelers op en sleutel ze op ID
+    // Ophalen van spelersgegevens en sleutelen aan hun ID's
     $players = Player::with('team')->whereIn('id', $playerIds)->get()->keyBy('id')->toArray();
 
     Log::info('Players found:', $players);
 
+    // Resolving names for captains and reserves
     $homeCaptainName = isset($validatedData['home_captain']) && isset($players[$validatedData['home_captain']]) 
         ? $players[$validatedData['home_captain']]['first_name'] . ' ' . $players[$validatedData['home_captain']]['last_name'] 
         : '';
@@ -921,6 +924,7 @@ public function updateLiveScore(Request $request, Game $game)
         'awayReserve' => $awayReserveName,
     ]);
 
+    // Voorbereiden van de scores array
     $scores = [];
     if (isset($validatedData['scores'])) {
         foreach ($validatedData['scores'] as $score) {
@@ -962,6 +966,7 @@ public function updateLiveScore(Request $request, Game $game)
         }
     }
 
+    // Voorbereiden van de data om op te slaan in de LiveScore
     $dataToStore = [
         'home_team_name' => $game->homeTeam->name ?? 'Nog niet gestart',
         'away_team_name' => $game->awayTeam->name ?? 'Nog niet gestart',
@@ -977,6 +982,7 @@ public function updateLiveScore(Request $request, Game $game)
 
     Log::info('Final data to be stored in LiveScore:', $dataToStore);
 
+    // Opslaan of bijwerken van de LiveScore
     $liveScore = LiveScore::updateOrCreate(
         ['game_id' => $game->id],
         ['data' => json_encode($dataToStore)]
@@ -990,50 +996,52 @@ public function updateLiveScore(Request $request, Game $game)
 
 
 
+
 public function showLiveScores()
 {
-    $currentDate = Carbon::now()->format('Y-m-d');
+    Log::info('Entering showLiveScores method');
 
-    // Haal alle wedstrijden van vandaag op, ongeacht de status
+    $currentDate = Carbon::now()->format('Y-m-d');
+    Log::info('Current date:', ['date' => $currentDate]);
+
     $games = Game::with(['homeTeam', 'awayTeam', 'division'])
                  ->whereDate('date', $currentDate)
                  ->get();
+    Log::info('Games found:', ['games' => $games->toArray()]);
 
-    // Haal alle live scores op voor de wedstrijden van vandaag
     $liveScores = LiveScore::whereIn('game_id', $games->pluck('id'))->get()->keyBy('game_id');
+    Log::info('Live scores found:', ['live_scores' => $liveScores->toArray()]);
 
-    // Combineer de live scores met de basisgegevens van de wedstrijd
     $liveData = $games->map(function ($game) use ($liveScores) {
-        // Haal de bijbehorende live score op
         $data = $liveScores->get($game->id) ? json_decode($liveScores->get($game->id)->data, true) : [];
-        
-        // Voeg basisinformatie van de wedstrijd toe
         $data['home_team_name'] = $game->homeTeam->name;
         $data['away_team_name'] = $game->awayTeam->name;
         $data['division_name'] = $game->division->name;
         $data['game_date'] = $game->date->format('Y-m-d');
-        $data['home_score'] = $data['home_score'] ?? null;
-        $data['away_score'] = $data['away_score'] ?? null;
-        $data['forfeit_team'] = $data['forfeit_team'] ?? null;
 
-        // Verwerk de scores voor de spelers
         if (isset($data['scores'])) {
             foreach ($data['scores'] as &$score) {
                 $score['home_player_team'] = $this->getPlayerActualTeamName($score['home_player_name']);
                 $score['away_player_team'] = $this->getPlayerActualTeamName($score['away_player_name']);
             }
+        } else {
+            $data['message'] = 'Live scores zijn nog niet beschikbaar.';
         }
+
+        Log::info('Live data for game:', ['game_id' => $game->id, 'live_data' => $data]);
 
         return $data;
     });
 
-    // Controleer of er live data is en stuur dit door naar de view
     if ($liveData->isEmpty()) {
         return view('live-scores', ['message' => 'Er zijn geen live wedstrijden beschikbaar voor vandaag.']);
     }
 
+    Log::info('Displaying live scores', ['liveData' => $liveData->toArray()]);
     return view('live-scores', ['liveData' => $liveData]);
 }
+
+
 
 
 

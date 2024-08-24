@@ -96,25 +96,30 @@
         <div class="col-md-6 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-calendar-alt"></i> Aankomende Wedstrijden</h5>
-                    @if(isset($upcomingGames) && $upcomingGames->isNotEmpty())
-                        <ul class="list-group">
-                            @foreach($upcomingGames as $game)
-                                <li class="list-group-item">
-                                    <a href="{{ route('teams.show', $game->homeTeam->id) }}">
-                                        <strong>{{ $game->homeTeam->name }}</strong>
-                                    </a>
-                                    vs
-                                    <a href="{{ route('teams.show', $game->awayTeam->id) }}">
-                                        <strong>{{ $game->awayTeam->name }}</strong>
-                                    </a>
-                                    op {{ $game->date->format('d-m-Y') }}
-                                </li>
-                            @endforeach
-                        </ul>
-                    @else
-                        <p>Geen aankomende wedstrijden.</p>
-                    @endif
+                    <h5 class="card-title">
+                        <i class="fas fa-calendar-alt"></i> Aankomende Wedstrijden
+                        <i class="fas fa-chevron-down float-right toggle-icon" data-toggle="collapse" data-target="#upcoming-games-list" aria-expanded="false" aria-controls="upcoming-games-list"></i>
+                    </h5>
+                    <div class="collapse" id="upcoming-games-list">
+                        @if(isset($upcomingGames) && $upcomingGames->isNotEmpty())
+                            <ul class="list-group">
+                                @foreach($upcomingGames as $game)
+                                    <li class="list-group-item">
+                                        <a href="{{ route('teams.show', $game->homeTeam->id) }}">
+                                            <strong>{{ $game->homeTeam->name }}</strong>
+                                        </a>
+                                        vs
+                                        <a href="{{ route('teams.show', $game->awayTeam->id) }}">
+                                            <strong>{{ $game->awayTeam->name }}</strong>
+                                        </a>
+                                        op {{ $game->date->format('d-m-Y') }}
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p>Geen aankomende wedstrijden.</p>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
@@ -151,4 +156,20 @@
         @endif
     </div>
 </div>
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Toggle the chevron icon on collapse
+        $('#upcoming-games-list').on('show.bs.collapse', function () {
+            $(this).prev().find('.toggle-icon').removeClass('fa-chevron-down').addClass('fa-chevron-up');
+        }).on('hide.bs.collapse', function () {
+            $(this).prev().find('.toggle-icon').removeClass('fa-chevron-up').addClass('fa-chevron-down');
+        });
+
+        // Initialize the collapse to be hidden by default
+        $('#upcoming-games-list').collapse('hide');
+    });
+</script>
+@endsection
 @endsection

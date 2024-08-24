@@ -13,4 +13,9 @@ class HomeController extends Controller
         $news = News::latest()->take(3)->get();
         return view('home', compact('news'));
     }
+
+    public function reglement()
+{
+    return view('reglement');
+}
 }

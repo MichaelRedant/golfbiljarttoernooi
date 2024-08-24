@@ -28,7 +28,7 @@ Route::get('/games/{game}', [GameController::class, 'showGame'])->name('games.sh
 Route::get('/games/fetchLiveScores', [GameController::class, 'fetchLiveScores'])->name('games.fetchLiveScores');
 Route::get('/scores/stream', [GameController::class, 'streamScores'])->name('scores.stream');
 Route::get('/kalender', [GameController::class, 'showCalendar'])->name('games.kalender');
-
+Route::get('/innerlijk-reglement', [HomeController::class, 'reglement'])->name('reglement');
 
 Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');
 Route::get('/rankings/{division}/teams', [RankingController::class, 'teamRankings'])->name('rankings.teams');
