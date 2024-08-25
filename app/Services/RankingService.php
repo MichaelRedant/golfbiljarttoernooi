@@ -252,6 +252,7 @@ use Illuminate\Support\Facades\Log;
 {
     Log::info('Calculating player standings.', ['division_id' => $divisionId, 'season_id' => $seasonId]);
 
+    // Stap 1: Haal alle spelers op die normaal in deze divisie spelen
     $players = Player::whereHas('team.divisions', function($query) use ($divisionId) {
         $query->where('divisions.id', $divisionId);
     })
@@ -262,7 +263,30 @@ use Illuminate\Support\Facades\Log;
     }])
     ->get();
 
-    $standings = $players->map(function ($player) {
+    // Stap 2: Voeg spelers toe die in deze divisie hebben gespeeld maar er normaal niet in zitten
+    $additionalPlayers = Player::whereHas('team.club.teams.gamesHome', function($query) use ($divisionId, $seasonId) {
+        $query->where('division_id', $divisionId)
+              ->where('season_id', $seasonId)
+              ->whereNotNull('home_score')
+              ->whereNotNull('away_score');
+    })->orWhereHas('team.club.teams.gamesAway', function($query) use ($divisionId, $seasonId) {
+        $query->where('division_id', $divisionId)
+              ->where('season_id', $seasonId)
+              ->whereNotNull('home_score')
+              ->whereNotNull('away_score');
+    })
+    ->with(['team.club.teams.gamesHome' => function($query) use ($seasonId) {
+        $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
+    }, 'team.club.teams.gamesAway' => function($query) use ($seasonId) {
+        $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
+    }])
+    ->get();
+
+    // Merge de extra spelers met de originele spelerslijst
+    $players = $players->merge($additionalPlayers)->unique('id');
+
+    // Stap 3: Bereken de standings
+    $standings = $players->map(function ($player) use ($divisionId) {
         $teamGames = $player->team->club->teams->flatMap(function($team) {
             return $team->gamesHome->merge($team->gamesAway);
         });
@@ -271,6 +295,8 @@ use Illuminate\Support\Facades\Log;
         $matchesLost = 0;
 
         foreach ($teamGames as $game) {
+            if ($game->division_id != $divisionId) continue; // Zorg ervoor dat we alleen games in de juiste divisie tellen
+
             foreach ($game->manches as $manche) {
                 if ($manche->winner_id == $player->id) {
                     $matchesWon++;
@@ -298,6 +324,19 @@ use Illuminate\Support\Facades\Log;
     return $standings;
 }
 
+public function getDivisionsWherePlayerPlayed($playerId, $seasonId)
+{
+    $divisions = Game::where('season_id', $seasonId)
+        ->whereHas('manches', function ($query) use ($playerId) {
+            $query->where('player1_id', $playerId)
+                  ->orWhere('player2_id', $playerId);
+        })
+        ->pluck('division_id')
+        ->unique()
+        ->toArray();
+
+    return $divisions;
+}
 
 
 

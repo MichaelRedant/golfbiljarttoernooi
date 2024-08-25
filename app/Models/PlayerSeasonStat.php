@@ -21,6 +21,7 @@ class PlayerSeasonStat extends Model
         'manches_won',
         'manches_lost',
         'points',
+        'division_id',
     ];
 
     // Relatie naar de speler
@@ -33,5 +34,10 @@ class PlayerSeasonStat extends Model
     public function season()
     {
         return $this->belongsTo(Season::class);
+    }
+
+    public function division()
+    {
+        return $this->belongsTo(Division::class, 'division_id');
     }
 }

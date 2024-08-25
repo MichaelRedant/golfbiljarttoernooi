@@ -43,4 +43,12 @@ class Player extends Model
         // Dit haalt alle unieke seizoenen op waarin de speler heeft deelgenomen via games.
         return $this->games()->with('season')->get()->pluck('season')->unique('id');
     }
+
+    public function seasonStats()
+    {
+        return $this->hasMany(PlayerSeasonStat::class, 'player_id');
+    }
+    
+
+    
 }

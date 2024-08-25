@@ -1,12 +1,11 @@
 <?php
+
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use Illuminate\Http\Request;
 use App\Models\Division;
-use App\Models\Player;
 use App\Models\Season;
 use App\Services\RankingService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class RankingController extends Controller
@@ -33,7 +32,6 @@ class RankingController extends Controller
         $seasonId = $request->input('season_id', Season::latest()->first()->id);
         $seasons = Season::all();
 
-        // Bereken standings met behulp van RankingService
         $standings = $this->rankingService->calculateDivisionStandings($division, $seasonId);
 
         return view('rankings.teams', compact('division', 'standings', 'seasonId', 'seasons'));
@@ -45,7 +43,7 @@ class RankingController extends Controller
         $seasonId = $request->input('season_id', Season::latest()->first()->id);
         $seasons = Season::all();
 
-        // Bereken de spelersklassementen via de RankingService
+        // Bereken de spelersklassementen via de aangepaste RankingService
         $standings = $this->rankingService->calculatePlayerStandings($division->id, $seasonId);
 
         return view('rankings.players', compact('division', 'seasonId', 'seasons', 'standings'));
@@ -55,5 +53,6 @@ class RankingController extends Controller
     }
 }
 
-    
+
+
 }

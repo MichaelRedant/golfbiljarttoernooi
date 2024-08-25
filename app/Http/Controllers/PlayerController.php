@@ -150,60 +150,90 @@ class PlayerController extends Controller
         }
     }
 
-    public function show(Player $player, Request $request, RankingService $rankingService)
+    public function show(Player $player, Request $request)
 {
     Log::info('Entering show method for PlayerController.', ['player_id' => $player->id]);
 
     try {
-        $imageUrl = Storage::url('photos/' . $player->photo);
-        Log::info('Player image URL generated.', ['image_url' => $imageUrl]);
+        // Haal de foto-URL op
+        $imageUrl = $player->photo ? Storage::url('photos/' . $player->photo) : null;
 
+        // Haal alle seizoenen op
         $seasons = Season::all();
-        Log::info('Seasons loaded.', ['season_count' => $seasons->count()]);
 
+        // Haal het huidige seizoen op via request of standaard naar het laatste seizoen
         $currentSeasonId = $request->input('season_id', Season::latest('id')->first()->id);
-        Log::info('Current season ID determined.', ['current_season_id' => $currentSeasonId]);
 
-        $standings = $rankingService->calculatePlayerStandings($player->division_id, $currentSeasonId);
-        Log::info('Player standings calculated.', ['standings_count' => count($standings)]);
+        // Haal de divisie op waarin het team van de speler speelt
+        $teamDivision = $player->team->divisions->first();
 
+        // Haal alle divisies op waarin de speler wedstrijden heeft gespeeld en punten heeft behaald
+        $playedDivisions = Division::whereHas('teams.players', function ($query) use ($player, $currentSeasonId) {
+            $query->where('players.id', $player->id)
+                  ->whereHas('team.gamesHome', function ($query) use ($currentSeasonId) {
+                      $query->where('season_id', $currentSeasonId)
+                            ->whereNotNull('home_score')
+                            ->whereNotNull('away_score');
+                  })
+                  ->orWhereHas('team.gamesAway', function ($query) use ($currentSeasonId) {
+                      $query->where('season_id', $currentSeasonId)
+                            ->whereNotNull('home_score')
+                            ->whereNotNull('away_score');
+                  });
+        })->get();
+
+        // Voeg de teamdivisie toe aan de divisieset als deze nog niet in de lijst staat
+        $divisions = $playedDivisions->contains($teamDivision) 
+            ? $playedDivisions 
+            : $playedDivisions->push($teamDivision);
+
+        // Controleer of de huidige divisie geldig is, anders gebruik de teamdivisie of de eerste beschikbare divisie
+        $currentDivisionId = $request->input('division_id', $teamDivision->id ?? $divisions->first()->id);
+
+        Log::info('Current season and division determined.', [
+            'current_season_id' => $currentSeasonId,
+            'current_division_id' => $currentDivisionId
+        ]);
+
+        // Bereken de spelerstanden voor de huidige divisie en seizoen
+        $standings = $this->rankingService->calculatePlayerStandings($currentDivisionId, $currentSeasonId);
         $playerRank = array_search($player->id, array_column($standings, 'player_id')) + 1;
-        Log::info('Player rank calculated.', ['player_rank' => $playerRank]);
 
-        $teamGamesHome = $player->team->gamesHome()->where('season_id', $currentSeasonId)->whereNotNull('home_score')->whereNotNull('away_score')->get();
-        $teamGamesAway = $player->team->gamesAway()->where('season_id', $currentSeasonId)->whereNotNull('home_score')->whereNotNull('away_score')->get();
-        Log::info('Team games loaded.', ['home_games' => $teamGamesHome->count(), 'away_games' => $teamGamesAway->count()]);
-
-        $teamGames = $teamGamesHome->merge($teamGamesAway);
-        Log::info('Team games merged.', ['total_games' => $teamGames->count()]);
-
-        $matchesWon = 0;
-        $matchesLost = 0;
-        foreach ($teamGames as $game) {
-            foreach ($game->manches as $manche) {
-                if ($manche->winner_id == $player->id) {
-                    $matchesWon++;
-                } else {
-                    $matchesLost++;
-                }
-            }
-        }
-        Log::info('Matches won and lost calculated.', ['matches_won' => $matchesWon, 'matches_lost' => $matchesLost]);
-
+        // Stuur alle benodigde data naar de view
         return view('players.show', compact(
             'player',
             'seasons',
+            'divisions',
             'currentSeasonId',
-            'matchesWon',
-            'matchesLost',
-            'imageUrl',
+            'currentDivisionId',
             'standings',
-            'playerRank'
+            'playerRank',
+            'imageUrl'
         ));
     } catch (\Exception $e) {
         Log::error('Error in show method of PlayerController: ' . $e->getMessage(), ['player_id' => $player->id]);
         return back()->withErrors('Er is een fout opgetreden bij het ophalen van de speler.');
     }
+}
+
+
+
+    
+
+public function getRankingsByDivision(Player $player, Request $request, RankingService $rankingService)
+{
+    Log::info('Fetching rankings by division via AJAX.', ['player_id' => $player->id]);
+
+    $divisionId = $request->input('division_id');
+    $currentSeasonId = $request->input('season_id', Season::latest('id')->first()->id);
+    Log::info('Division ID and season ID received.', ['division_id' => $divisionId, 'current_season_id' => $currentSeasonId]);
+
+    $standings = $rankingService->calculatePlayerStandings($divisionId, $currentSeasonId);
+    Log::info('Standings fetched for division.', ['standings' => $standings]);
+
+    $view = view('players.partials.ranking', ['standings' => $standings])->render();
+
+    return response()->json(['view' => $view]);
 }
 
 

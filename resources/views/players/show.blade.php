@@ -22,7 +22,7 @@
                     </select>
                 </div>
             </form>
-            
+
             @php
                 $playerStanding = null;
                 foreach ($standings as $standing) {
@@ -50,36 +50,72 @@
         </div>
     </div>
 
+    <!-- Tabbladen voor de verschillende divisies -->
+    <ul class="nav nav-tabs mt-4" id="divisionTabs" role="tablist">
+        @foreach($divisions as $division)
+            <li class="nav-item">
+                <a class="nav-link {{ $division->id == $currentDivisionId ? 'active' : '' }}" 
+                   href="{{ route('players.show', ['player' => $player->id, 'division_id' => $division->id, 'season_id' => $currentSeasonId]) }}">
+                    {{ $division->name }}
+                </a>
+            </li>
+        @endforeach
+    </ul>
+
+    <!-- Spelers Ranking sectie -->
     <div class="card mt-4">
         <div class="card-header">
             <h2><i class="fas fa-chart-line"></i> Spelers Rankings</h2>
         </div>
         <div class="card-body">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Plaats Dit Seizoen</th>
-                        <th>Naam</th>
-                        <th>Team</th>
-                        <th>Gewonnen</th>
-                        <th>Verloren</th>
-                        <th>Punten</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($standings as $index => $standing)
-                        <tr class="{{ $standing['player_id'] == $player->id ? 'table-success' : '' }}">
-                            <td>{{ $index + 1 }}</td>
-                            <td><a href="{{ route('players.show', $standing['player_id']) }}">{{ $standing['player_name'] }}</a></td>
-                            <td><a href="{{ route('teams.show', $standing['team_id']) }}">{{ $standing['team_name'] }}</a></td>
-                            <td>{{ $standing['matches_won'] }}</td>
-                            <td>{{ $standing['matches_lost'] }}</td>
-                            <td>{{ $standing['points'] }}</td>
+            <div id="rankingContent">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Plaats Dit Seizoen</th>
+                            <th>Naam</th>
+                            <th>Team</th>
+                            <th>Gewonnen</th>
+                            <th>Verloren</th>
+                            <th>Punten</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach ($standings as $index => $standing)
+                            <tr class="{{ $standing['player_id'] == $player->id ? 'table-success' : '' }}">
+                                <td>{{ $index + 1 }}</td>
+                                <td><a href="{{ route('players.show', $standing['player_id']) }}">{{ $standing['player_name'] }}</a></td>
+                                <td><a href="{{ route('teams.show', $standing['team_id']) }}">{{ $standing['team_name'] }}</a></td>
+                                <td>{{ $standing['matches_won'] }}</td>
+                                <td>{{ $standing['matches_lost'] }}</td>
+                                <td>{{ $standing['points'] }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Verborgen formulier voor tab wisseling -->
+<form id="divisionForm" method="GET" action="{{ route('players.show', $player->id) }}">
+    <input type="hidden" name="season_id" value="{{ $currentSeasonId }}">
+    <input type="hidden" name="division_id" id="divisionInput" value="{{ $currentDivisionId }}">
+</form>
+
+@endsection
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.nav-link').forEach(function (tab) {
+            tab.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.getElementById('divisionInput').value = tab.getAttribute('href').split('division_id=')[1];
+                document.getElementById('divisionForm').submit();
+            });
+        });
+    });
+</script>
 @endsection

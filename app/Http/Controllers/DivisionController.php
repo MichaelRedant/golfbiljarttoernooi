@@ -10,9 +10,15 @@ use App\Models\Season;
 use App\Models\Division;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Services\RankingService;
 
 class DivisionController extends Controller
 {
+    protected $rankingService;
+    public function __construct(RankingService $rankingService)
+    {
+        $this->rankingService = $rankingService;
+    }
     public function index()
     {
         Log::info('DivisionController@index reached');
@@ -61,7 +67,9 @@ class DivisionController extends Controller
 
         $gamesByDate = $games->groupBy('date');
 
-        $standings = $this->calculateDivisionStandings($division, $currentSeasonId);
+        // Gebruik de RankingService om de standings op te halen
+        $rankingService = new RankingService();
+        $standings = $rankingService->calculateDivisionStandings($division, $currentSeasonId);
 
         Log::info('Division data retrieved', [
             'games_count' => $games->count(),
@@ -76,64 +84,6 @@ class DivisionController extends Controller
     }
 }
 
-
-    private function calculateDivisionStandings(Division $division, $seasonId)
-    {
-        Log::info('Calculating standings for division', ['division_id' => $division->id, 'season_id' => $seasonId]);
-
-        try {
-            $teams = $division->teams()->with([
-                'gamesHome' => function ($query) use ($seasonId) {
-                    $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
-                },
-                'gamesAway' => function ($query) use ($seasonId) {
-                    $query->where('season_id', $seasonId)->whereNotNull('home_score')->whereNotNull('away_score');
-                }
-            ])->get();
-
-            $standings = $teams->map(function ($team) {
-                $gamesWon = 0;
-                $gamesLost = 0;
-                $gamesDraw = 0;
-
-                foreach ($team->gamesHome as $game) {
-                    if ($game->home_score > $game->away_score) {
-                        $gamesWon++;
-                    } elseif ($game->home_score == $game->away_score) {
-                        $gamesDraw++;
-                    } else {
-                        $gamesLost++;
-                    }
-                }
-
-                foreach ($team->gamesAway as $game) {
-                    if ($game->away_score > $game->home_score) {
-                        $gamesWon++;
-                    } elseif ($game->away_score == $game->home_score) {
-                        $gamesDraw++;
-                    } else {
-                        $gamesLost++;
-                    }
-                }
-
-                return [
-                    'team_id' => $team->id,
-                    'team_name' => $team->name,
-                    'games_won' => $gamesWon,
-                    'games_lost' => $gamesLost,
-                    'games_draw' => $gamesDraw,
-                    'points' => $gamesWon * 3 + $gamesDraw
-                ];
-            })->sortByDesc('points')->values()->all();
-
-            Log::info('Standings calculated', ['standings_count' => count($standings)]);
-            return $standings;
-
-        } catch (\Exception $e) {
-            Log::error('Error calculating standings: ' . $e->getMessage());
-            return [];
-        }
-    }
 
     public function getTeamsByDivision($divisionId)
     {

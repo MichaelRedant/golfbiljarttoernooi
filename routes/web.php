@@ -22,6 +22,7 @@ Route::get('/players', [PlayerController::class, 'index'])->name('players.index'
 Route::get('/players/{player}', [PlayerController::class, 'show'])->name('players.show');
 Route::get('/get-teams', [PlayerController::class, 'getTeams'])->name('get-teams');
 Route::get('/get-players-by-team', [PlayerController::class, 'getPlayersByTeam'])->name('get-players-by-team');
+Route::get('/players/{player}/rankings', [PlayerController::class, 'getRankingsByDivision'])->name('players.rankings');
 
 Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
 Route::get('/games/{game}', [GameController::class, 'showGame'])->name('games.show');
@@ -29,6 +30,7 @@ Route::get('/games/fetchLiveScores', [GameController::class, 'fetchLiveScores'])
 Route::get('/scores/stream', [GameController::class, 'streamScores'])->name('scores.stream');
 Route::get('/kalender', [GameController::class, 'showCalendar'])->name('games.kalender');
 Route::get('/innerlijk-reglement', [HomeController::class, 'reglement'])->name('reglement');
+Route::get('/speelreglement', function () { return view('speelreglement');})->name('speelreglement');
 
 Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');
 Route::get('/rankings/{division}/teams', [RankingController::class, 'teamRankings'])->name('rankings.teams');
