@@ -67,7 +67,6 @@ class DivisionController extends Controller
 
         $gamesByDate = $games->groupBy('date');
 
-        // Gebruik de RankingService om de standings op te halen
         $rankingService = new RankingService();
         $standings = $rankingService->calculateDivisionStandings($division, $currentSeasonId);
 
@@ -83,6 +82,7 @@ class DivisionController extends Controller
         return response()->view('errors.500', [], 500);
     }
 }
+
 
 
     public function getTeamsByDivision($divisionId)

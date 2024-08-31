@@ -864,10 +864,8 @@ public function updateAllPlayerStats()
         }
     }
 
-    return view('games.show', compact('game', 'scores'));
+    return view('games.show', compact('game', 'scores', 'liveData'));
 }
-
-
 
 
 public function updateLiveScore(Request $request, Game $game)

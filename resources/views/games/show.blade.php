@@ -48,22 +48,22 @@
     <div class="row">
         <div class="col-md-6 text-center">
             <strong>Kapitein:</strong>
-            <p><a href="#">{{ $liveData['home_captain_name'] ?? 'Onbekend' }}</a></p>
+            <p><a href="#">{{ $liveData['home_captain_name'] ?? $game->homeTeam->captain->full_name ?? 'Onbekend' }}</a></p>
         </div>
         <div class="col-md-6 text-center">
             <strong>Kapitein:</strong>
-            <p><a href="#">{{ $liveData['away_captain_name'] ?? 'Onbekend' }}</a></p>
+            <p><a href="#">{{ $liveData['away_captain_name'] ?? $game->awayTeam->captain->full_name ?? 'Onbekend' }}</a></p>
         </div>
     </div>
 
     <div class="row">
         <div class="col-md-6 text-center">
             <strong>Reservespeler:</strong>
-            <p><a href="#">{{ $liveData['home_reserve_name'] ?? 'Onbekend' }}</a></p>
+            <p><a href="#">{{ $liveData['home_reserve_name'] ?? $game->homeTeam->reserve->full_name ?? 'Onbekend' }}</a></p>
         </div>
         <div class="col-md-6 text-center">
             <strong>Reservespeler:</strong>
-            <p><a href="#">{{ $liveData['away_reserve_name'] ?? 'Onbekend' }}</a></p>
+            <p><a href="#">{{ $liveData['away_reserve_name'] ?? $game->awayTeam->reserve->full_name ?? 'Onbekend' }}</a></p>
         </div>
     </div>
 

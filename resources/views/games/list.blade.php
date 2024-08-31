@@ -157,73 +157,67 @@
     </h2>
     <div class="collapse" id="pastGamesCollapse">
         @if ($pastGames->isNotEmpty())
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>Datum</th>
-                        <th>Thuis Team</th>
-                        <th>Uit Team</th>
-                        <th>Uitslag</th>
-                        <th>Actie</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($pastGames as $game)
-                        <tr>
-                            <td>{{ \Carbon\Carbon::parse($game->date)->format('d-m-Y') }}</td>
-                            <td>
-                                @if ($game->bye_team_id)
-                                    {{ $game->byeTeam->name }} heeft een bye
-                                @else
-                                    @if ($game->homeTeam)
-                                        <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
-                                    @else
-                                        Bye
-                                    @endif
-                                @endif
-                            </td>
-                            <td>
-                                @if ($game->awayTeam)
-                                    <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
-                                @else
-                                    @if (!$game->bye_team_id)
-                                        Bye
-                                    @endif
-                                @endif
-                            </td>
-                            <td>{{ $game->home_score ?? '' }} : {{ $game->away_score ?? '' }}</td>
-                            <td>
-                                @if (!$game->bye_team_id)
-                                    <a href="{{ route('games.show', $game->id) }}" class="btn btn-primary btn-sm">
-                                        <i class="fas fa-eye"></i> Bekijk
-                                    </a>
-                                    <a href="{{ route('games.edit', $game->id) }}" class="btn btn-info btn-sm">
-                                        <i class="fas fa-pencil-alt"></i> Aanpassen
-                                    </a>
-                                    <form action="{{ route('games.destroy', $game->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Weet je zeker dat je deze wedstrijd wilt verwijderen?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <input type="hidden" name="redirect_to" value="{{ url()->current() }}">
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            <i class="fas fa-trash-alt"></i> Verwijder
-                                        </button>
-                                    </form>
-                                @else
-                                    <button class="btn btn-primary btn-sm" disabled>
-                                        <i class="fas fa-eye"></i> Bekijk
-                                    </button>
-                                    <button class="btn btn-info btn-sm" disabled>
-                                        <i class="fas fa-pencil-alt"></i> Aanpassen
-                                    </button>
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @else
-            <p>Geen voorbije wedstrijden dit seizoen.</p>
-        @endif
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Thuis Team</th>
+                <th>Uit Team</th>
+                <th>Uitslag</th>
+                <th>Actie</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($pastGames as $game)
+                <tr>
+                    <td>{{ \Carbon\Carbon::parse($game->date)->format('d-m-Y') }}</td>
+                    <td>
+                        @if ($game->bye_team_id)
+                            {{ $game->byeTeam->name }} heeft een bye
+                        @else
+                            @if ($game->homeTeam)
+                                <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
+                            @else
+                                Bye
+                            @endif
+                        @endif
+                    </td>
+                    <td>
+                        @if ($game->awayTeam)
+                            <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
+                        @else
+                            @if (!$game->bye_team_id)
+                                Bye
+                            @endif
+                        @endif
+                    </td>
+                    <td>{{ $game->home_score ?? '' }} : {{ $game->away_score ?? '' }}</td>
+                    <td>
+                        @if (!$game->bye_team_id)
+                            <a href="{{ route('games.show', $game->id) }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-eye"></i> Bekijk
+                            </a>
+                            <a href="{{ route('games.edit', $game->id) }}" class="btn btn-info btn-sm">
+                                <i class="fas fa-pencil-alt"></i> Aanpassen
+                            </a>
+                        @endif
+                        <form action="{{ route('games.destroy', $game->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Weet je zeker dat je deze wedstrijd wilt verwijderen?');">
+                            @csrf
+                            @method('DELETE')
+                            <input type="hidden" name="redirect_to" value="{{ url()->current() }}">
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash-alt"></i> Verwijder
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+@else
+    <p>Geen voorbije wedstrijden dit seizoen.</p>
+@endif
+
     </div>
 </div>
 @endsection

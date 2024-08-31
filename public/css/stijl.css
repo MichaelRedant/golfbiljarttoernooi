@@ -518,7 +518,7 @@ body.night-mode .table td {
 }
 
 .sponsor-image {
-  max-height: 100px; /* Set maximum height for the image */
+  max-height: 150px; /* Set maximum height for the image */
   width: auto; /* Maintain aspect ratio */
   display: block;
   margin: auto;
@@ -526,12 +526,12 @@ body.night-mode .table td {
 
 @media (max-width: 768px) {
   .sponsor-image {
-      max-height: 80px; /* Adjust size for smaller screens */
+      max-height: 100px; /* Adjust size for smaller screens */
   }
 }
 
 @media (max-width: 576px) {
   .sponsor-image {
-      max-height: 60px; /* Further adjust size for mobile screens */
+      max-height: 80px; /* Further adjust size for mobile screens */
   }
 }

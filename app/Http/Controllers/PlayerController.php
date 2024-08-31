@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use App\Services\RankingService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-
+ 
 class PlayerController extends Controller
 {
     protected $rankingService;
@@ -157,47 +157,48 @@ class PlayerController extends Controller
     try {
         // Haal de foto-URL op
         $imageUrl = $player->photo ? Storage::url('photos/' . $player->photo) : null;
+        Log::info('Player photo URL retrieved.', ['image_url' => $imageUrl]);
 
         // Haal alle seizoenen op
         $seasons = Season::all();
+        Log::info('All seasons retrieved.', ['season_count' => $seasons->count()]);
 
         // Haal het huidige seizoen op via request of standaard naar het laatste seizoen
         $currentSeasonId = $request->input('season_id', Season::latest('id')->first()->id);
+        Log::info('Current season determined.', ['current_season_id' => $currentSeasonId]);
 
-        // Haal de divisie op waarin het team van de speler speelt
-        $teamDivision = $player->team->divisions->first();
-
-        // Haal alle divisies op waarin de speler wedstrijden heeft gespeeld en punten heeft behaald
-        $playedDivisions = Division::whereHas('teams.players', function ($query) use ($player, $currentSeasonId) {
-            $query->where('players.id', $player->id)
-                  ->whereHas('team.gamesHome', function ($query) use ($currentSeasonId) {
-                      $query->where('season_id', $currentSeasonId)
-                            ->whereNotNull('home_score')
-                            ->whereNotNull('away_score');
-                  })
-                  ->orWhereHas('team.gamesAway', function ($query) use ($currentSeasonId) {
-                      $query->where('season_id', $currentSeasonId)
-                            ->whereNotNull('home_score')
-                            ->whereNotNull('away_score');
-                  });
+        // Haal de divisie(s) op waarin de speler normaal speelt via zijn team
+        $normalDivisions = Division::whereHas('teams.players', function ($query) use ($player) {
+            $query->where('players.id', $player->id);
         })->get();
+        Log::info('Normal divisions retrieved.', ['normal_division_ids' => $normalDivisions->pluck('id')->toArray()]);
 
-        // Voeg de teamdivisie toe aan de divisieset als deze nog niet in de lijst staat
-        $divisions = $playedDivisions->contains($teamDivision) 
-            ? $playedDivisions 
-            : $playedDivisions->push($teamDivision);
+        // Haal alle divisies op waarin de speler daadwerkelijk wedstrijden heeft gespeeld
+        $playedDivisions = Division::whereIn('id', function ($query) use ($player, $currentSeasonId) {
+            $query->select('division_id')
+                  ->from('player_season_stats')
+                  ->where('player_id', $player->id)
+                  ->where('season_id', $currentSeasonId);
+        })->get();
+        Log::info('Played divisions retrieved.', ['played_division_ids' => $playedDivisions->pluck('id')->toArray()]);
 
-        // Controleer of de huidige divisie geldig is, anders gebruik de teamdivisie of de eerste beschikbare divisie
-        $currentDivisionId = $request->input('division_id', $teamDivision->id ?? $divisions->first()->id);
+        // Combineer beide sets divisies en verwijder eventuele duplicaten
+        $divisions = $normalDivisions->merge($playedDivisions)->unique('id');
+        Log::info('Combined divisions for player.', ['combined_division_ids' => $divisions->pluck('id')->toArray()]);
 
-        Log::info('Current season and division determined.', [
-            'current_season_id' => $currentSeasonId,
-            'current_division_id' => $currentDivisionId
+        // Controleer of de huidige divisie geldig is, anders gebruik de eerste beschikbare divisie
+        $currentDivisionId = $request->input('division_id', $divisions->first()->id ?? null);
+        Log::info('Current division determined.', [
+            'current_division_id' => $currentDivisionId,
+            'available_division_ids' => $divisions->pluck('id')->toArray()
         ]);
 
         // Bereken de spelerstanden voor de huidige divisie en seizoen
         $standings = $this->rankingService->calculatePlayerStandings($currentDivisionId, $currentSeasonId);
+        Log::info('Player standings calculated.', ['standings_count' => count($standings)]);
+
         $playerRank = array_search($player->id, array_column($standings, 'player_id')) + 1;
+        Log::info('Player rank determined.', ['player_rank' => $playerRank]);
 
         // Stuur alle benodigde data naar de view
         return view('players.show', compact(
@@ -216,9 +217,6 @@ class PlayerController extends Controller
     }
 }
 
-
-
-    
 
 public function getRankingsByDivision(Player $player, Request $request, RankingService $rankingService)
 {

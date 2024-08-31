@@ -136,7 +136,7 @@
                                 @foreach($pendingGames as $pendingGame)
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                         {{ $pendingGame->homeTeam->name }} vs {{ $pendingGame->awayTeam->name }} 
-                                        <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Goedkeuren/Afkeuren</a>
+                                        <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Laten goedkeuren</a>
                                     </li>
                                 @endforeach
                             </ul>
