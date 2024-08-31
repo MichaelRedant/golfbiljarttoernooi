@@ -63,6 +63,7 @@ use Illuminate\Support\Facades\Log;
     Log::info('Starting updatePlayerStats', ['game_id' => $game->id]);
 
     $seasonId = $game->season_id;
+    $divisionId = $game->division_id;  // Voeg division_id toe
     $playerMatchStats = [];
     $playerMancheStats = [];
     $processedPlayers = [];
@@ -118,7 +119,8 @@ use Illuminate\Support\Facades\Log;
     foreach ($playerMatchStats as $playerId => $stats) {
         $playerStats = PlayerSeasonStat::firstOrNew([
             'player_id' => $playerId,
-            'season_id' => $seasonId
+            'season_id' => $seasonId,
+            'division_id' => $divisionId  // Zorg ervoor dat division_id wordt toegevoegd
         ]);
 
         $playerStats->matches_won += $stats['matches_won'];
@@ -132,13 +134,15 @@ use Illuminate\Support\Facades\Log;
             'matches_lost' => $playerStats->matches_lost,
             'points' => $playerStats->points,
             'season_id' => $seasonId,
+            'division_id' => $divisionId
         ]);
     }
 
     foreach ($playerMancheStats as $playerId => $stats) {
         $playerStats = PlayerSeasonStat::firstOrNew([
             'player_id' => $playerId,
-            'season_id' => $seasonId
+            'season_id' => $seasonId,
+            'division_id' => $divisionId  // Zorg ervoor dat division_id wordt toegevoegd
         ]);
 
         $playerStats->manches_won += $stats['manches_won'];
@@ -150,14 +154,12 @@ use Illuminate\Support\Facades\Log;
             'manches_won' => $playerStats->manches_won,
             'manches_lost' => $playerStats->manches_lost,
             'season_id' => $seasonId,
+            'division_id' => $divisionId
         ]);
     }
 
     Log::info('Finished updatePlayerStats', ['game_id' => $game->id]);
 }
-
-
-
 
     public function calculateDivisionStandings(Division $division, $seasonId)
     {

@@ -23,15 +23,17 @@ class ClubController extends Controller
     }
 
     public function store(Request $request)
-{
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'location' => 'nullable|string|max:255', // Location can be optional
-    ]);
-
-    Club::create($request->all());
-    return redirect()->route('clubs.index')->with('success', 'Club successfully created.');
-}
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'location' => 'nullable|string|max:255',
+            'contact_person' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|max:20',
+        ]);
+    
+        Club::create($request->all());
+        return redirect()->route('clubs.index')->with('success', 'Club successfully created.');
+    }
 
     public function show(Club $club)
     {
@@ -54,12 +56,14 @@ class ClubController extends Controller
     $request->validate([
         'name' => 'required|string|max:255',
         'location' => 'nullable|string|max:255',
+        'contact_person' => 'nullable|string|max:255',
+        'phone_number' => 'nullable|string|max:20',
         'teams' => 'nullable|array',
-        'teams.*' => 'exists:teams,id'
+        'teams.*' => 'exists:teams,id',
     ]);
 
-    // Update club details including location
-    $club->update($request->only(['name', 'location']));
+    // Update club details including location, contact person, and phone number
+    $club->update($request->only(['name', 'location', 'contact_person', 'phone_number']));
 
     // Update teams association
     if ($request->filled('teams')) {
@@ -74,8 +78,6 @@ class ClubController extends Controller
 
     return redirect()->route('clubs.index')->with('success', 'Club successfully updated.');
 }
-
-
 
     public function destroy(Club $club)
     {

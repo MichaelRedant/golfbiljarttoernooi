@@ -14,8 +14,18 @@
 
         <div class="mb-3">
             <label for="location" class="form-label">Location:</label>
-            <input type="text" class="form-control" id="location" name="location" value="{{ $club->location }}" placeholder="Enter club location">
+            <input type="text" class="form-control" id="location" name="location" value="{{ $club->location }}" placeholder="Vul club locatie in">
         </div>
+
+        <div class="mb-3">
+            <label for="contact_person" class="form-label">Contactpersoon:</label>
+            <input type="text" class="form-control" id="contact_person" name="contact_person" value="{{ $club->contact_person }}" placeholder="Vul contactpersoon in">
+        </div>
+        <div class="mb-3">
+            <label for="phone_number" class="form-label">Telefoonnummer:</label>
+            <input type="text" class="form-control" id="phone_number" name="phone_number" value="{{ $club->phone_number }}" placeholder="Vul telefoonnummer in">
+        </div>
+        
 
         <div class="mb-3">
             <label for="teams" class="form-label">Select Teams:</label>

@@ -34,6 +34,8 @@
                         @endif
                     </a>
                 </th>
+                <th>Contactpersoon</th>
+                <th>Telefoonnummer</th>
                 @if(auth()->user() && auth()->user()->role === 'admin')
                 <th>Acties</th>
                 @endif
@@ -44,6 +46,8 @@
             <tr>
                 <td><a href="{{ route('clubs.show', $club->id) }}">{{ $club->name }}</a></td>
                 <td>{{ $club->location }}</td>
+                <td>{{ $club->contact_person }}</td>
+                <td>{{ $club->phone_number }}</td>
                 @if(auth()->user() && auth()->user()->role === 'admin')
                 <td>
                     <a href="{{ route('clubs.edit', $club->id) }}" class="btn btn-sm btn-info">Bewerken</a>
