@@ -139,13 +139,13 @@
                                     </td>
                                     <td class="small" id="away-team-{{ $i }}"></td>
                                     <td>
-                                        <input type="number" class="form-control manche" name="scores[{{ $i }}][1M]" min="1" max="2" step="1" required>
+                                        <input type="text" class="form-control manche" name="scores[{{ $i }}][1M]" maxlength="1" pattern="[12]" required>
                                     </td>
                                     <td>
-                                        <input type="number" class="form-control manche" name="scores[{{ $i }}][2M]" min="1" max="2" step="1" required>
+                                        <input type="text" class="form-control manche" name="scores[{{ $i }}][2M]" maxlength="1" pattern="[12]" required>
                                     </td>
                                     <td>
-                                        <input type="number" class="form-control belle" name="scores[{{ $i }}][Belle]" min="1" max="2" step="1" readonly>
+                                        <input type="text" class="form-control belle" name="scores[{{ $i }}][Belle]" maxlength="1" pattern="[12]" readonly>
                                     </td>
                                     <td>
                                         <input type="text" class="form-control result" readonly>
@@ -160,15 +160,13 @@
         </div>
 
         <div class="text-center mt-4 mb-4">
-            <div class="text-center mt-4 mb-4">
-                <button type="submit" class="btn btn-primary btn-lg btn-block" id="saveButton">Wedstrijd laten goedkeuren</button>
-            </div>
+            <button type="submit" class="btn btn-primary btn-lg btn-block" id="saveButton">Wedstrijd laten goedkeuren</button>
         </div>
     </form>
 </div>
 
 <script>
-   document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('matchForm');
     const rows = document.querySelectorAll('tbody tr');
     const homeScoreInput = document.getElementById('home_score');
@@ -177,24 +175,19 @@
     const forfeitTeamSelect = document.getElementById('forfeit_team');
     const playerSelects = document.querySelectorAll('.player-select');
     const scoreTable = document.querySelector('.table-responsive');
-    const captainReserveSection = document.querySelector('.card:nth-child(3)'); // Kapiteins en reservespelers kaart
-    const playersAndScoresSection = document.querySelector('.card:nth-child(4)'); // Spelers en Scores kaart
+    const captainReserveSection = document.querySelector('.card:nth-child(3)'); 
+    const playersAndScoresSection = document.querySelector('.card:nth-child(4)'); 
     
-    const gameId = {{ $game->id }}; // Zorg ervoor dat je het game ID gebruikt
-    const EXPIRY_TIME = 32400000; // 9 uur in milliseconden
-
-
-    // Load saved form data from localStorage
+    const gameId = {{ $game->id }}; 
+    const EXPIRY_TIME = 32400000; 
+ 
     loadFormData();
     
-
-    // Save form data on input change
     form.addEventListener('input', function() {
         saveFormData();
         updateLiveScore(gameId);
     });
 
-    // Clear localStorage on form submit
     form.addEventListener('submit', function() {
         localStorage.removeItem(`matchFormData_${gameId}`);
         localStorage.removeItem(`matchFormDataExpiry_${gameId}`);
@@ -205,15 +198,14 @@
         if (this.value === 'home') {
             homeScoreInput.value = 0;
             awayScoreInput.value = 6;
-            captainReserveSection.style.display = 'none'; // Verberg kapiteins en reservespelers
-            playersAndScoresSection.style.display = 'none'; // Verberg spelers en scores
+            captainReserveSection.style.display = 'none';
+            playersAndScoresSection.style.display = 'none';
         } else if (this.value === 'away') {
             homeScoreInput.value = 6;
             awayScoreInput.value = 0;
-            captainReserveSection.style.display = 'none'; // Verberg kapiteins en reservespelers
-            playersAndScoresSection.style.display = 'none'; // Verberg spelers en scores
+            captainReserveSection.style.display = 'none';
+            playersAndScoresSection.style.display = 'none';
         } else {
-            // Herbereken de score op basis van de individuele matchen
             let homeWins = 0;
             let awayWins = 0;
 
@@ -242,8 +234,8 @@
             homeScoreInput.value = homeWins;
             awayScoreInput.value = awayWins;
 
-            captainReserveSection.style.display = ''; // Maak kapiteins en reservespelers weer zichtbaar
-            playersAndScoresSection.style.display = ''; // Maak spelers en scores weer zichtbaar
+            captainReserveSection.style.display = ''; 
+            playersAndScoresSection.style.display = ''; 
         }
     });
 
@@ -251,7 +243,7 @@
         scoreInputs.forEach(input => {
             input.disabled = disable;
             if (disable) {
-                input.value = '';  // Leeg de velden bij uitschakeling
+                input.value = ''; 
             }
         });
         playerSelects.forEach(select => {
@@ -262,7 +254,6 @@
     function updateAvailableOptions() {
         let selectedPlayers = [];
 
-        // Verzamel geselecteerde spelers alleen uit de sectie "Spelers en Scores"
         rows.forEach(row => {
             const homePlayerSelect = row.querySelector('select[name*="[home_player]"]');
             const awayPlayerSelect = row.querySelector('select[name*="[away_player]"]');
@@ -275,7 +266,6 @@
             }
         });
 
-        // Update alleen de opties in de sectie "Spelers en Scores"
         rows.forEach(row => {
             const homePlayerSelect = row.querySelector('select[name*="[home_player]"]');
             const awayPlayerSelect = row.querySelector('select[name*="[away_player]"]');
@@ -313,7 +303,6 @@
         let homePoints = 0;
         let awayPoints = 0;
 
-        // Controleer of de vereiste velden zijn ingevuld
         if (manche1Input.value && manche2Input.value) {
             if (parseInt(manche1Input.value) === 1) homePoints++;
             if (parseInt(manche2Input.value) === 2) awayPoints++;
@@ -328,7 +317,7 @@
                 }
             } else {
                 belleInput.setAttribute('readonly', true);
-                belleInput.value = ""; // Reset belle input if not a draw
+                belleInput.value = ""; 
             }
 
             resultInput.value = `${homePoints} - ${awayPoints}`;
@@ -336,7 +325,6 @@
             if (homePoints > awayPoints) homeWins++;
             if (awayPoints > homePoints) awayWins++;
         } else {
-            // Reset de uitslag als niet alle velden zijn ingevuld
             resultInput.value = "";
         }
     });
@@ -345,14 +333,12 @@
     awayScoreInput.value = awayWins;
 }
 
-// Event listener voor het bijwerken van de uitslag bij invoer
 rows.forEach(row => {
     const inputs = row.querySelectorAll('.manche, .belle');
     inputs.forEach(input => {
         input.addEventListener('input', updateResults);
     });
 });
-
 
     document.querySelectorAll('.player-select').forEach(select => {
         select.addEventListener('change', function() {
@@ -434,7 +420,6 @@ rows.forEach(row => {
         .catch(error => console.error('Error updating live score:', error));
     }
 
-    // Save form data to localStorage with expiry
     function saveFormData() {
         const formData = new FormData(form);
         const data = {};
@@ -445,7 +430,6 @@ rows.forEach(row => {
         localStorage.setItem(`matchFormDataExpiry_${gameId}`, Date.now() + EXPIRY_TIME);
     }
 
-    // Load form data from localStorage with expiry check
     function loadFormData() {
     const savedData = localStorage.getItem(`matchFormData_${gameId}`);
     const expiry = localStorage.getItem(`matchFormDataExpiry_${gameId}`);
@@ -462,13 +446,12 @@ rows.forEach(row => {
             }
         });
         updateResults();
-        updateTeamNames();  // Zorg ervoor dat teamnamen correct worden ingesteld na het laden van gegevens
+        updateTeamNames();  
     } else {
         localStorage.removeItem(`matchFormData_${gameId}`);
         localStorage.removeItem(`matchFormDataExpiry_${gameId}`);
     }
 }
-
 
 function updateTeamNames() {
     document.querySelectorAll('.player-select').forEach(select => {
@@ -484,12 +467,10 @@ function updateTeamNames() {
         }
     });
 }
+
     updateResults();
     updateAvailableOptions();
 });
-
-    
-    </script>
-    
+</script>
 
 @endsection

@@ -15,18 +15,19 @@
                 <h2>Adres- en functielijst van de bestuursleden van het Verbond Aalst</h2>
                 <hr>
                 <p><strong>Voorzitter & PR</strong><br> Van Cauwenbergh Danny <br> Zevekootstraat 100, 9420 Erpe-Mere <br> GSM: 0479/66.73.88 <br> E-mail: dimitri.vc@skynet.be</p>
-                <hr>
-                <p><strong>Ondervoorzitter & kaarthouder</strong><br> Verbeirens Marnick <br> Tel: 054/33.78.32 – GSM: 0479/45.28.99 <br> E-mail: verbeirensmarnick@gmail.com</p>
-                <hr>
-                <p><strong>Secretaris, schatbewaarder, kalender, kampioenschappen en EW zaterdag</strong><br> Van Cauwenbergh Dimitri <br> GSM: 0496/68.87.85 <br> E-mail: dimitri.vancauwenbergh@gmail.com</p>
-                <hr>
-                <p><strong>Wedstrijdcontrole, ranking en EW vrijdag</strong><br> Van Impe Mathias <br> GSM: 0475/80.29.03</p>
-                <hr>
-                <p><strong>Medewerkend lid</strong><br> Peirlinckx Luc – Van Impe Hans <br> Klachtencommissie</p>
-                <hr>
-                <p><strong>Secretaris & Secretariaat Klachtencommissie</strong><br> Geschillen ivm competitie en beker <br> Van Cauwenbergh Danny <br> Zevekootstraat 100, 9420 Erpe-Mere <br> Tel: 053/80.40.99 – GSM: 0479/66.73.88 <br> E-mail: dimitri.vc@skynet.be</p>
-                <hr>
-                <p><strong>Secretariaat Beroepscommissie</strong><br> Van Cauwenbergh Dimitri <br> Ottergemstraat 16, 9420 Mere <br> GSM: 0496/68.87.85 <br> E-mail: dimitri.vancauwenbergh@gmail.com</p>
+<hr>
+<p><strong>Ondervoorzitter & kaarthouder</strong><br> Verbeirens Marnick <br> Tel: 054/33.78.32 – GSM: 0479/45.28.99 <br> E-mail: verbeirensmarnick@gmail.com</p>
+<hr>
+<p><strong>Secretaris, schatbewaarder, kalender, kampioenschappen en EW zaterdag</strong><br> Van Cauwenbergh Dimitri <br> GSM: 0496/68.87.85 <br> E-mail: dimitri.vancauwenbergh@gmail.com</p>
+<hr>
+<p><strong>Wedstrijdcontrole, ranking en EW vrijdag</strong><br> Van Impe Mathias <br> GSM: 0475/80.29.03</p>
+<hr>
+<p><strong>Medewerkend lid</strong><br> Peirlinckx Luc – Van Impe Hans <br> Klachtencommissie</p>
+<hr>
+<p><strong>Secretaris & Secretariaat Klachtencommissie</strong><br> Geschillen ivm competitie en beker <br> Van Cauwenbergh Danny <br> Zevekootstraat 100, 9420 Erpe-Mere <br> Tel: 053/80.40.99 – GSM: 0479/66.73.88 <br> E-mail: dimitri.vc@skynet.be</p>
+<hr>
+<p><strong>Secretariaat Beroepscommissie</strong><br> Van Cauwenbergh Dimitri <br> Ottergemstraat 16, 9420 Mere <br> GSM: 0496/68.87.85 <br> E-mail: dimitri.vancauwenbergh@gmail.com</p>
+
             </div>
 
             <h3 class="text-center pt-5">De relatie met de BGB</h3>
@@ -68,6 +69,7 @@
             <p>Niet aanwezig of forfait op schiftingen kampioenschappen: 25,00 euro</p>
             <p>Attesten of bewijzen van afwezigheid moeten ten laatste binnenkomen tegen het einde van de kampioenschappen.</p>
             <p>Laattijdig ingediende attesten worden niet meer aanvaard.</p>
+            
             <hr>
 
             <h3 class="pt-4 text-center">Aantal wedstrijden per speler</h3>
@@ -75,7 +77,9 @@
             <hr>
 
             <h3 class="pt-4 text-center">Spelerslijsten</h3>
-            <p>De spelerslijsten moeten op het secretariaat binnen zijn voor de aanvang van de competitie. Clubs die in gebreke blijven zullen een boete van 125,00 euro dienen te betalen.</p>
+<p>De spelerslijsten moeten op het secretariaat binnen zijn voor de aanvang van de competitie. Clubs die in gebreke blijven zullen een boete van 125,00 euro dienen te betalen.</p>
+<hr>
+
             <hr>
 
             <h3 class="pt-4 text-center">Nieuwe spelers</h3>
@@ -87,12 +91,14 @@
             <p>Iedere club is verplicht aanwezig te zijn op de algemene vergadering.</p>
             <hr>
 
-            <h3 class="pt-4 text-center">Reservespeler</h3>
+            <<h3 class="pt-4 text-center">Reservespeler</h3>
             <p>Een op het elektronisch wedstrijdblad vermelde reservespeler mag aantreden in vervanging vanaf de tweede speler op het elektronisch wedstrijdblad en vervangt de eerste niet-aanwezige. De regel blijft nochtans gelden, een vervanger mag slechts aantreden indien de opgestelde speler die hij vervangt niet aanwezig is of geweest is. De opgestelde speler kan echter wanneer zijn wedstrijd door de reservespeler wordt gespeeld alsnog het lokaal betreden. Indien deze regel niet wordt nageleefd geldt de volgende strafmaat: De reservespeler verliest zijn wedstrijd met 2-0. De reservespeler en de effectieve speler die zijn plaats heeft afgestaan, worden beide bestraft met 2 speeldagen schorsing (die ingaat vanaf de eerste speeldag na schriftelijke verwittiging van het verbond). Een speler kan te allen tijde een D4 doen zolang hij nog niet effectief gespeeld heeft. Meerdere malen spelen op een dag is toegelaten maar niet in hetzelfde Verbond.</p>
+            
             <hr>
-
             <h3 class="pt-4 text-center">Transferperiode BGB Aalst & GVA</h3>
             <p>Eindigen op 30/06 te 24h.</p>
+            <hr>
+            
             <hr>
 
             <h3 class="pt-4 text-center">Nieuwe kaarten</h3>
@@ -143,10 +149,11 @@
             <p>Bij afwezigheid van beide spelers verliest de speler van de thuisploeg zijn wedstrijd.</p>
             <hr>
 
-            <h3 class="pt-4 text-center">Forfait (FF)</h3>
-            <p>a. Een ploeg die 2 individuele forfaits oploopt en 4 wedstrijden speelt loopt een boete op van 50,00 euro. Hiervan zijn 30,00 euro voor de tegenpartij en 20,00 euro voor het verbond. De som van 30,00 euro wordt betaald nadat het verbond het geld van de boete ontvangen heeft.</p>
-            <p>b. Een ploeg die 3 individuele forfaits oploopt en 3 wedstrijden speelt loopt een boete op van 75,00 euro. Hiervan zijn 45,00 euro voor de tegenpartij en 30,00 euro voor het verbond. De som van 45,00 euro wordt betaald nadat het verbond het geld van de boete ontvangen heeft.</p>
-            <p>c. Een ploeg die 4 of meerdere individuele forfaits oploopt verliest met 6-0 en loopt een boete op van 200,00 euro. Hiervan zijn 100,00 euro voor de tegenpartij en 100,00 euro voor het verbond. De som van 100,00 euro kan slechts betaald worden nadat het verbond het geld van de boete ontvangen heeft.</p>
+            <h3 class="pt-4 text-center">Boetes voor forfait</h3>
+<p>a. Een ploeg die 2 individuele forfaits oploopt en 4 wedstrijden speelt, krijgt een boete van 50,00 euro. Hiervan zijn 30,00 euro voor de tegenpartij en 20,00 euro voor het verbond.</p>
+<p>b. Een ploeg die 3 individuele forfaits oploopt en 3 wedstrijden speelt, krijgt een boete van 75,00 euro. Hiervan zijn 45,00 euro voor de tegenpartij en 30,00 euro voor het verbond.</p>
+<p>c. Een ploeg die 4 of meerdere individuele forfaits oploopt, verliest met 6-0 en krijgt een boete van 200,00 euro. Hiervan zijn 100,00 euro voor de tegenpartij en 100,00 euro voor het verbond.</p>
+
             <p>d. Boetes voor forfait zijn te betalen aan het verbond door de club, op de vastgestelde datum.</p>
             <p>e. Indien een club met 1 zijner ploegen forfait geeft, betaalt deze club 250,00 euro.</p>
             <p>f. De eerste speler op het wedstrijdblad kan nooit forfait krijgen anders verliest de ploeg met 6-0.</p>
@@ -160,6 +167,7 @@
 
             <h3 class="pt-4 text-center">Melden uitslagen</h3>
             <p>De uitslagen zullen onmiddellijk ter beschikking zijn wanneer beide kapiteins het EW afgesloten hebben. De afgesloten wedstrijden worden automatisch verwerkt in de standen, zowel per ploeg als individueel. Indien om één of andere reden het elektronisch wedstrijdblad niet kan ingevuld worden (geen bereik, storing provider,...) mag een papieren wedstrijdblad ingevuld worden wat nadien elektronisch dient opgestuurd te worden naar de verantwoordelijke van de website (Mathias voor de vrijdagcompetitie en Dimitri voor de zaterdagcompetitie). De desbetreffende persoon zal het nodige doen om desbetreffende wedstrijd in te vullen op de website. Clubs die nationaal spelen dienen voor die ploegen een biljart afzonderlijk te hebben daar er voor die ploegen in de zaterdagreeks geen kalenderaanpassingen zullen gemaakt worden.</p>
+            
             <hr>
 
             <h3 class="pt-4 text-center">Beker van het Verbond Aalst (BGB)</h3>
@@ -399,7 +407,8 @@
             <hr>
 
             <h3 class="pt-4 text-center">Sancties</h3>
-            <p>Door hun aansluiting bij het verbond verbinden clubs en spelers er zich toe de statuten, reglementen en beslissingen strikt te eerbiedigen. Overtreders zullen beboet en geschorst worden. De verliezende partij betaalt alle kosten. Bij onbepaalde beslissing worden de kosten verdeeld. Wanneer een klacht wordt ingediend bij BGB tegenover het Verbond Aalst zullen alle onkosten betaald worden door dit lid of deze club. Schorsingen gaan steeds in op de dag vermeld in de schriftelijke verwittiging. Leden met schuld aan de verbondskas worden geschorst tot de schuld vereffend is. Indien zij toch spelen verliest de club met 6-0 of 0-6. Een geschorst lid kan geen wedstrijden betwisten in zijn schorsingsperiode (zowel vrijdag, zaterdag en bekerwedstrijden). Bij niet naleven zal de straf verdubbeld worden en verliest de club met 6-0 of 0-6. Een lid die 2 maal een blaam oploopt, loopt een schorsing op vanaf 2 weken of de strafmaat bepaald door de klachtencommissie of beroepscommissie. Gestrafte leden en boetes van leden zullen steeds langs de club verwittigd worden. Zij zijn geschorst voor ALLE competitieen bekeractiviteiten ingericht door het Verbond Aalst. Eventuele beledigingen t.o.v. leden van de klachtencommissie in functie worden bestraft vanaf 5 weken schorsing.</p>
+<p>Door hun aansluiting bij het verbond verbinden clubs en spelers er zich toe de statuten, reglementen en beslissingen strikt te eerbiedigen. Overtreders zullen beboet en geschorst worden. De verliezende partij betaalt alle kosten. Bij onbepaalde beslissing worden de kosten verdeeld. Wanneer een klacht wordt ingediend bij BGB tegenover het Verbond Aalst, zullen alle onkosten betaald worden door dit lid of deze club. Schorsingen gaan steeds in op de dag vermeld in de schriftelijke verwittiging. Leden met schuld aan de verbondskas worden geschorst tot de schuld vereffend is. Indien zij toch spelen verliest de club met 6-0 of 0-6.</p>
+
             <hr>
 
             <h3 class="pt-4 text-center">Rookverbod / E-sigaret</h3>
