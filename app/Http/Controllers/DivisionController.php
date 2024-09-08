@@ -11,7 +11,6 @@ use App\Models\Division;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Services\RankingService;
-
 class DivisionController extends Controller
 {
     protected $rankingService;
@@ -67,12 +66,28 @@ class DivisionController extends Controller
 
         $gamesByDate = $games->groupBy('date');
 
+        $now = Carbon::now('Europe/Brussels');
+        foreach ($games as $game) {
+            $limitTime = Carbon::parse($game->date)->addHours(3);
+            
+            // De wedstrijd is nog speelbaar als deze nog niet is goedgekeurd, ongeacht het tijdstip
+            $game->canStillBePlayed = !$game->is_approved || $now->lessThan($limitTime);
+
+            Log::info('Game Details', [
+                'game_id' => $game->id,
+                'game_date' => $game->date,
+                'limit_time' => $limitTime,
+                'is_approved' => $game->is_approved,
+                'canStillBePlayed' => $game->canStillBePlayed,
+            ]);
+        }
+
         $rankingService = new RankingService();
         $standings = $rankingService->calculateDivisionStandings($division, $currentSeasonId);
 
         Log::info('Division data retrieved', [
             'games_count' => $games->count(),
-            'standings_count' => count($standings)
+            'standings_count' => count($standings),
         ]);
 
         return view('divisions.show', compact('division', 'gamesByDate', 'standings', 'seasons', 'currentSeasonId'));
@@ -82,6 +97,7 @@ class DivisionController extends Controller
         return response()->view('errors.500', [], 500);
     }
 }
+
 
 
 

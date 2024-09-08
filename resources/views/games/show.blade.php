@@ -107,7 +107,8 @@
         @endif
     </div>
 
-    @if(!$game->away_team_approved)
+    <!-- Controleer of de gebruiker ingelogd is en admin-rechten heeft voordat de goedkeuringsknop wordt weergegeven -->
+    @if(auth()->check() && auth()->user()->isAdmin() && !$game->away_team_approved)
     <form action="{{ route('games.approve', $game->id) }}" method="POST" class="text-center mt-4">
         @csrf
         <button type="submit" class="btn btn-success">Goedkeuren</button>

@@ -262,6 +262,7 @@ public function edit(Game $game)
 public function update(Request $request, Game $game)
 {
     Log::info('Update method called');
+    Log::info('Form submitted via hidden iframe.', $request->all());
     Log::info('Request data:', $request->all());
 
     $validatedData = $request->validate([
@@ -369,118 +370,128 @@ public function requestApproval(Game $game)
 
 
 public function approve(Request $request, Game $game)
-    {
-        $user = auth()->user();
-        $isDryRun = $request->has('dry_run');
+{
+    $user = auth()->user();
+    Log::info('Approve method called by user:', ['user_id' => $user->id, 'game_id' => $game->id]);
 
-        if ($user->team_id == $game->away_team_id || $user->role == 'admin') {
+    $isDryRun = $request->has('dry_run');
+    Log::info('Dry run:', ['isDryRun' => $isDryRun]);
 
-            $liveScore = LiveScore::where('game_id', $game->id)->first();
+    if ($user->team_id == $game->away_team_id || $user->role == 'admin') {
+        Log::info('User authorized to approve game', ['user_id' => $user->id]);
 
-            if (!$liveScore) {
-                return redirect()->route('dashboard')->withErrors(['msg' => 'Geen live score gegevens gevonden voor deze wedstrijd.']);
-            }
-
-            $liveData = json_decode($liveScore->data, true);
-
-            DB::beginTransaction();
-            try {
-                Log::info('LiveScore Data:', $liveData);
-
-                // Als er sprake is van een forfait
-                if (isset($liveData['forfeit_team'])) {
-                    $forfeitTeam = $liveData['forfeit_team'];
-                    if ($forfeitTeam === 'home') {
-                        $game->home_score = 0;
-                        $game->away_score = 6;
-                    } elseif ($forfeitTeam === 'away') {
-                        $game->home_score = 6;
-                        $game->away_score = 0;
-                    }
-
-                    if (!$isDryRun) {
-                        Manche::where('game_id', $game->id)->delete();
-                        $game->update([
-                            'home_score' => $game->home_score,
-                            'away_score' => $game->away_score,
-                            'away_team_approved' => true,
-                        ]);
-                    }
-
-                } else {
-                    // Verwerking van normale wedstrijd
-                    $game->home_score = $liveData['home_score'];
-                    $game->away_score = $liveData['away_score'];
-
-                    if (!$isDryRun) {
-                        $game->update(['away_team_approved' => true]);
-                    }
-
-                    foreach ($liveData['scores'] as $index => $score) {
-                        Log::info('Simulating Manche Data Update:', [
-                            'game_id' => $game->id,
-                            'player1_id' => $this->getPlayerIdByName($score['home_player_name']),
-                            'player2_id' => $this->getPlayerIdByName($score['away_player_name']),
-                            'score1' => $score['1M'],
-                            'score2' => $score['2M'],
-                            'belle_score' => $score['Belle'] !== '' ? $score['Belle'] : null,
-                            'winner_id' => $this->determineWinnerId($score),
-                        ]);
-
-                        if (!$isDryRun) {
-                            Manche::updateOrCreate(
-                                [
-                                    'game_id' => $game->id,
-                                    'number' => $index + 1,
-                                ],
-                                [
-                                    'player1_id' => $this->getPlayerIdByName($score['home_player_name']),
-                                    'player2_id' => $this->getPlayerIdByName($score['away_player_name']),
-                                    'score1' => $score['1M'],
-                                    'score2' => $score['2M'],
-                                    'belle_score' => $score['Belle'] !== '' ? $score['Belle'] : null,
-                                    'winner_id' => $this->determineWinnerId($score),
-                                ]
-                            );
-                        }
-                    }
-
-                    if (!$isDryRun) {
-                        // Update de spelersstatistieken
-                        $this->rankingService->updatePlayerStats($game);
-                    }
-                }
-
-                // Update de teamstatistieken
-                if (!$isDryRun) {
-                    $this->rankingService->updateTeamStats($game);
-                }
-
-                // Gebruik calculateDivisionStandings om de teamstand te simuleren of daadwerkelijk te herberekenen
-                $division = $game->division;
-                $seasonId = $game->season_id;
-                $standings = $this->rankingService->calculateDivisionStandings($division, $seasonId);
-                Log::info('Updated Division Standings (Simulated):', ['standings' => $standings]);
-
-                // Rollback transactie bij Dry Run zodat er niets in de database wordt opgeslagen
-                if ($isDryRun) {
-                    DB::rollBack();
-                    return redirect()->route('games.show', $game->id)
-                        ->with('success', 'Dry Run voltooid: wedstrijdgegevens gesimuleerd en niet opgeslagen.');
-                } else {
-                    DB::commit();
-                    return redirect()->route('home')->with('success', 'Wedstrijd succesvol goedgekeurd!');
-                }
-
-            } catch (\Exception $e) {
-                DB::rollBack();
-                Log::error('Error tijdens goedkeuring van de wedstrijd:', ['error' => $e->getMessage()]);
-                return redirect()->route('dashboard')->withErrors(['msg' => $e->getMessage()]);
-            }
+        $liveScore = LiveScore::where('game_id', $game->id)->first();
+        if (!$liveScore) {
+            Log::error('No live score data found for game', ['game_id' => $game->id]);
+            return redirect()->route('dashboard')->withErrors(['msg' => 'Geen live score gegevens gevonden voor deze wedstrijd.']);
         }
 
-        return redirect()->route('games.index')->withErrors(['msg' => 'Je bent niet bevoegd om deze wedstrijd goed te keuren of af te wijzen.']);
+        $liveData = json_decode($liveScore->data, true);
+        Log::info('LiveScore Data:', $liveData);
+
+        DB::beginTransaction();
+        try {
+            if (isset($liveData['forfeit_team'])) {
+                $forfeitTeam = $liveData['forfeit_team'];
+                Log::info('Forfeit team detected', ['forfeit_team' => $forfeitTeam]);
+
+                if ($forfeitTeam === 'home') {
+                    $game->home_score = 0;
+                    $game->away_score = 6;
+                } elseif ($forfeitTeam === 'away') {
+                    $game->home_score = 6;
+                    $game->away_score = 0;
+                }
+
+                if (!$isDryRun) {
+                    Manche::where('game_id', $game->id)->delete();
+                    $game->update([
+                        'home_score' => $game->home_score,
+                        'away_score' => $game->away_score,
+                        'away_team_approved' => true,
+                    ]);
+                    Log::info('Game updated after forfeit', ['game_id' => $game->id]);
+                }
+            } else {
+                // Verwerking van normale wedstrijd
+                $game->home_score = $liveData['home_score'];
+                $game->away_score = $liveData['away_score'];
+                Log::info('Normal game processing:', ['home_score' => $game->home_score, 'away_score' => $game->away_score]);
+
+                if (!$isDryRun) {
+                    $game->update(['away_team_approved' => true]);
+                    Log::info('Game approved', ['game_id' => $game->id]);
+                }
+
+                foreach ($liveData['scores'] as $index => $score) {
+                    Log::info('Processing Manche Data:', [
+                        'game_id' => $game->id,
+                        'player1_id' => $this->getPlayerIdByName($score['home_player_name']),
+                        'player2_id' => $this->getPlayerIdByName($score['away_player_name']),
+                        'score1' => $score['1M'],
+                        'score2' => $score['2M'],
+                        'belle_score' => $score['Belle'] !== '' ? $score['Belle'] : null,
+                        'winner_id' => $this->determineWinnerId($score),
+                    ]);
+
+                    if (!$isDryRun) {
+                        Manche::updateOrCreate(
+                            [
+                                'game_id' => $game->id,
+                                'number' => $index + 1,
+                            ],
+                            [
+                                'player1_id' => $this->getPlayerIdByName($score['home_player_name']),
+                                'player2_id' => $this->getPlayerIdByName($score['away_player_name']),
+                                'score1' => $score['1M'],
+                                'score2' => $score['2M'],
+                                'belle_score' => $score['Belle'] !== '' ? $score['Belle'] : null,
+                                'winner_id' => $this->determineWinnerId($score),
+                            ]
+                        );
+                    }
+                }
+
+                if (!$isDryRun) {
+                    // Update de spelersstatistieken
+                    $this->rankingService->updatePlayerStats($game);
+                    Log::info('Player stats updated for game', ['game_id' => $game->id]);
+                }
+            }
+
+            // Update de teamstatistieken
+            if (!$isDryRun) {
+                $this->rankingService->updateTeamStats($game);
+                Log::info('Team stats updated for game', ['game_id' => $game->id]);
+            }
+
+            // Simuleer of herbereken de teamstand
+            $division = $game->division;
+            $seasonId = $game->season_id;
+            $standings = $this->rankingService->calculateDivisionStandings($division, $seasonId);
+            Log::info('Updated Division Standings (Simulated):', ['standings' => $standings]);
+
+            if ($isDryRun) {
+                DB::rollBack();
+                Log::info('Dry run completed, no data saved', ['game_id' => $game->id]);
+                return redirect()->route('games.show', $game->id)->with('success', 'Dry Run voltooid: wedstrijdgegevens gesimuleerd en niet opgeslagen.');
+            } else {
+                DB::commit();
+                Log::info('Game successfully approved', ['game_id' => $game->id]);
+                return redirect()->route('home')->with('success', 'Wedstrijd succesvol goedgekeurd!');
+            }
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Error during game approval:', ['error' => $e->getMessage()]);
+            return redirect()->route('dashboard')->withErrors(['msg' => $e->getMessage()]);
+        }
     }
+
+    Log::warning('Unauthorized user attempted to approve game', ['user_id' => $user->id, 'game_id' => $game->id]);
+    return redirect()->route('games.index')->withErrors(['msg' => 'Je bent niet bevoegd om deze wedstrijd goed te keuren of af te wijzen.']);
+}
+
 
 
 private function updateGameStats(Game $game)
@@ -980,18 +991,109 @@ public function updateLiveScore(Request $request, Game $game)
 
     Log::info('Final data to be stored in LiveScore:', $dataToStore);
 
-    // Opslaan of bijwerken van de LiveScore
-    $liveScore = LiveScore::updateOrCreate(
-        ['game_id' => $game->id],
-        ['data' => json_encode($dataToStore)]
-    );
+    // Foutafhandeling en retries toevoegen
+    $attempts = 3;
+    do {
+        try {
+            // Opslaan of bijwerken van de LiveScore
+            $liveScore = LiveScore::updateOrCreate(
+                ['game_id' => $game->id],
+                ['data' => json_encode($dataToStore)]
+            );
 
-    Log::info('Live score updated/created successfully.', $liveScore->toArray());
+            Log::info('Live score updated/created successfully.', $liveScore->toArray());
+            return response()->json(['success' => true]);
+        } catch (Exception $e) {
+            Log::error('Error updating live score, attempts left: ' . ($attempts - 1), [
+                'error' => $e->getMessage()
+            ]);
+            $attempts--;
+            if ($attempts == 0) {
+                return response()->json(['success' => false, 'error' => 'Failed to update live score after multiple attempts.']);
+            }
+        }
+    } while ($attempts > 0);
 
-    return response()->json(['success' => true]);
+    // Sla de live score gegevens op in de database
+    try {
+        LiveScore::updateOrCreate(
+            ['game_id' => $game->id],
+            ['data' => json_encode($dataToStore)]
+        );
+
+        Log::info('Live score successfully stored for game:', ['game_id' => $game->id]);
+
+        return response()->json(['success' => true]);
+    } catch (\Exception $e) {
+        Log::error('Error storing live score:', ['error' => $e->getMessage()]);
+        return response()->json(['success' => false, 'error' => 'Failed to update live score']);
+    }
 }
 
 
+public function fetchLatestGameData(Game $game)
+{
+    Log::info('Fetching latest game data for game:', ['game_id' => $game->id]);
+
+    // Haal de live score op uit de database
+    $liveScore = LiveScore::where('game_id', $game->id)->first();
+
+    if ($liveScore) {
+        $data = json_decode($liveScore->data, true);
+        Log::info('Live score data retrieved:', ['data' => $data]);
+        return response()->json($data);
+    } else {
+        Log::warning('No live score data found for game:', ['game_id' => $game->id]);
+        return response()->json(['home_score' => 0, 'away_score' => 0, 'scores' => []]);
+    }
+}
+public function fetchLiveScore(Game $game)
+{
+    // Haal de live score op uit de database voor de opgegeven game
+    $liveScore = LiveScore::where('game_id', $game->id)->first();
+
+    if ($liveScore) {
+        $data = json_decode($liveScore->data, true);
+        // Log the data retrieved from liveScore
+        Log::info('Live score data retrieved:', $data);
+        
+        return response()->json($data);
+    } else {
+        // Log that no live score was found
+        Log::info('No live score found for game ID:', ['game_id' => $game->id]);
+        
+        // Haal bestaande spelersinformatie op als er geen live score is
+        $homePlayers = $game->homeTeam->players->map(function($player) {
+            return [
+                'id' => $player->id,
+                'name' => $player->first_name . ' ' . $player->last_name,
+                'team' => $player->team->name
+            ];
+        });
+
+        $awayPlayers = $game->awayTeam->players->map(function($player) {
+            return [
+                'id' => $player->id,
+                'name' => $player->first_name . ' ' . $player->last_name,
+                'team' => $player->team->name
+            ];
+        });
+
+        $response = [
+            'home_score' => $game->home_score ?? 0,
+            'away_score' => $game->away_score ?? 0,
+            'scores' => [
+                'home_players' => $homePlayers,
+                'away_players' => $awayPlayers
+            ]
+        ];
+
+        // Log the response when no live score is found
+        Log::info('Returning default scores:', $response);
+
+        return response()->json($response);
+    }
+}
 
 
 
@@ -999,24 +1101,34 @@ public function showLiveScores()
 {
     Log::info('Entering showLiveScores method');
 
+    // Haal de huidige datum en de datum van twee dagen geleden op
+    $twoDaysAgo = Carbon::now()->subDays(2)->format('Y-m-d');
     $currentDate = Carbon::now()->format('Y-m-d');
     Log::info('Current date:', ['date' => $currentDate]);
+    Log::info('Two days ago:', ['date' => $twoDaysAgo]);
 
+    // Haal de wedstrijden op die binnen de laatste 48 uur plaatsvinden
     $games = Game::with(['homeTeam', 'awayTeam', 'division'])
-                 ->whereDate('date', $currentDate)
+                 ->whereBetween('date', [$twoDaysAgo, $currentDate])
                  ->get();
     Log::info('Games found:', ['games' => $games->toArray()]);
 
+    // Haal de live scores op voor de gevonden wedstrijden
     $liveScores = LiveScore::whereIn('game_id', $games->pluck('id'))->get()->keyBy('game_id');
     Log::info('Live scores found:', ['live_scores' => $liveScores->toArray()]);
 
+    // Verwerk de wedstrijden en koppel de live scores aan de bijbehorende wedstrijd
     $liveData = $games->map(function ($game) use ($liveScores) {
+        // Zorg ervoor dat de live score gegevens beschikbaar zijn of anders een leeg array teruggeven
         $data = $liveScores->get($game->id) ? json_decode($liveScores->get($game->id)->data, true) : [];
+        
+        // Voeg basisgegevens over de wedstrijd toe
         $data['home_team_name'] = $game->homeTeam->name;
         $data['away_team_name'] = $game->awayTeam->name;
         $data['division_name'] = $game->division->name;
         $data['game_date'] = $game->date->format('Y-m-d');
 
+        // Werk de speler- en teamnamen bij voor de score als ze bestaan
         if (isset($data['scores'])) {
             foreach ($data['scores'] as &$score) {
                 $score['home_player_team'] = $this->getPlayerActualTeamName($score['home_player_name']);
@@ -1031,11 +1143,14 @@ public function showLiveScores()
         return $data;
     });
 
+    // Als er geen live wedstrijden zijn, toon een bericht aan de gebruiker
     if ($liveData->isEmpty()) {
         return view('live-scores', ['message' => 'Er zijn geen live wedstrijden beschikbaar voor vandaag.']);
     }
 
     Log::info('Displaying live scores', ['liveData' => $liveData->toArray()]);
+
+    // Toon de live scores
     return view('live-scores', ['liveData' => $liveData]);
 }
 

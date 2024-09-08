@@ -14,9 +14,12 @@
         </div>
     </div>
 
-    <form id="matchForm" action="{{ route('games.update', $game->id) }}" method="POST">
+    <form id="matchForm" action="{{ route('games.update', $game->id) }}" method="POST" target="hiddenIframe">
         @csrf
         @method('PUT')
+
+         <!-- Hidden iframe to handle polling without page reload -->
+         <iframe id="hiddenIframe" name="hiddenIframe" style="display:none;"></iframe>
 
         <input type="hidden" name="home_team_id" value="{{ $game->homeTeam->id }}">
         <input type="hidden" name="away_team_id" value="{{ $game->awayTeam->id }}">
@@ -177,9 +180,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const scoreTable = document.querySelector('.table-responsive');
     const captainReserveSection = document.querySelector('.card:nth-child(3)'); 
     const playersAndScoresSection = document.querySelector('.card:nth-child(4)'); 
-    
     const gameId = {{ $game->id }}; 
     const EXPIRY_TIME = 32400000; 
+    const pollingInterval = 10000; // Poll every 10 seconds
  
     loadFormData();
     
@@ -193,6 +196,8 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.removeItem(`matchFormDataExpiry_${gameId}`);
         updateLiveScore(gameId);
     });
+
+    
 
     forfeitTeamSelect.addEventListener('change', function() {
         if (this.value === 'home') {
@@ -250,6 +255,10 @@ document.addEventListener('DOMContentLoaded', function() {
             select.disabled = disable;
         });
     }
+
+    document.getElementById('matchForm').addEventListener('submit', function() {
+    alert('Wedstrijd succesvol bijgewerkt!');
+});
 
     function updateAvailableOptions() {
         let selectedPlayers = [];
@@ -453,6 +462,150 @@ rows.forEach(row => {
     }
 }
 
+// Function to populate the form fields with live score data
+function populateForm(data) {
+    console.log('Populating form with data:', data); // Log the received data
+
+    // Populate standard form fields
+    for (const key in data) {
+        const element = form.querySelector(`[name="${key}"]`);
+        if (element) {
+            console.log(`Populating field ${key} with value:`, data[key]); // Log each populated field
+            element.value = data[key];
+        }
+    }
+
+    // Populate the scores array (if exists in the data)
+    if (data.scores) {
+        data.scores.forEach((score, index) => {
+            const homePlayerInput = form.querySelector(`[name="scores[${index}][home_player]"]`);
+            const awayPlayerInput = form.querySelector(`[name="scores[${index}][away_player]"]`);
+            const firstMancheInput = form.querySelector(`[name="scores[${index}][1M]"]`);
+            const secondMancheInput = form.querySelector(`[name="scores[${index}][2M]"]`);
+            const belleInput = form.querySelector(`[name="scores[${index}][Belle]"]`);
+            // Syncing captains and reserves
+            const homeCaptainInput = form.querySelector('select[name="home_captain"]');
+            const awayCaptainInput = form.querySelector('select[name="away_captain"]');
+            const homeReserveInput = form.querySelector('select[name="home_reserve"]');
+            const awayReserveInput = form.querySelector('select[name="away_reserve"]');
+
+
+
+            console.log(`Populating score row ${index} with data:`, score);
+
+             // Populate home player
+             if (homePlayerInput && score.home_player_name) {
+                const homePlayerOption = Array.from(homePlayerInput.options).find(option => option.text.includes(score.home_player_name));
+                if (homePlayerOption) {
+                    homePlayerInput.value = homePlayerOption.value;
+                    console.log(`Setting home player for row ${index}: ${score.home_player_name}`);
+                }
+            }
+
+            // Populate away player
+            if (awayPlayerInput && score.away_player_name) {
+                const awayPlayerOption = Array.from(awayPlayerInput.options).find(option => option.text.includes(score.away_player_name));
+                if (awayPlayerOption) {
+                    awayPlayerInput.value = awayPlayerOption.value;
+                    console.log(`Setting away player for row ${index}: ${score.away_player_name}`);
+                }
+            }
+
+            // Populate home captain
+    if (homeCaptainInput && data.home_captain_name) {
+        const homeCaptainOption = Array.from(homeCaptainInput.options).find(option => option.text.includes(data.home_captain_name));
+        if (homeCaptainOption) {
+            homeCaptainInput.value = homeCaptainOption.value;
+            console.log(`Setting home captain: ${data.home_captain_name}`);
+        }
+    }
+
+    // Populate away captain
+    if (awayCaptainInput && data.away_captain_name) {
+        const awayCaptainOption = Array.from(awayCaptainInput.options).find(option => option.text.includes(data.away_captain_name));
+        if (awayCaptainOption) {
+            awayCaptainInput.value = awayCaptainOption.value;
+            console.log(`Setting away captain: ${data.away_captain_name}`);
+        }
+    }
+
+    // Populate home reserve
+    if (homeReserveInput && data.home_reserve_name) {
+        const homeReserveOption = Array.from(homeReserveInput.options).find(option => option.text.includes(data.home_reserve_name));
+        if (homeReserveOption) {
+            homeReserveInput.value = homeReserveOption.value;
+            console.log(`Setting home reserve: ${data.home_reserve_name}`);
+        }
+    }
+
+    // Populate away reserve
+    if (awayReserveInput && data.away_reserve_name) {
+        const awayReserveOption = Array.from(awayReserveInput.options).find(option => option.text.includes(data.away_reserve_name));
+        if (awayReserveOption) {
+            awayReserveInput.value = awayReserveOption.value;
+            console.log(`Setting away reserve: ${data.away_reserve_name}`);
+        }
+    }
+
+            // Populate the first and second manche inputs
+            if (firstMancheInput) firstMancheInput.value = score['1M'] || '';
+            if (secondMancheInput) secondMancheInput.value = score['2M'] || '';
+
+            // Populate the belle input if available
+            if (belleInput) belleInput.value = score.Belle || '';
+        });
+    }
+}
+
+
+
+// Fetch saved live score data and populate the form
+fetch(`/games/${gameId}/live-score`)
+    .then(response => response.json())
+    .then(data => {
+        console.log('Fetched live score data:', data); // Log the fetched data
+        if (data) {
+            populateForm(data); // Call the populateForm function with fetched data
+            updateTeamNames(); // Update team names after form is populated
+            updateAvailableOptions(); // Ensure options are updated after form is populated
+        }
+    })
+    .catch(error => console.error('Error fetching live score data:', error));
+
+
+
+// Handle form submission to save live score data
+form.addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent the form from submitting normally
+
+    const formData = new FormData(form); // Create form data object
+    const formDataObject = {};
+
+    // Convert FormData to a plain object
+    formData.forEach((value, key) => {
+        formDataObject[key] = value;
+    });
+
+    // Send form data to the server to save in LiveScore
+    fetch(`/games/${gameId}/live-score/update`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}' // Include CSRF token for security
+        },
+        body: JSON.stringify(formDataObject) // Convert form data to JSON string
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Live score saved successfully!');
+        }
+    })
+    .catch(error => console.error('Error saving live score data:', error));
+});
+
+
+
 function updateTeamNames() {
     document.querySelectorAll('.player-select').forEach(select => {
         const selectedOption = select.options[select.selectedIndex];
@@ -462,15 +615,18 @@ function updateTeamNames() {
             const rowIndex = select.dataset.rowIndex;
             const teamCell = document.getElementById(`${playerType}-team-${rowIndex}`);
             if (teamCell) {
+                console.log(`Updating team cell for row ${rowIndex}, ${playerType}: ${teamName}`); // Log team name updates
                 teamCell.textContent = teamName;
             }
         }
     });
 }
 
+
     updateResults();
     updateAvailableOptions();
 });
+
 </script>
 
 @endsection

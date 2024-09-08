@@ -102,7 +102,8 @@
             </div>
         </div>
 
-        <div class="col-md-12 mb-4">
+         <!-- Wachtende Goedkeuringen van vandaag en gisteren -->
+         <div class="col-md-12 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title">
@@ -146,10 +147,10 @@
                 </div>
             </div>
         </div>
-        
-        
+    </div>
+</div>
 @endsection
- 
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('selectAll').addEventListener('change', function (e) {

@@ -12,15 +12,11 @@
         <p>{{ $message }}</p>
     @else
         @php
-            $currentDate = \Carbon\Carbon::now()->format('Y-m-d');
             $divisions = [];
             foreach($liveData as $data) {
-                $gameDate = \Carbon\Carbon::parse($data['game_date'] ?? '')->format('Y-m-d');
-                
-                if ($gameDate === $currentDate) {
-                    $divisionName = $data['division_name'] ?? 'Onbekende Reeks';
-                    $divisions[$divisionName][] = $data;
-                }
+                // Geen filter meer voor alleen de huidige datum
+                $divisionName = $data['division_name'] ?? 'Onbekende Reeks';
+                $divisions[$divisionName][] = $data;
             }
         @endphp
 

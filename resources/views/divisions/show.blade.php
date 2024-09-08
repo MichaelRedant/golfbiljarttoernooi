@@ -69,7 +69,7 @@
                                                         <i class="fas fa-eye"></i> Wedstrijd bekijken
                                                     </a>
                                                 </td>
-                                            @elseif(auth()->check() && (auth()->user()->isAdmin() || (auth()->user()->isTeam() && auth()->user()->team_id == $game->home_team_id)) && \Carbon\Carbon::parse($game->date)->isToday())
+                                            @elseif(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->team_id == $game->home_team_id) && \Carbon\Carbon::parse($game->date)->isToday())
                                                 <td>
                                                     <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-success">
                                                         <i class="fas fa-play"></i> Start Wedstrijd
@@ -149,15 +149,38 @@
                 </thead>
                 <tbody>
                     @foreach ($gamesByDate->sortKeysDesc() as $date => $gamesOnDate)
-                        @if (\Carbon\Carbon::parse($date) < \Carbon\Carbon::today())
+                        @if (\Carbon\Carbon::parse($date)->lessThan(\Carbon\Carbon::today()))
                             @foreach ($gamesOnDate as $game)
                                 @if (!$game->bye_team_id)
                                     <tr>
                                         <td>{{ \Carbon\Carbon::parse($date)->format('d-m-Y') }}</td>
                                         <td><a href="{{ route('teams.show', $game->homeTeam->id ?? '#') }}">{{ $game->homeTeam ? $game->homeTeam->name : 'Bye' }}</a></td>
                                         <td>{{ $game->home_score ?? '' }} : {{ $game->away_score ?? '' }}</td>
-                                        <td><a href="{{ route('teams.show', $game->awayTeam->id ?? '#') }}">{{ $game->awayTeam ? $game->awayTeam->name : 'Bye' }}</a></td>                                      
-                                        <td><a href="{{ route('games.show', $game->id) }}" class="btn btn-primary btn-sm"><i class="fas fa-eye"></i> Wedstrijd bekijken</a></td>
+                                        <td><a href="{{ route('teams.show', $game->awayTeam->id ?? '#') }}">{{ $game->awayTeam ? $game->awayTeam->name : 'Bye' }}</a></td>
+                                        <td>
+                                            @php
+                                                // Bereken de tijdslimiet van 27 uur
+                                                $limitTime = \Carbon\Carbon::parse($game->date)->addHours(28);
+                                                $totalPoints = ($game->home_score ?? 0) + ($game->away_score ?? 0);
+                                            @endphp
+
+                                            @if($game->is_approved || \Carbon\Carbon::now()->greaterThan($limitTime))
+                                                <!-- Als de wedstrijd goedgekeurd is of meer dan 27 uur geleden -->
+                                                <a href="{{ route('games.show', $game->id) }}" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-eye"></i> Bekijken
+                                                </a>
+                                            @elseif(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->team_id == $game->home_team_id) && $totalPoints < 6)
+                                                <!-- Admin of team kan de wedstrijd nog spelen als het binnen 27 uur is, minder dan 6 punten zijn verdeeld en niet goedgekeurd -->
+                                                <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-play"></i> Spelen
+                                                </a>
+                                            @else
+                                                 <!-- Als de wedstrijd goedgekeurd is of meer dan 27 uur geleden -->
+                                                 <a href="{{ route('games.show', $game->id) }}" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-eye"></i> Bekijken
+                                                </a>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @endif
                             @endforeach

@@ -76,4 +76,10 @@ class Game extends Model
     return $this->hasOne(LiveScore::class);
 }
 
+public function getIsFinishedAttribute()
+    {
+        // Definieer wat het betekent dat een wedstrijd is afgelopen. Bijvoorbeeld:
+        return $this->date->isPast() && $this->manches()->count() > 0;
+    }
+
 }
