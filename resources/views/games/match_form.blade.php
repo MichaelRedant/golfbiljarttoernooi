@@ -51,6 +51,16 @@
                 </div>
             </div>
 
+            @php
+                $sortedHomeTeamPlayers = $homeTeamPlayers->sortBy(function($player) {
+                    return $player->team->name . ' ' . $player->first_name . ' ' . $player->last_name;
+                });
+
+                $sortedAwayTeamPlayers = $awayTeamPlayers->sortBy(function($player) {
+                    return $player->team->name . ' ' . $player->first_name . ' ' . $player->last_name;
+                });
+            @endphp
+
             <div class="card">
                 <div class="card-header">Kapiteins en reservespelers</div>
                 <div class="card-body">
@@ -125,19 +135,21 @@
                                 <tr>
                                     <td>
                                         <select class="form-control player-select wide-select" data-player-type="home" data-row-index="{{ $i }}" name="scores[{{ $i }}][home_player]">
-                                            <option value="">Speler</option>
-                                            @foreach ($homeTeamPlayers as $player)
-                                            <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}</option>
+                                            <option value="">Selecteer speler</option>
+                                            @foreach ($sortedHomeTeamPlayers as $player)
+                                                <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}</option>
                                             @endforeach
+                                            <option value="forfeit">Forfait</option>
                                         </select>
                                     </td>
                                     <td class="small" id="home-team-{{ $i }}"></td>
                                     <td>
                                         <select class="form-control player-select wide-select" data-player-type="away" data-row-index="{{ $i }}" name="scores[{{ $i }}][away_player]">
-                                            <option value="">Speler</option>
-                                            @foreach ($awayTeamPlayers as $player)
-                                            <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}</option>
+                                            <option value="">Selecteer speler</option>
+                                            @foreach ($sortedAwayTeamPlayers as $player)
+                                                <option value="{{ $player->id }}">{{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}</option>
                                             @endforeach
+                                            <option value="forfeit">Forfait</option>
                                         </select>
                                     </td>
                                     <td class="small" id="away-team-{{ $i }}"></td>
@@ -154,6 +166,7 @@
                                         <input type="text" class="form-control result" readonly>
                                     </td>
                                 </tr>
+                                
                                 @endfor
                             </tbody>
                         </table>
@@ -183,10 +196,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const gameId = {{ $game->id }}; 
     const EXPIRY_TIME = 32400000; 
     const pollingInterval = 10000; // Poll every 10 seconds
+
+      // Definieer de teamnamen
+    const homeTeamName = '{{ $game->homeTeam->name }}';
+    const awayTeamName = '{{ $game->awayTeam->name }}';
  
     loadFormData();
     
-    form.addEventListener('input', function() {
+    form.addEventListener('input', function(event) {
+        updateResults();
         saveFormData();
         updateLiveScore(gameId);
     });
@@ -261,86 +279,137 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
     function updateAvailableOptions() {
-        let selectedPlayers = [];
+    let selectedPlayers = [];
 
-        rows.forEach(row => {
-            const homePlayerSelect = row.querySelector('select[name*="[home_player]"]');
-            const awayPlayerSelect = row.querySelector('select[name*="[away_player]"]');
+    rows.forEach(row => {
+        const homePlayerSelect = row.querySelector('select[name*="[home_player]"]');
+        const awayPlayerSelect = row.querySelector('select[name*="[away_player]"]');
 
-            if (homePlayerSelect && homePlayerSelect.value) {
-                selectedPlayers.push(homePlayerSelect.value);
-            }
-            if (awayPlayerSelect && awayPlayerSelect.value) {
-                selectedPlayers.push(awayPlayerSelect.value);
+        if (homePlayerSelect && homePlayerSelect.value && homePlayerSelect.value !== 'forfeit') {
+            selectedPlayers.push(homePlayerSelect.value);
+        }
+        if (awayPlayerSelect && awayPlayerSelect.value && awayPlayerSelect.value !== 'forfeit') {
+            selectedPlayers.push(awayPlayerSelect.value);
+        }
+    });
+
+    rows.forEach(row => {
+        const homePlayerSelect = row.querySelector('select[name*="[home_player]"]');
+        const awayPlayerSelect = row.querySelector('select[name*="[away_player]"]');
+
+        [homePlayerSelect, awayPlayerSelect].forEach(select => {
+            if (select) {
+                let currentSelection = select.value;
+                let options = select.querySelectorAll('option');
+                options.forEach(option => {
+                    if (selectedPlayers.includes(option.value) && option.value !== currentSelection) {
+                        option.disabled = true;
+                    } else {
+                        option.disabled = false;
+                    }
+                });
             }
         });
+    });
+}
 
-        rows.forEach(row => {
-            const homePlayerSelect = row.querySelector('select[name*="[home_player]"]');
-            const awayPlayerSelect = row.querySelector('select[name*="[away_player]"]');
-
-            [homePlayerSelect, awayPlayerSelect].forEach(select => {
-                if (select) {
-                    let currentSelection = select.value;
-                    let options = select.querySelectorAll('option');
-                    options.forEach(option => {
-                        if (selectedPlayers.includes(option.value) && option.value !== currentSelection) {
-                            option.disabled = true;
-                        } else {
-                            option.disabled = false;
-                        }
-                    });
-                }
-            });
-        });
-    }
 
     playerSelects.forEach(select => {
         select.addEventListener('change', updateAvailableOptions);
     });
 
     function updateResults() {
-    let homeWins = 0;
-    let awayWins = 0;
+    let homeScore = 0;
+    let awayScore = 0;
 
     rows.forEach(row => {
-        const manche1Input = row.querySelector('input[name*="[1M]"]');
-        const manche2Input = row.querySelector('input[name*="[2M]"]');
+        const homePlayerSelect = row.querySelector('select[name*="[home_player]"]');
+        const awayPlayerSelect = row.querySelector('select[name*="[away_player]"]');
+        const firstMatchInput = row.querySelector('input[name*="[1M]"]');
+        const secondMatchInput = row.querySelector('input[name*="[2M]"]');
         const belleInput = row.querySelector('input[name*="[Belle]"]');
-        const resultInput = row.querySelector('input.result');
+        const resultCell = row.querySelector('.result-cell');
+        let result = '';
 
-        let homePoints = 0;
-        let awayPoints = 0;
+        const homePlayer = homePlayerSelect.value;
+        const awayPlayer = awayPlayerSelect.value;
 
-        if (manche1Input.value && manche2Input.value) {
-            if (parseInt(manche1Input.value) === 1) homePoints++;
-            if (parseInt(manche2Input.value) === 2) awayPoints++;
-            if (parseInt(manche1Input.value) === 2) awayPoints++;
-            if (parseInt(manche2Input.value) === 1) homePoints++;
+        // Controleer of de individuele match volledig is
+        let isMatchComplete = false;
 
-            if (homePoints === awayPoints) {
-                belleInput.removeAttribute('readonly');
-                if (belleInput.value) {
-                    if (parseInt(belleInput.value) === 1) homePoints++;
-                    if (parseInt(belleInput.value) === 2) awayPoints++;
-                }
-            } else {
-                belleInput.setAttribute('readonly', true);
-                belleInput.value = ""; 
+        if ((homePlayer === 'forfeit' || awayPlayer === 'forfeit')) {
+            // Forfait situatie, match is compleet
+            isMatchComplete = true;
+        } else if (firstMatchInput.value && secondMatchInput.value) {
+            // Beide sets zijn ingevuld
+            isMatchComplete = true;
+        }
+
+        if (!homePlayer && !awayPlayer) {
+            // Match is nog niet gestart
+            result = '';
+        } else if (!isMatchComplete) {
+            // Match is nog niet compleet, wacht met bijwerken
+            result = 'Match loopt';
+        } else if (homePlayer === 'forfeit' && awayPlayer === 'forfeit') {
+            // Beide spelers geven forfait, geen punten toegekend
+            result = 'Beide forfait';
+        } else if (homePlayer === 'forfeit') {
+            // Thuis speler geeft forfait, uit team wint de match
+            awayScore++;
+            result = 'Uit wint (forfait)';
+        } else if (awayPlayer === 'forfeit') {
+            // Uit speler geeft forfait, thuis team wint de match
+            homeScore++;
+            result = 'Thuis wint (forfait)';
+        } else {
+            // Reguliere match, bepaal de winnaar op basis van de scores
+            let homeSetsWon = 0;
+            let awaySetsWon = 0;
+
+            if (firstMatchInput.value === '1') {
+                homeSetsWon++;
+            } else if (firstMatchInput.value === '2') {
+                awaySetsWon++;
             }
 
-            resultInput.value = `${homePoints} - ${awayPoints}`;
+            if (secondMatchInput.value === '1') {
+                homeSetsWon++;
+            } else if (secondMatchInput.value === '2') {
+                awaySetsWon++;
+            }
 
-            if (homePoints > awayPoints) homeWins++;
-            if (awayPoints > homePoints) awayWins++;
-        } else {
-            resultInput.value = "";
+            if (homeSetsWon === 2 || awaySetsWon === 2) {
+                // Match beslist in twee sets
+            } else if (belleInput.value === '1') {
+                homeSetsWon++;
+            } else if (belleInput.value === '2') {
+                awaySetsWon++;
+            }
+
+            if (homeSetsWon > awaySetsWon) {
+                homeScore++;
+                result = 'Thuis wint';
+            } else if (awaySetsWon > homeSetsWon) {
+                awayScore++;
+                result = 'Uit wint';
+            } else {
+                result = 'Gelijkspel';
+            }
+        }
+
+        // Update de resultaatcel indien nodig
+        if (resultCell) {
+            resultCell.textContent = result;
         }
     });
 
-    homeScoreInput.value = homeWins;
-    awayScoreInput.value = awayWins;
+    // Update de verborgen inputs
+    homeScoreInput.value = homeScore;
+    awayScoreInput.value = awayScore;
 }
+
+
 
 rows.forEach(row => {
     const inputs = row.querySelectorAll('.manche, .belle');
@@ -349,17 +418,33 @@ rows.forEach(row => {
     });
 });
 
-    document.querySelectorAll('.player-select').forEach(select => {
-        select.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const teamName = selectedOption.text.split(' - ')[1] || 'Geen team gevonden';
-            const playerType = this.dataset.playerType;
-            const rowIndex = this.dataset.rowIndex;
-            document.getElementById(`${playerType}-team-${rowIndex}`).textContent = teamName;
-            updateAvailableOptions();
-            updateTeamNames(); 
-        });
+document.querySelectorAll('.player-select').forEach(select => {
+    select.addEventListener('change', function() {
+        const selectedOption = select.options[select.selectedIndex];
+        let teamName;
+        if (selectedOption.value === 'forfeit') {
+            const playerType = select.dataset.playerType;
+            if (playerType === 'home') {
+                teamName = homeTeamName;
+            } else if (playerType === 'away') {
+                teamName = awayTeamName;
+            } else {
+                teamName = 'Geen team gevonden';
+            }
+        } else {
+            teamName = selectedOption.text.split(' - ')[1] || 'Geen team gevonden';
+        }
+        const playerType = select.dataset.playerType;
+        const rowIndex = select.dataset.rowIndex;
+        const teamCell = document.getElementById(`${playerType}-team-${rowIndex}`);
+        if (teamCell) {
+            teamCell.textContent = teamName;
+        }
+        updateAvailableOptions();
+        updateTeamNames();
+        updateResults();
     });
+});
 
     function updateLiveScore(gameId) {
         const homeScore = document.getElementById('home_score').value;
@@ -401,22 +486,22 @@ rows.forEach(row => {
         });
 
         fetch(`/games/${gameId}/update-live-score`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                home_score: homeScore,
-                away_score: awayScore,
-                home_captain: homeCaptain,
-                away_captain: awayCaptain,
-                home_reserve: homeReserve,
-                away_reserve: awayReserve,
-                scores: scores,
-                forfeit_team: forfeitTeam
-            })
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            home_score: homeScore,
+            away_score: awayScore,
+            home_captain: homeCaptain,
+            away_captain: awayCaptain,
+            home_reserve: homeReserve,
+            away_reserve: awayReserve,
+            scores: scores,
+            forfeit_team: forfeitTeam
         })
+    })
         .then(response => response.json())
         .then(data => {
             console.log('Server response:', data);
@@ -604,18 +689,62 @@ form.addEventListener('submit', function(event) {
     .catch(error => console.error('Error saving live score data:', error));
 });
 
+playerSelects.forEach(select => {
+    select.addEventListener('change', function() {
+        const rowIndex = this.dataset.rowIndex;
+        const homeSelect = document.querySelector(`select[name="scores[${rowIndex}][home_player]"]`);
+        const awaySelect = document.querySelector(`select[name="scores[${rowIndex}][away_player]"]`);
+        const manche1Input = document.querySelector(`input[name="scores[${rowIndex}][1M]"]`);
+        const manche2Input = document.querySelector(`input[name="scores[${rowIndex}][2M]"]`);
+
+        if (homeSelect.value === 'forfeit') {
+            // Home player forfeits, away player wins both sets
+            manche1Input.value = 2;
+            manche2Input.value = 2;
+            manche1Input.readOnly = true;
+            manche2Input.readOnly = true;
+        } else if (awaySelect.value === 'forfeit') {
+            // Away player forfeits, home player wins both sets
+            manche1Input.value = 1;
+            manche2Input.value = 1;
+            manche1Input.readOnly = true;
+            manche2Input.readOnly = true;
+        } else {
+            // Reset scores and make inputs editable
+            manche1Input.value = '';
+            manche2Input.value = '';
+            manche1Input.readOnly = false;
+            manche2Input.readOnly = false;
+        }
+
+        updateResults();
+    });
+});
+
+
 
 
 function updateTeamNames() {
     document.querySelectorAll('.player-select').forEach(select => {
         const selectedOption = select.options[select.selectedIndex];
         if (selectedOption && selectedOption.value) {
-            const teamName = selectedOption.text.split(' - ')[1] || 'Geen team gevonden';
+            let teamName;
+            if (selectedOption.value === 'forfeit') {
+                const playerType = select.dataset.playerType;
+                if (playerType === 'home') {
+                    teamName = homeTeamName;
+                } else if (playerType === 'away') {
+                    teamName = awayTeamName;
+                } else {
+                    teamName = 'Geen team gevonden';
+                }
+            } else {
+                teamName = selectedOption.text.split(' - ')[1] || 'Geen team gevonden';
+            }
             const playerType = select.dataset.playerType;
             const rowIndex = select.dataset.rowIndex;
             const teamCell = document.getElementById(`${playerType}-team-${rowIndex}`);
             if (teamCell) {
-                console.log(`Updating team cell for row ${rowIndex}, ${playerType}: ${teamName}`); // Log team name updates
                 teamCell.textContent = teamName;
             }
         }
@@ -623,9 +752,12 @@ function updateTeamNames() {
 }
 
 
+
+
     updateResults();
     updateAvailableOptions();
 });
+
 
 </script>
 

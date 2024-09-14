@@ -17,6 +17,7 @@ class Manche extends Model
         'score2', 
         'belle_score', 
         'winner_id', 
+        'forfeit_by_player',
         'number'
     ];
 

@@ -20,38 +20,49 @@ class NewsController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required',
-            'is_sticky' => 'sometimes|boolean',
-        ]);
+{
+    $request->validate([
+        'title' => 'required|string|max:255',
+        'content' => 'required',
+    ]);
 
-        News::create([
-            'title' => $request->title,
-            'content' => $request->content,
-            'is_sticky' => $request->is_sticky ?? false,
-        ]);
+    // Zorg ervoor dat 'is_sticky' wordt ingesteld op true (1) of false (0)
+    $isSticky = $request->has('is_sticky') ? 1 : 0;
 
-        return redirect()->route('news.index')->with('success', 'News item created successfully.');
-    }
+    // Maak een nieuw nieuwsbericht aan met de juiste 'is_sticky'-waarde
+    News::create([
+        'title' => $request->input('title'),
+        'content' => $request->input('content'),
+        'is_sticky' => $isSticky,
+    ]);
 
+    return redirect()->route('news.index')->with('success', 'News item created successfully.');
+}
+ 
     public function edit(News $news)
     {
         return view('news.edit', compact('news'));
     }
 
     public function update(Request $request, News $news)
-    {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required',
-        ]);
+{
+    $request->validate([
+        'title' => 'required|string|max:255',
+        'content' => 'required',
+    ]);
 
-        $news->update($request->all());
+    // Zorg ervoor dat 'is_sticky' wordt ingesteld op true (1) of false (0)
+    $isSticky = $request->has('is_sticky') ? 1 : 0;
 
-        return redirect()->route('news.index')->with('success', 'Nieuwsbericht succesvol bijgewerkt.');
-    }
+    // Update het nieuwsbericht inclusief de juiste 'is_sticky'-waarde
+    $news->update([
+        'title' => $request->input('title'),
+        'content' => $request->input('content'),
+        'is_sticky' => $isSticky,
+    ]);
+
+    return redirect()->route('news.index')->with('success', 'Nieuwsbericht succesvol bijgewerkt.');
+}
 
     public function destroy(News $news)
     {

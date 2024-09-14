@@ -126,6 +126,12 @@ class PlayerController extends Controller
                 'thumbnail' => 'nullable|image|max:2048',
             ]);
 
+            // Speciale behandeling voor de "Forfait" speler
+        if ($validatedData['first_name'] === 'Forfait') {
+            $validatedData['last_name'] = ''; // Laat achternaam leeg voor Forfait
+            $validatedData['team_id'] = null; // Eventueel team_id op null zetten
+        }
+
             $team = Team::find($validatedData['team_id']);
             $divisionId = $team ? $team->divisions->first()->id : null;
             $validatedData['division_id'] = $divisionId;
@@ -158,6 +164,13 @@ class PlayerController extends Controller
         // Haal de foto-URL op
         $imageUrl = $player->photo ? Storage::url('photos/' . $player->photo) : null;
         Log::info('Player photo URL retrieved.', ['image_url' => $imageUrl]);
+
+
+        // Controleer of de spelernaam "Forfait" is
+        if ($player->first_name === 'Forfait') {
+            Log::info('Forfait speler gevonden, geen verdere spelerinformatie nodig.');
+            return view('players.show', ['player' => $player, 'imageUrl' => $imageUrl]);
+        }
 
         // Haal alle seizoenen op
         $seasons = Season::all();
@@ -265,6 +278,13 @@ public function getRankingsByDivision(Player $player, Request $request, RankingS
                 $player->thumbnail = $thumbnailName;
             }
 
+            // Speciale behandeling voor de "Forfait" speler
+        $data = $request->only(['first_name', 'last_name', 'team_id']);
+        if ($data['first_name'] === 'Forfait') {
+            $data['last_name'] = ''; // Laat achternaam leeg voor Forfait
+            $data['team_id'] = null; // Team ID wordt verwijderd voor Forfait
+        }
+
             $player->update([
                 'first_name' => $request->first_name,
                 'last_name' => $request->last_name,
@@ -300,6 +320,13 @@ public function getRankingsByDivision(Player $player, Request $request, RankingS
 
     $standings = [];
     foreach ($players as $player) {
+        // Controleer of de speler een team heeft om fouten te voorkomen
+        if (!$player->team) {
+            // Log de speler zonder team voor later onderzoek
+            Log::warning('Speler zonder team gevonden', ['player_id' => $player->id, 'player_name' => $player->first_name . ' ' . $player->last_name]);
+            continue; // Sla deze speler over
+        }
+
         // Bereken de punten voor de geselecteerde seizoen
         $teamGamesHome = $player->team->gamesHome()
                              ->where('season_id', $seasonId)
@@ -347,6 +374,7 @@ public function getRankingsByDivision(Player $player, Request $request, RankingS
 
     return $standings;
 }
+
 
 
     public function getPlayersByTeam(Request $request)

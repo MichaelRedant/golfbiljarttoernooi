@@ -16,7 +16,8 @@
 
         <div class="form-group mb-3">
             <label for="content"><i class="fas fa-edit"></i> Inhoud:</label>
-            <textarea name="content" class="form-control" id="content" rows="10" required></textarea>
+            <div id="editor"></div>
+            <textarea name="content" id="hidden-content" class="form-control" rows="10" style="display: none;" required></textarea>
         </div>
 
         <div class="form-group mb-3 form-check form-check-inline">
@@ -30,4 +31,20 @@
         </div>
     </form>
 </div>
+
+<!-- Include Pell Editor CSS and JS from CDN -->
+<link rel="stylesheet" href="https://unpkg.com/pell/dist/pell.min.css">
+<script src="https://unpkg.com/pell"></script>
+
+<script>
+    // Initialize Pell Editor
+    var editor = pell.init({
+        element: document.getElementById('editor'),
+        onChange: function (html) {
+            document.getElementById('hidden-content').value = html;
+        },
+        defaultParagraphSeparator: 'p',
+        styleWithCSS: false
+    });
+</script>
 @endsection

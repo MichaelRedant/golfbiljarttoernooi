@@ -1,11 +1,9 @@
 <!-- resources/views/news/index.blade.php -->
-
 @extends('layouts.app')
 
 @section('content')
 <div class="container mt-4">
     <h1 class="mb-4"><i class="fas fa-newspaper"></i> Nieuwsbeheer</h1>
-    <a href="{{ route('news.create') }}" class="btn btn-primary mb-3"><i class="fas fa-plus"></i> Nieuw Nieuwsbericht</a>
 
     @if (session('success'))
         <div class="alert alert-success">
@@ -46,15 +44,6 @@
             @endforeach
         </tbody>
     </table>
+    <a href="{{ route('news.create') }}" class="btn btn-primary mb-3"><i class="fas fa-plus"></i> Nieuw Nieuwsbericht</a>
 </div>
 @endsection
-
-<style>
-    .table thead th {
-        background-color: #343a40;
-        color: #fff;
-    }
-    .btn-sm {
-        margin: 0 2px;
-    }
-</style>
