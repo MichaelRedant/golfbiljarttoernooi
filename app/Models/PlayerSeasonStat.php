@@ -22,6 +22,7 @@ class PlayerSeasonStat extends Model
         'manches_lost',
         'points',
         'division_id',
+        'matches_played'
     ];
 
     // Relatie naar de speler

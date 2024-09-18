@@ -20,26 +20,41 @@
             </form>
 
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="thead-dark">
+                <table class="table table-hover table-bordered">
+                    <thead class="thead-dark text-center">
                         <tr>
-                            <th>#</th>
-                            <th>Team</th>
+                            <th rowspan="2">#</th>
+                            <th rowspan="2">Team</th>
+                            <th colspan="4">Wedstrijden</th>
+                            <th colspan="2">Matchen</th>
+                            <th colspan="2">Manches</th>
+                            <th rowspan="2">Punten</th>
+                        </tr>
+                        <tr>
+                            <th>Gespeeld</th>
                             <th>Gewonnen</th>
                             <th>Verloren</th>
                             <th>Gelijk</th>
-                            <th>Punten</th>
+                            <th>Gewonnen</th>
+                            <th>Verloren</th>
+                            <th>Gewonnen</th>
+                            <th>Verloren</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="ranking-body">
                         @foreach ($standings as $index => $standing)
-                            <tr>
-                                <td>{{ $index + 1 }}</td>
+                            <tr class="table-row-hover">
+                                <td class="text-center">{{ $index + 1 }}</td>
                                 <td><a href="{{ route('teams.show', ['team' => $standing['team_id']]) }}">{{ $standing['team_name'] }}</a></td>
-                                <td>{{ $standing['games_won'] }}</td>
-                                <td>{{ $standing['games_lost'] }}</td>
-                                <td>{{ $standing['games_draw'] }}</td>
-                                <td>{{ $standing['points'] }}</td>
+                                <td class="text-center">{{ $standing['games_played'] }}</td>
+                                <td class="text-center">{{ $standing['games_won'] }}</td>
+                                <td class="text-center">{{ $standing['games_lost'] }}</td>
+                                <td class="text-center">{{ $standing['games_draw'] }}</td>
+                                <td class="text-center">{{ $standing['matches_won'] }}</td>
+                                <td class="text-center">{{ $standing['matches_lost'] }}</td>
+                                <td class="text-center">{{ $standing['manches_won'] }}</td>
+                                <td class="text-center">{{ $standing['manches_lost'] }}</td>
+                                <td class="text-center">{{ $standing['points'] }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -49,7 +64,67 @@
     </div>
 
     <div class="mt-4 text-center">
-        <a href="{{ route('rankings.index') }}" class="btn btn-secondary btn-lg w-100"><i class="fas fa-arrow-left"></i> Terug naar Overzicht</a>
+        <a href="{{ route('rankings.index') }}" class="btn btn-secondary btn-lg w-100">
+            <i class="fas fa-arrow-left"></i> Terug naar Overzicht
+        </a>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function sortTable() {
+            const table = document.querySelector('#ranking-body');
+            const rows = Array.from(table.querySelectorAll('tr'));
+
+            rows.sort((a, b) => {
+                const pointsA = parseInt(a.cells[10].innerText) || 0;
+                const pointsB = parseInt(b.cells[10].innerText) || 0;
+
+                if (pointsA !== pointsB) {
+                    return pointsB - pointsA; // Sorteren op punten
+                }
+
+                const gamesWonA = parseInt(a.cells[3].innerText) || 0;
+                const gamesWonB = parseInt(b.cells[3].innerText) || 0;
+
+                if (gamesWonA !== gamesWonB) {
+                    return gamesWonB - gamesWonA; // Sorteren op gewonnen wedstrijden
+                }
+
+                const matchesWonA = parseInt(a.cells[6].innerText) || 0;
+                const matchesWonB = parseInt(b.cells[6].innerText) || 0;
+
+                return matchesWonB - matchesWonA; // Sorteren op gewonnen matchen
+            });
+
+            // Plaats gesorteerde rijen opnieuw in de tabel
+            rows.forEach((row, index) => {
+                row.cells[0].innerText = index + 1; // Correcte nummering
+                table.appendChild(row);
+            });
+        }
+
+        sortTable();
+    });
+</script>
+@endsection
+
+@section('styles')
+<style>
+    /* Hover effect for table rows */
+    .table-row-hover:hover {
+        background-color: #f0f8ff;
+        transition: background-color 0.3s ease;
+    }
+
+    /* Center table text and style */
+    .table th, .table td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .table-bordered td, .table-bordered th {
+        border: 1px solid #dee2e6;
+    }
+</style>
 @endsection

@@ -8,7 +8,8 @@
         </div>
         <div class="card-body">
             <div class="mb-3">
-                <strong><i class="fas fa-users"></i> Team:</strong> <a href="{{ route('teams.show', $player->team_id) }}">{{ $player->team->name }}</a>
+                <strong><i class="fas fa-users"></i> Team:</strong> 
+                <a href="{{ route('teams.show', $player->team_id) }}">{{ $player->team->name }}</a>
             </div>
             <form action="{{ route('players.show', $player->id) }}" method="GET">
                 <div class="form-group">
@@ -35,16 +36,21 @@
 
             @if($playerStanding)
                 <div>
-                    <p><strong><i class="fas fa-trophy"></i> Gewonnen:</strong> {{ $playerStanding['matches_won'] }}</p>
-                    <p><strong><i class="fas fa-thumbs-down"></i> Verloren:</strong> {{ $playerStanding['matches_lost'] }}</p>
+                    <p><strong><i class="fas fa-trophy"></i> Gewonnen Wedstrijden:</strong> {{ $playerStanding['matches_won'] }}</p>
+                    <p><strong><i class="fas fa-thumbs-down"></i> Verloren Wedstrijden:</strong> {{ $playerStanding['matches_lost'] }}</p>
+                    <p><strong><i class="fas fa-medal"></i> Gewonnen Manches:</strong> {{ $playerStanding['manches_won'] }}</p>
+                    <p><strong><i class="fas fa-hand-paper"></i> Verloren Manches:</strong> {{ $playerStanding['manches_lost'] }}</p>
                     <p><strong><i class="fas fa-list-ol"></i> Plaats dit seizoen:</strong> {{ $playerRank }}</p>
+                    <p><strong><i class="fas fa-star"></i> Punten:</strong> {{ $playerStanding['points'] }}</p>
                 </div>
             @else
                 <p>Geen gegevens beschikbaar voor deze speler in dit seizoen.</p>
             @endif
 
             @if(auth()->user() && (auth()->user()->role === 'admin' || auth()->user()->role === 'speler'))
-                <a href="{{ route('players.edit', $player->id) }}" class="btn btn-primary"><i class="fas fa-edit"></i> Bewerk Speler</a>
+                <a href="{{ route('players.edit', $player->id) }}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Bewerk Speler
+                </a>
             @endif
             <a href="{{ url()->previous() }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Terug</a>
         </div>
@@ -65,7 +71,7 @@
     <!-- Spelers Ranking sectie -->
     <div class="card mt-4">
         <div class="card-header">
-            <h2><i class="fas fa-chart-line"></i> Spelers Rankings</h2>
+            <h3><i class="fas fa-chart-line"></i> Ranking van {{ $player->first_name }} {{ $player->last_name }}</h3>
         </div>
         <div class="card-body">
             <div id="rankingContent">
@@ -75,9 +81,12 @@
                             <th>Plaats Dit Seizoen</th>
                             <th>Naam</th>
                             <th>Team</th>
-                            <th>Gewonnen</th>
-                            <th>Verloren</th>
-                            <th>Punten</th>
+                            <th>Gsp.</th>
+                            <th>G.</th>
+                            <th>V.</th>
+                            <th>MG.</th>
+                            <th>MV.</th>
+                            <th>Pt.</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -86,8 +95,11 @@
                                 <td>{{ $index + 1 }}</td>
                                 <td><a href="{{ route('players.show', $standing['player_id']) }}">{{ $standing['player_name'] }}</a></td>
                                 <td><a href="{{ route('teams.show', $standing['team_id']) }}">{{ $standing['team_name'] }}</a></td>
+                                <td>{{ $standing['matches_played'] }}</td>
                                 <td>{{ $standing['matches_won'] }}</td>
                                 <td>{{ $standing['matches_lost'] }}</td>
+                                <td>{{ $standing['manches_won'] }}</td>
+                                <td>{{ $standing['manches_lost'] }}</td>
                                 <td>{{ $standing['points'] }}</td>
                             </tr>
                         @endforeach

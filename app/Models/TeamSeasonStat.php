@@ -15,6 +15,10 @@ class TeamSeasonStat extends Model
         'games_won',
         'games_lost',
         'games_draw',
+        'matches_won',      // Voeg dit veld toe
+        'matches_lost',     // Voeg dit veld toe
+        'manches_won',      // Voeg dit veld toe
+        'manches_lost',     // Voeg dit veld toe
         'points',
     ];
 

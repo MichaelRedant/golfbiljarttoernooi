@@ -104,30 +104,46 @@
         </button>
     </h2>
     <div class="collapse show" id="standingsCollapse">
-        <table class="table table-bordered table-striped">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Team</th>
-                    <th>Gewonnen</th>
-                    <th>Verloren</th>
-                    <th>Gelijk</th>
-                    <th>Punten</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($standings as $index => $standing)
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered">
+                <thead class="thead-dark text-center">
                     <tr>
-                        <td>{{ $index + 1 }}</td>
-                        <td><a href="{{ route('teams.show', ['team' => $standing['team_id']]) }}">{{ $standing['team_name'] }}</a></td>
-                        <td>{{ $standing['games_won'] }}</td>
-                        <td>{{ $standing['games_lost'] }}</td>
-                        <td>{{ $standing['games_draw'] }}</td>
-                        <td>{{ $standing['points'] }}</td>
+                        <th rowspan="2">#</th>
+                        <th rowspan="2">Team</th>
+                        <th colspan="4">Wedstrijden</th>
+                        <th colspan="2">Matchen</th>
+                        <th colspan="2">Manches</th>
+                        <th rowspan="2">Punten</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
+                    <tr>
+                        <th>Gespeeld</th>
+                        <th>Gewonnen</th>
+                        <th>Verloren</th>
+                        <th>Gelijk</th>
+                        <th>Gewonnen</th>
+                        <th>Verloren</th>
+                        <th>Gewonnen</th>
+                        <th>Verloren</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($standings as $index => $standing)
+                        <tr class="table-row-hover">
+                            <td class="text-center">{{ $index + 1 }}</td>
+                            <td><a href="{{ route('teams.show', ['team' => $standing['team_id']]) }}">{{ $standing['team_name'] }}</a></td>
+                            <td class="text-center">{{ $standing['games_played'] }}</td>
+                            <td class="text-center">{{ $standing['games_won'] }}</td>
+                            <td class="text-center">{{ $standing['games_lost'] }}</td>
+                            <td class="text-center">{{ $standing['games_draw'] }}</td>
+                            <td class="text-center">{{ $standing['matches_won'] }}</td>
+                            <td class="text-center">{{ $standing['matches_lost'] }}</td>
+                            <td class="text-center">{{ $standing['manches_won'] }}</td>
+                            <td class="text-center">{{ $standing['manches_lost'] }}</td>
+                            <td class="text-center">{{ $standing['points'] }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
     </div>
 
     <h2>
@@ -175,8 +191,8 @@
                                                     <i class="fas fa-play"></i> Spelen
                                                 </a>
                                             @else
-                                                 <!-- Als de wedstrijd goedgekeurd is of meer dan 27 uur geleden -->
-                                                 <a href="{{ route('games.show', $game->id) }}" class="btn btn-sm btn-primary">
+                                                <!-- Als de wedstrijd goedgekeurd is of meer dan 27 uur geleden -->
+                                                <a href="{{ route('games.show', $game->id) }}" class="btn btn-sm btn-primary">
                                                     <i class="fas fa-eye"></i> Bekijken
                                                 </a>
                                             @endif
@@ -208,3 +224,14 @@
         });
     });
 </script>
+<style>
+    /* Hover effect for table rows */
+    .table-row-hover:hover {
+        background-color: #f0f8ff;
+        transition: background-color 0.3s ease;
+    }
+
+    .table-bordered td, .table-bordered th {
+        border: 1px solid #dee2e6;
+    }
+</style>

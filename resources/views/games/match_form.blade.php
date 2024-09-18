@@ -27,25 +27,78 @@
         <input type="hidden" name="division_id" value="{{ $game->division_id }}">
         <input type="hidden" name="season_id" value="{{ $game->season_id }}">
 
-        <div class="form-group">
+        {{-- <div class="form-group">
             <label for="forfeit_team">Dit team geeft forfait:</label>
             <select class="form-control" id="forfeit_team" name="forfeit_team">
                 <option value="">Selecteer team</option>
                 <option value="home">{{ $game->homeTeam->name }}</option>
                 <option value="away">{{ $game->awayTeam->name }}</option>
             </select>
+        </div> --}}
+
+        <div class="card">
+            <div class="card-header">Kapiteins en reservespelers</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12 col-md-6 mb-2">
+                        <label>Kapitein {{ $game->homeTeam->name }}</label>
+                        <select class="form-control player-select" name="home_captain">
+                            <option value="">Speler</option>
+                            @foreach ($homeTeamPlayers as $player)
+                                <option value="{{ $player->id }}" {{ $player->id == optional($game->homeTeam->captain)->id ? 'selected' : '' }}>
+                                    {{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6 mb-2">
+                        <label>Kapitein {{ $game->awayTeam->name }}</label>
+                        <select class="form-control player-select" name="away_captain">
+                            <option value="">Speler</option>
+                            @foreach ($awayTeamPlayers as $player)
+                                <option value="{{ $player->id }}" {{ $player->id == optional($game->awayTeam->captain)->id ? 'selected' : '' }}>
+                                    {{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6 mb-2">
+                        <label>Reservespeler {{ $game->homeTeam->name }}</label>
+                        <select class="form-control player-select" name="home_reserve">
+                            <option value="">Speler</option>
+                            @foreach ($homeTeamPlayers as $player)
+                                <option value="{{ $player->id }}" {{ $player->id == optional($game->homeTeam->reserve)->id ? 'selected' : '' }}>
+                                    {{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6 mb-2">
+                        <label>Reservespeler {{ $game->awayTeam->name }}</label>
+                        <select class="form-control player-select" name="away_reserve">
+                            <option value="">Speler</option>
+                            @foreach ($awayTeamPlayers as $player)
+                                <option value="{{ $player->id }}" {{ $player->id == optional($game->awayTeam->reserve)->id ? 'selected' : '' }}>
+                                    {{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
         </div>
+
 
         <div id="scoreSection">
             <div class="card">
                 <div class="card-header">Wedstrijdscore</div>
                 <div class="card-body">
                     <div class="form-group">
-                        <label>Thuis score:</label>
+                        <label>Thuisploeg {{ $game->homeTeam->name }}:</label>
                         <input type="text" class="form-control" id="home_score" name="home_score" value="{{ $game->home_score ?? '0' }}" readonly>
                     </div>
                     <div class="form-group">
-                        <label>Uit score:</label>
+                        <label>Uit ploeg {{ $game->awayTeam->name }}:</label>
                         <input type="text" class="form-control" id="away_score" name="away_score" value="{{ $game->away_score ?? '0' }}" readonly>
                     </div>
                 </div>
@@ -61,65 +114,14 @@
                 });
             @endphp
 
-            <div class="card">
-                <div class="card-header">Kapiteins en reservespelers</div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-12 col-md-6 mb-2">
-                            <label>Kapitein {{ $game->homeTeam->name }}</label>
-                            <select class="form-control player-select" name="home_captain">
-                                <option value="">Speler</option>
-                                @foreach ($homeTeamPlayers as $player)
-                                    <option value="{{ $player->id }}" {{ $player->id == optional($game->homeTeam->captain)->id ? 'selected' : '' }}>
-                                        {{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-6 mb-2">
-                            <label>Kapitein {{ $game->awayTeam->name }}</label>
-                            <select class="form-control player-select" name="away_captain">
-                                <option value="">Speler</option>
-                                @foreach ($awayTeamPlayers as $player)
-                                    <option value="{{ $player->id }}" {{ $player->id == optional($game->awayTeam->captain)->id ? 'selected' : '' }}>
-                                        {{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-6 mb-2">
-                            <label>Reservespeler {{ $game->homeTeam->name }}</label>
-                            <select class="form-control player-select" name="home_reserve">
-                                <option value="">Speler</option>
-                                @foreach ($homeTeamPlayers as $player)
-                                    <option value="{{ $player->id }}" {{ $player->id == optional($game->homeTeam->reserve)->id ? 'selected' : '' }}>
-                                        {{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-6 mb-2">
-                            <label>Reservespeler {{ $game->awayTeam->name }}</label>
-                            <select class="form-control player-select" name="away_reserve">
-                                <option value="">Speler</option>
-                                @foreach ($awayTeamPlayers as $player)
-                                    <option value="{{ $player->id }}" {{ $player->id == optional($game->awayTeam->reserve)->id ? 'selected' : '' }}>
-                                        {{ $player->first_name }} {{ $player->last_name }} - {{ $player->team->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+            
             <div class="card">
                 <div class="card-header">Spelers en Scores</div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-bordered">
                             <thead>
-                                <tr>
+                                <tr class="responsive-small-text">
                                     <th>{{ $game->homeTeam->name }}</th>
                                     <th>Team</th>
                                     <th>{{ $game->awayTeam->name }}</th>
@@ -127,13 +129,12 @@
                                     <th>1M</th>
                                     <th>2M</th>
                                     <th>Belle</th>
-                                    <th>Uitslag</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @for ($i = 0; $i < 6; $i++)
                                 <tr>
-                                    <td>
+                                    <td data-label="{{ $game->homeTeam->name }}">
                                         <select class="form-control player-select wide-select" data-player-type="home" data-row-index="{{ $i }}" name="scores[{{ $i }}][home_player]">
                                             <option value="">Selecteer speler</option>
                                             @foreach ($sortedHomeTeamPlayers as $player)
@@ -142,8 +143,8 @@
                                             <option value="forfeit">Forfait</option>
                                         </select>
                                     </td>
-                                    <td class="small" id="home-team-{{ $i }}"></td>
-                                    <td>
+                                    <td class="small" data-label="Team" id="home-team-{{ $i }}"></td>
+                                    <td data-label="{{ $game->awayTeam->name }}">
                                         <select class="form-control player-select wide-select" data-player-type="away" data-row-index="{{ $i }}" name="scores[{{ $i }}][away_player]">
                                             <option value="">Selecteer speler</option>
                                             @foreach ($sortedAwayTeamPlayers as $player)
@@ -152,27 +153,24 @@
                                             <option value="forfeit">Forfait</option>
                                         </select>
                                     </td>
-                                    <td class="small" id="away-team-{{ $i }}"></td>
-                                    <td>
+                                    <td class="small" data-label="Team" id="away-team-{{ $i }}"></td>
+                                    <td data-label="1M">
                                         <input type="text" class="form-control manche" name="scores[{{ $i }}][1M]" maxlength="1" pattern="[12]" required>
                                     </td>
-                                    <td>
+                                    <td data-label="2M">
                                         <input type="text" class="form-control manche" name="scores[{{ $i }}][2M]" maxlength="1" pattern="[12]" required>
                                     </td>
-                                    <td>
+                                    <td data-label="Belle">
                                         <input type="text" class="form-control belle" name="scores[{{ $i }}][Belle]" maxlength="1" pattern="[12]" readonly>
                                     </td>
-                                    <td>
-                                        <input type="text" class="form-control result" readonly>
-                                    </td>
                                 </tr>
-                                
                                 @endfor
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
+            
         </div>
 
         <div class="text-center mt-4 mb-4">
@@ -367,26 +365,36 @@ document.addEventListener('DOMContentLoaded', function() {
             let homeSetsWon = 0;
             let awaySetsWon = 0;
 
+            // Verwerk de eerste manche
             if (firstMatchInput.value === '1') {
                 homeSetsWon++;
             } else if (firstMatchInput.value === '2') {
                 awaySetsWon++;
             }
 
+            // Verwerk de tweede manche
             if (secondMatchInput.value === '1') {
                 homeSetsWon++;
             } else if (secondMatchInput.value === '2') {
                 awaySetsWon++;
             }
 
-            if (homeSetsWon === 2 || awaySetsWon === 2) {
-                // Match beslist in twee sets
-            } else if (belleInput.value === '1') {
+            // Als de uitslagen van 1M en 2M niet gelijk zijn, activeer het belle-veld
+            if (firstMatchInput.value !== secondMatchInput.value) {
+                belleInput.removeAttribute('readonly');
+            } else {
+                belleInput.setAttribute('readonly', true);
+                belleInput.value = ''; // Reset de belle waarde als het niet nodig is
+            }
+
+            // Verwerk de uitslag op basis van de belle, indien ingevuld
+            if (belleInput.value === '1') {
                 homeSetsWon++;
             } else if (belleInput.value === '2') {
                 awaySetsWon++;
             }
 
+            // Bepaal de winnaar van de match
             if (homeSetsWon > awaySetsWon) {
                 homeScore++;
                 result = 'Thuis wint';
@@ -404,13 +412,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Update de verborgen inputs
+    // Update de verborgen inputs voor de totaalscore
     homeScoreInput.value = homeScore;
     awayScoreInput.value = awayScore;
 }
 
-
-
+// Eventlisteners toevoegen voor het verwerken van invoer
 rows.forEach(row => {
     const inputs = row.querySelectorAll('.manche, .belle');
     inputs.forEach(input => {
@@ -761,4 +768,62 @@ function updateTeamNames() {
 
 </script>
 
+@endsection
+@section('styles')
+<style>
+/* Zorg ervoor dat select elementen op mobiele apparaten goed werken */
+.player-select {
+    width: 100%;
+}
+
+.manche, .belle {
+    max-width: 50px;
+    text-align: center;
+}
+
+.table-responsive {
+    display: block;
+}
+
+@media (max-width: 767px) {
+    /* Verberg de originele header op mobiel */
+    .table thead {
+        display: none;
+    }
+
+    /* Zorg ervoor dat de tabel rijen worden gestapeld */
+    .table tbody tr {
+        display: block;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    /* Alle cellen worden onder elkaar weergegeven */
+    .table tbody tr td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        font-size: 0.875rem;
+        text-align: left;
+    }
+
+    /* Voeg labels toe voor de cellen in mobiele weergave */
+    .table tbody tr td:before {
+        content: attr(data-label);
+        font-weight: bold;
+        flex: 1;
+        padding-right: 10px;
+        color: #333;
+    }
+
+    /* Zorg ervoor dat inputs klein genoeg zijn op mobiel */
+    .form-control {
+        width: 100%;
+        font-size: 0.875rem;
+        padding: 0.4rem;
+    }
+}
+
+</style>
 @endsection

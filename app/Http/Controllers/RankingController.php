@@ -16,7 +16,7 @@ class RankingController extends Controller
     {
         $this->rankingService = $rankingService;
     }
-
+ 
     public function index(Request $request)
     {
         $seasons = Season::all();
@@ -28,23 +28,30 @@ class RankingController extends Controller
     }
 
     public function teamRankings(Request $request, Division $division)
-    {
-        $seasonId = $request->input('season_id', Season::latest()->first()->id);
-        $seasons = Season::all();
+{
+    $seasonId = $request->input('season_id', Season::latest()->first()->id);
+    $seasons = Season::all();
 
-        $standings = $this->rankingService->calculateDivisionStandings($division, $seasonId);
+    $standings = $this->rankingService->calculateDivisionStandings($division, $seasonId);
 
-        return view('rankings.teams', compact('division', 'standings', 'seasonId', 'seasons'));
-    }
+    // Log de standings voor debuggen
+    Log::info('Division Standings:', $standings);
 
-    public function playerRankings(Request $request, Division $division)
+    return view('rankings.teams', compact('division', 'standings', 'seasonId', 'seasons'));
+}
+
+
+
+public function playerRankings(Request $request, Division $division)
 {
     try {
         $seasonId = $request->input('season_id', Season::latest()->first()->id);
         $seasons = Season::all();
 
-        // Bereken de spelersklassementen via de aangepaste RankingService
         $standings = $this->rankingService->calculatePlayerStandings($division->id, $seasonId);
+
+        // Log de standings voor debuggen
+        Log::info('Player Standings:', $standings);
 
         return view('rankings.players', compact('division', 'seasonId', 'seasons', 'standings'));
     } catch (\Exception $e) {
@@ -52,6 +59,7 @@ class RankingController extends Controller
         return back()->withErrors('Er is een fout opgetreden bij het ophalen van het spelersklassement.');
     }
 }
+
 
 
 

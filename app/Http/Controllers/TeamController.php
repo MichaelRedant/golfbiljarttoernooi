@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Club;
-use App\Models\Team;
-use App\Models\Player;
-use App\Models\Season;
 use App\Models\Division;
-use Illuminate\Http\Request;
-use App\Services\TeamStatsService;
+use App\Models\Player;
+use App\Models\PlayerSeasonStat;
+use App\Models\Season;
+use App\Models\Team;
 use App\Services\RankingService;
+use App\Services\TeamStatsService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class TeamController extends Controller
@@ -103,10 +104,13 @@ public function show(Team $team, Request $request)
 {
     Log::info('TeamController@show reached', ['team' => $team]);
 
+    $error = null;
+
     // Haal het laatste seizoen op
     $latestSeason = Season::latest()->first();
     if (!$latestSeason) {
         Log::error('No active season found');
+        $error = 'Geen actief seizoen gevonden. Zorg ervoor dat er minstens één seizoen is toegevoegd.';
         return view('teams.show', [
             'team' => $team,
             'teamStats' => [],
@@ -116,21 +120,19 @@ public function show(Team $team, Request $request)
             'currentDivisionId' => null,
             'standings' => collect(),
             'currentTeamStanding' => null,
-            'players' => $team->players ?? collect(),
-            'error' => 'Geen actief seizoen gevonden. Zorg ervoor dat er minstens één seizoen is toegevoegd.'
+            'teamPlayerStats' => collect(), // Maak een lege collectie aan
+            'error' => $error
         ]);
     }
 
     // Gebruik het laatste seizoen en de bijbehorende divisie als standaard
     $currentSeasonId = $request->query('season_id', $latestSeason->id);
     $currentDivisionId = $request->query('division_id', $team->divisions->first()->id ?? null);
-    Log::info('Current season ID', ['currentSeasonId' => $currentSeasonId]);
-    Log::info('Current division ID', ['currentDivisionId' => $currentDivisionId]);
+    Log::info('Current season and division selected', ['currentSeasonId' => $currentSeasonId, 'currentDivisionId' => $currentDivisionId]);
 
     $seasons = Season::all();
     $divisions = $team->divisions;
-    Log::info('All seasons', ['seasons' => $seasons]);
-    Log::info('Team divisions', ['divisions' => $divisions]);
+    Log::info('Seasons and divisions loaded', ['seasons' => $seasons, 'divisions' => $divisions]);
 
     // Bereken de teamstatistieken voor het huidige seizoen en divisie
     $defaultStats = [
@@ -142,7 +144,7 @@ public function show(Team $team, Request $request)
 
     $teamStats = $team->calculateStatsForSeasonAndDivision($currentSeasonId, $currentDivisionId);
     $teamStats = array_merge($defaultStats, $teamStats ?? []);
-    Log::info('Team stats', ['teamStats' => $teamStats]);
+    Log::info('Team stats calculated', ['teamStats' => $teamStats]);
 
     // Bereken de standen van de divisie via de RankingService
     $division = Division::find($currentDivisionId);
@@ -153,15 +155,34 @@ public function show(Team $team, Request $request)
         $standings = app(RankingService::class)->calculateDivisionStandings($division, $currentSeasonId);
         $currentTeamStanding = collect($standings)->firstWhere('team_id', $team->id);
     }
-    Log::info('Division and standings', ['division' => $division, 'standings' => $standings, 'currentTeamStanding' => $currentTeamStanding]);
 
-    $players = $team->players ?? collect();
-    Log::info('Team players', ['players' => $players]);
+    Log::info('Division standings calculated', ['standings' => $standings, 'currentTeamStanding' => $currentTeamStanding]);
 
-    $error = null; // Initialize error variable
+    // Haal de spelerstatistieken op via de RankingService
+    $playerStats = app(RankingService::class)->calculatePlayerStandingsForAllDivisions($team, $currentSeasonId);
+    
+    // Filter de spelerstatistieken zodat alleen de spelers van het team getoond worden
+    $teamPlayerStats = collect($playerStats)->filter(function($playerStat) use ($team) {
+        return $playerStat['team_id'] === $team->id;
+    })->values();
 
-    return view('teams.show', compact('team', 'teamStats', 'seasons', 'divisions', 'currentSeasonId', 'currentDivisionId', 'standings', 'currentTeamStanding', 'players', 'error'));
+    Log::info('Player stats for the team', ['teamPlayerStats' => $teamPlayerStats]);
+
+    // Return de view met de correcte variabelen
+    return view('teams.show', compact(
+        'team',
+        'teamStats', 
+        'seasons', 
+        'divisions', 
+        'currentSeasonId', 
+        'currentDivisionId', 
+        'standings', 
+        'currentTeamStanding', 
+        'teamPlayerStats', 
+        'error'
+    ));
 }
+
 
 
 
