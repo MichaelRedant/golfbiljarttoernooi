@@ -149,13 +149,14 @@
         </div>
     </div>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('selectAll').addEventListener('change', function (e) {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][name="game_ids[]"]');
+            checkboxes.forEach(checkbox => checkbox.checked = e.target.checked);
+        });
+    });
+    </script>
 @endsection
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    document.getElementById('selectAll').addEventListener('change', function (e) {
-        const checkboxes = document.querySelectorAll('input[type="checkbox"][name="game_ids[]"]');
-        checkboxes.forEach(checkbox => checkbox.checked = e.target.checked);
-    });
-});
-</script>
+

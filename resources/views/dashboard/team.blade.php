@@ -156,8 +156,6 @@
         @endif
     </div>
 </div>
-
-@section('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Toggle the chevron icon on collapse
@@ -171,5 +169,5 @@
         $('#upcoming-games-list').collapse('hide');
     });
 </script>
-@endsection
+
 @endsection

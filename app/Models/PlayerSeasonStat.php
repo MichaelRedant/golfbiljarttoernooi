@@ -24,7 +24,7 @@ class PlayerSeasonStat extends Model
         'division_id',
         'matches_played'
     ];
-
+ 
     // Relatie naar de speler
     public function player()
     {

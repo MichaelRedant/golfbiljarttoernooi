@@ -27,14 +27,14 @@
         <input type="hidden" name="division_id" value="{{ $game->division_id }}">
         <input type="hidden" name="season_id" value="{{ $game->season_id }}">
 
-        {{-- <div class="form-group">
+        <div class="form-group">
             <label for="forfeit_team">Dit team geeft forfait:</label>
             <select class="form-control" id="forfeit_team" name="forfeit_team">
                 <option value="">Selecteer team</option>
                 <option value="home">{{ $game->homeTeam->name }}</option>
                 <option value="away">{{ $game->awayTeam->name }}</option>
             </select>
-        </div> --}}
+        </div>
 
         <div class="card">
             <div class="card-header">Kapiteins en reservespelers</div>

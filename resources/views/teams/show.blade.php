@@ -66,15 +66,7 @@
                 <p><strong><i class="fas fa-thumbs-down"></i> Verloren:</strong> {{ $currentTeamStanding['games_lost'] ?? 'N/A' }}</p>
                 <p><strong><i class="fas fa-handshake"></i > Gelijk:</strong> {{ $currentTeamStanding['games_draw'] ?? 'N/A' }}</p>
                 <p><strong><i class="fas fa-star"></i> Totaal Punten:</strong> {{ $currentTeamStanding['points'] ?? 'N/A' }}</p>
-                <p><strong><i class="fas fa-medal"></i> Plaats dit seizoen:</strong>
-                    <span id="current-team-rank">
-                        @foreach ($standings as $index => $standing)
-                            @if($standing['team_id'] == $team->id)
-                                {{ $index + 1 }}
-                            @endif
-                        @endforeach
-                    </span>
-                </p>
+
             @endif
         </div>
         <div class="card-footer d-flex justify-content-between">
@@ -190,7 +182,7 @@
 </div>
 
 <script>
-   document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function() {
     function sortTable() {
         const table = document.querySelector('#ranking-body');
         const rows = Array.from(table.querySelectorAll('tr'));
@@ -216,22 +208,15 @@
             return matchesWonB - matchesWonA; // Sorteren op gewonnen matchen
         });
 
-        // Correcte nummering bijwerken en rijen toevoegen aan de tabel
         rows.forEach((row, index) => {
             row.cells[0].innerText = index + 1; // Bijwerken van de rang in de eerste kolom
             table.appendChild(row);
         });
-
-        // Werk de plaats dit seizoen bij voor het huidige team
-        const currentTeamRow = rows.find(row => row.querySelector('td a').href.includes('{{ $team->id }}'));
-        if (currentTeamRow) {
-            const currentPosition = currentTeamRow.cells[0].innerText;
-            document.getElementById('current-team-rank').innerText = currentPosition;
-        }
     }
 
     sortTable();
 });
+
 
 </script>
 @endsection

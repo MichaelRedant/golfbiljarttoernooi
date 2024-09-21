@@ -20,7 +20,7 @@ class TeamSeasonStat extends Model
         'manches_won',      // Voeg dit veld toe
         'manches_lost',     // Voeg dit veld toe
         'points',
-    ];
+    ]; 
 
     // Relatie naar Team
     public function team()

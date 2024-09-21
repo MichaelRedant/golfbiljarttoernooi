@@ -13,136 +13,131 @@ use Illuminate\Support\Facades\Log;
 
 {
     public function updateTeamStats(Game $game)
-    {
-        $homeWins = $game->home_score; 
-        $awayWins = $game->away_score; 
-        $seasonId = $game->season_id;
-        
-        // Zoek of creëer teamstatistieken voor het thuis- en uitteam
-        $homeTeamStats = TeamSeasonStat::firstOrNew([
-            'team_id' => $game->home_team_id,
-            'season_id' => $seasonId,
-        ]);
+{
+    $homeWins = $game->home_score ?? 0; // Voeg standaardwaarden toe om null te vermijden
+    $awayWins = $game->away_score ?? 0;
+    $seasonId = $game->season_id ?? null;
 
-        $awayTeamStats = TeamSeasonStat::firstOrNew([
-            'team_id' => $game->away_team_id,
-            'season_id' => $seasonId,
-        ]);
+    if (!$seasonId) {
+        Log::error('Season ID is null for the game', ['game_id' => $game->id]);
+        return; // Return early if seasonId is missing
+    }
 
-        // **1. Teamscores bijwerken**
-        // Deze logica wordt gebruikt om te bepalen wie de wedstrijd (teamniveau) heeft gewonnen, verloren of gelijkgespeeld.
-        if ($game->home_score > $game->away_score) {
-            // Thuisteam wint
-            $homeTeamStats->games_won += 1;
-            $awayTeamStats->games_lost += 1;
-            $homeTeamStats->points += 2; // 2 punten voor gewonnen
-        } elseif ($game->home_score < $game->away_score) {
-            // Uitteam wint
-            $awayTeamStats->games_won += 1;
-            $homeTeamStats->games_lost += 1;
-            $awayTeamStats->points += 2; // 2 punten voor gewonnen
-        } else {
-            // Gelijkspel
-            $homeTeamStats->games_draw += 1;
-            $awayTeamStats->games_draw += 1;
-            $homeTeamStats->points += 1;
-            $awayTeamStats->points += 1;
+    // Zoek of creëer teamstatistieken voor het thuis- en uitteam
+    $homeTeamStats = TeamSeasonStat::firstOrNew([
+        'team_id' => $game->home_team_id,
+        'season_id' => $seasonId,
+    ]);
+
+    $awayTeamStats = TeamSeasonStat::firstOrNew([
+        'team_id' => $game->away_team_id,
+        'season_id' => $seasonId,
+    ]);
+
+    // **1. Teamscores bijwerken**
+    if ($homeWins > $awayWins) {
+        $homeTeamStats->games_won += 1;
+        $awayTeamStats->games_lost += 1;
+        $homeTeamStats->points += 2;
+    } elseif ($homeWins < $awayWins) {
+        $awayTeamStats->games_won += 1;
+        $homeTeamStats->games_lost += 1;
+        $awayTeamStats->points += 2;
+    } else {
+        $homeTeamStats->games_draw += 1;
+        $awayTeamStats->games_draw += 1;
+        $homeTeamStats->points += 1;
+        $awayTeamStats->points += 1;
+    }
+
+    // **2. Match en Manche Statistieken bijwerken**
+    $homeMatchesWon = 0;
+    $awayMatchesWon = 0;
+    $homeManchesWon = 0;
+    $awayManchesWon = 0;
+    $totalMatches = count($game->live_data['scores'] ?? []); // Controleer of scores bestaan
+    $totalManches = $totalMatches * 2; // Standaard twee manches per match (Belle optioneel)
+
+    foreach ($game->live_data['scores'] ?? [] as $score) { // Loop door scores als ze bestaan
+        // Controleer op null voor elke waarde voordat je ermee werkt
+        if (!empty($score['1M'])) {
+            $score['1M'] == '1' ? $homeManchesWon++ : $awayManchesWon++;
         }
 
-        // **2. Match en Manche Statistieken bijwerken**
-        $homeMatchesWon = 0;
-        $awayMatchesWon = 0;
-        $homeManchesWon = 0;
-        $awayManchesWon = 0;
-        $totalMatches = count($game->live_data['scores']); // Aantal matches in de wedstrijd
-        $totalManches = $totalMatches * 2; // Standaard twee manches per match (Belle optioneel)
+        if (!empty($score['2M'])) {
+            $score['2M'] == '1' ? $homeManchesWon++ : $awayManchesWon++;
+        }
 
-        foreach ($game->live_data['scores'] as $score) {
-            // Manches per match bijwerken
-            if ($score['1M'] == '1') {
-                $homeManchesWon++;
-            } elseif ($score['1M'] == '2') {
-                $awayManchesWon++;
-            }
+        if (!empty($score['Belle'])) {
+            $score['Belle'] == '1' ? $homeManchesWon++ : $awayManchesWon++;
+        }
 
-            if ($score['2M'] == '1') {
-                $homeManchesWon++;
-            } elseif ($score['2M'] == '2') {
-                $awayManchesWon++;
-            }
-
-            // Verwerk Belle
-            if (isset($score['Belle']) && $score['Belle'] !== "") {
-                if ($score['Belle'] == '1') {
-                    $homeManchesWon++;
-                } elseif ($score['Belle'] == '2') {
-                    $awayManchesWon++;
-                }
-            }
-
-            // Bepaal winnaar van de match
+        // Bepaal winnaar van de match
+        if (!empty($score['WinnerId'])) {
             if ($score['WinnerId'] == $game->home_team_id) {
                 $homeMatchesWon++;
             } elseif ($score['WinnerId'] == $game->away_team_id) {
                 $awayMatchesWon++;
             }
         }
-
-        // Update statistieken voor thuis- en uitteam
-        $homeTeamStats->matches_won += $homeMatchesWon;
-        $homeTeamStats->matches_lost += ($totalMatches - $homeMatchesWon);
-        $homeTeamStats->manches_won += $homeManchesWon;
-        $homeTeamStats->manches_lost += ($totalManches - $homeManchesWon);
-
-        $awayTeamStats->matches_won += $awayMatchesWon;
-        $awayTeamStats->matches_lost += ($totalMatches - $awayMatchesWon);
-        $awayTeamStats->manches_won += $awayManchesWon;
-        $awayTeamStats->manches_lost += ($totalManches - $awayManchesWon);
-
-        // Sla de bijgewerkte statistieken op
-        $homeTeamStats->save();
-        $awayTeamStats->save();
     }
 
+    // Update statistieken voor thuis- en uitteam
+    $homeTeamStats->matches_won += $homeMatchesWon;
+    $homeTeamStats->matches_lost += ($totalMatches - $homeMatchesWon);
+    $homeTeamStats->manches_won += $homeManchesWon;
+    $homeTeamStats->manches_lost += ($totalManches - $homeManchesWon);
+
+    $awayTeamStats->matches_won += $awayMatchesWon;
+    $awayTeamStats->matches_lost += ($totalMatches - $awayMatchesWon);
+    $awayTeamStats->manches_won += $awayManchesWon;
+    $awayTeamStats->manches_lost += ($totalManches - $awayManchesWon);
+
+    $homeTeamStats->save();
+    $awayTeamStats->save();
+}
 
 
-    public function updatePlayerStats(Game $game)
+
+public function updatePlayerStats(Game $game)
 {
     Log::info('Starting updatePlayerStats', ['game_id' => $game->id]);
 
-    $seasonId = $game->season_id;
-    $divisionId = $game->division_id;  // Voeg division_id toe
+    $seasonId = $game->season_id ?? null;
+    $divisionId = $game->division_id ?? null;
+    
+    if (!$seasonId || !$divisionId) {
+        Log::error('Missing season or division ID for game', ['game_id' => $game->id]);
+        return;
+    }
+
     $playerMatchStats = [];
     $playerMancheStats = [];
     $processedPlayers = [];
 
     foreach ($game->manches as $manche) {
-        $winnerId = $manche->winner_id;
+        $winnerId = $manche->winner_id ?? null;
         $loserId = $winnerId === $manche->player1_id ? $manche->player2_id : $manche->player1_id;
 
-        // Voeg de spelers toe aan de lijst van verwerkte spelers
-        $processedPlayers[] = $manche->player1_id;
-        $processedPlayers[] = $manche->player2_id;
+        if (!$winnerId || !$loserId) {
+            Log::warning('Missing winner or loser ID for manche', ['manche_id' => $manche->id]);
+            continue; // Skip if there's no winner or loser
+        }
+
+        $processedPlayers[] = $manche->player1_id ?? 0;
+        $processedPlayers[] = $manche->player2_id ?? 0;
 
         // Initialiseer de arrays als ze nog niet bestaan
-        if (!isset($playerMancheStats[$winnerId])) {
-            $playerMancheStats[$winnerId] = ['manches_won' => 0, 'manches_lost' => 0];
-        }
-        if (!isset($playerMancheStats[$loserId])) {
-            $playerMancheStats[$loserId] = ['manches_won' => 0, 'manches_lost' => 0];
-        }
+        $playerMancheStats[$winnerId] = $playerMancheStats[$winnerId] ?? ['manches_won' => 0, 'manches_lost' => 0];
+        $playerMancheStats[$loserId] = $playerMancheStats[$loserId] ?? ['manches_won' => 0, 'manches_lost' => 0];
 
         // Werk de manche-statistieken bij
         $playerMancheStats[$winnerId]['manches_won']++;
         $playerMancheStats[$loserId]['manches_lost']++;
 
         // Initialiseer de match arrays als ze nog niet bestaan
-        if (!isset($playerMatchStats[$winnerId])) {
-            $playerMatchStats[$winnerId] = ['matches_won' => 0, 'matches_lost' => 0, 'points' => 0];
-        }
-        if (!isset($playerMatchStats[$loserId])) {
-            $playerMatchStats[$loserId] = ['matches_won' => 0, 'matches_lost' => 0, 'points' => 0];
-        }
+        $playerMatchStats[$winnerId] = $playerMatchStats[$winnerId] ?? ['matches_won' => 0, 'matches_lost' => 0, 'points' => 0];
+        $playerMatchStats[$loserId] = $playerMatchStats[$loserId] ?? ['matches_won' => 0, 'matches_lost' => 0, 'points' => 0];
 
         // Werk de match-statistieken bij
         $playerMatchStats[$winnerId]['matches_won']++;
@@ -150,25 +145,21 @@ use Illuminate\Support\Facades\Log;
         $playerMatchStats[$loserId]['matches_lost']++;
     }
 
-    // Beveiliging: Controleer of alle 12 spelers zijn verwerkt
-    $expectedPlayerCount = 12; // 6 van het thuisteam en 6 van het uitteam
     $uniqueProcessedPlayers = array_unique($processedPlayers);
-
-    if (count($uniqueProcessedPlayers) !== $expectedPlayerCount) {
+    if (count($uniqueProcessedPlayers) !== 12) {
         Log::error('Mismatch in the number of processed players.', [
-            'expected' => $expectedPlayerCount,
+            'expected' => 12,
             'actual' => count($uniqueProcessedPlayers),
             'processed_players' => $uniqueProcessedPlayers
         ]);
         throw new \Exception('Niet alle spelers zijn correct verwerkt.');
     }
 
-    // Update de database met de verzamelde statistieken
     foreach ($playerMatchStats as $playerId => $stats) {
         $playerStats = PlayerSeasonStat::firstOrNew([
             'player_id' => $playerId,
             'season_id' => $seasonId,
-            'division_id' => $divisionId  // Zorg ervoor dat division_id wordt toegevoegd
+            'division_id' => $divisionId
         ]);
 
         $playerStats->matches_won += $stats['matches_won'];
@@ -176,13 +167,11 @@ use Illuminate\Support\Facades\Log;
         $playerStats->points += $stats['points'];
         $playerStats->save();
 
-        Log::info('Database updated for matches and points (season)', [
+        Log::info('Database updated for matches and points', [
             'player_id' => $playerId,
             'matches_won' => $playerStats->matches_won,
             'matches_lost' => $playerStats->matches_lost,
-            'points' => $playerStats->points,
-            'season_id' => $seasonId,
-            'division_id' => $divisionId
+            'points' => $playerStats->points
         ]);
     }
 
@@ -190,24 +179,23 @@ use Illuminate\Support\Facades\Log;
         $playerStats = PlayerSeasonStat::firstOrNew([
             'player_id' => $playerId,
             'season_id' => $seasonId,
-            'division_id' => $divisionId  // Zorg ervoor dat division_id wordt toegevoegd
+            'division_id' => $divisionId
         ]);
 
         $playerStats->manches_won += $stats['manches_won'];
         $playerStats->manches_lost += $stats['manches_lost'];
         $playerStats->save();
 
-        Log::info('Database updated for manches (season)', [
+        Log::info('Database updated for manches', [
             'player_id' => $playerId,
             'manches_won' => $playerStats->manches_won,
-            'manches_lost' => $playerStats->manches_lost,
-            'season_id' => $seasonId,
-            'division_id' => $divisionId
+            'manches_lost' => $playerStats->manches_lost
         ]);
     }
 
     Log::info('Finished updatePlayerStats', ['game_id' => $game->id]);
 }
+
 
 public function calculateDivisionStandings(Division $division, $seasonId)
 {
