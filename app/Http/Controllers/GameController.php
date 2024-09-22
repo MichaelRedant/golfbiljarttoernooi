@@ -182,16 +182,20 @@ public function edit(Game $game)
         return redirect()->route('games.show', $game->id)->withErrors(['msg' => 'Je bent niet bevoegd om deze wedstrijd te bewerken.']);
     }
 
-    // Laad de nodige relaties: thuisteam, uitteam en manches met spelers
-    $game->load(['homeTeam', 'awayTeam', 'manches.player1', 'manches.player2']);
+    // Laad de benodigde relaties voor het game object
+    $game->load(['homeTeam.club.teams.players', 'awayTeam.club.teams.players', 'manches.player1', 'manches.player2']);
 
-    // Haal alle spelers van het thuis- en uitteam op
-    $homeTeamPlayers = $game->homeTeam->players;
-    $awayTeamPlayers = $game->awayTeam->players;
+    // Haal alle spelers van het thuis- en uitteam op inclusief spelers van alle teams binnen de clubs
+    $homeTeamPlayers = $game->homeTeam->club->teams->flatMap(function ($team) {
+        return $team->players;
+    })->unique('id');
 
-    // Voeg spelers toe die niet bij het thuis- of uitteam horen, maar wel in de manches voorkomen
+    $awayTeamPlayers = $game->awayTeam->club->teams->flatMap(function ($team) {
+        return $team->players;
+    })->unique('id');
+
+    // Voeg spelers toe die in de manches voorkomen maar niet in de huidige teamselectie zitten
     $additionalPlayers = collect();
-
     foreach ($game->manches as $manche) {
         if ($manche->player1 && !$homeTeamPlayers->contains($manche->player1) && !$awayTeamPlayers->contains($manche->player1)) {
             $additionalPlayers->push($manche->player1);
@@ -210,8 +214,9 @@ public function edit(Game $game)
 
     $scores = [];
 
-    // Als er recente wijzigingen zijn in de manches, gebruik die gegevens
+    // Controleer of er recente wijzigingen zijn in de manches
     if ($mostRecentManche && $mostRecentManche->updated_at > ($game->updated_at ?? now())) {
+        // Gebruik actuele gegevens van de manches
         foreach ($game->manches as $manche) {
             $homePlayerName = optional($manche->player1)->first_name . ' ' . optional($manche->player1)->last_name;
             $awayPlayerName = optional($manche->player2)->first_name . ' ' . optional($manche->player2)->last_name;
@@ -230,16 +235,16 @@ public function edit(Game $game)
             ];
         }
     } else {
-        // Anders gebruik de LiveScore gegevens
+        // Gebruik de opgeslagen LiveScore gegevens indien beschikbaar
         $liveScore = LiveScore::where('game_id', $game->id)->first();
         $liveData = $liveScore ? json_decode($liveScore->data, true) : null;
 
         if ($liveData && isset($liveData['scores'])) {
             foreach ($liveData['scores'] as $score) {
-                // Zoek de juiste teamnaam voor de speler
+                // Zoek de juiste teamnaam voor de speler op basis van de opgeslagen gegevens
                 $homePlayerTeamName = $this->getPlayerActualTeamName($score['home_player_name']);
                 $awayPlayerTeamName = $this->getPlayerActualTeamName($score['away_player_name']);
-                
+
                 $scores[] = [
                     'home_player_name' => $score['home_player_name'] ?? 'Onbekend',
                     'home_player_team' => $homePlayerTeamName,
@@ -253,10 +258,9 @@ public function edit(Game $game)
         }
     }
 
+    // Retourneer de view met de benodigde data om alle velden aan te kunnen passen
     return view('games.edit', compact('game', 'homeTeamPlayers', 'awayTeamPlayers', 'scores'));
 }
-
-
 
 
 public function update(Request $request, Game $game)
@@ -307,30 +311,46 @@ public function update(Request $request, Game $game)
     // Update game data
     $game->update($validatedData);
 
-    // If not a forfeit, update manches
-    if (!$request->filled('forfeit_by') && isset($validatedData['manches'])) {
-        foreach ($validatedData['manches'] as $index => $mancheData) {
-            Manche::updateOrCreate(
-                [
-                    'game_id' => $game->id,
-                    'number' => $index + 1,
-                ],
-                [
-                    'player1_id' => $mancheData['player1_id'],
-                    'player2_id' => $mancheData['player2_id'],
-                    'score1' => $mancheData['score1'],
-                    'score2' => $mancheData['score2'],
-                    'belle_score' => $mancheData['belle_score'] ?? null,
-                ]
-            );
+    // Als de gebruiker admin is, zet away_team_approved direct op true
+    $user = auth()->user();
+    if ($user->role === 'admin') {
+        $game->away_team_approved = true;
+        $game->save();
+    } else {
+        // Normale goedkeuringslogica voor niet-admin gebruikers
+        // If not a forfeit, update manches
+        if (!$request->filled('forfeit_by') && isset($validatedData['manches'])) {
+            // Verwijder bestaande manches voor deze wedstrijd
+            Manche::where('game_id', $game->id)->delete();
+
+            foreach ($validatedData['manches'] as $index => $mancheData) {
+                Manche::updateOrCreate(
+                    [
+                        'game_id' => $game->id,
+                        'number' => $index + 1,
+                    ],
+                    [
+                        'player1_id' => $mancheData['player1_id'],
+                        'player2_id' => $mancheData['player2_id'],
+                        'score1' => $mancheData['score1'],
+                        'score2' => $mancheData['score2'],
+                        'belle_score' => $mancheData['belle_score'] ?? null,
+                    ]
+                );
+            }
         }
     }
 
-    // Update the LiveScore data
+    // Update de statistieken van spelers en teams na de update van de wedstrijd
+    $this->updatePlayerStats($game);
+    $this->updateGameStats($game);
+
+    // Update de LiveScore data
     $this->updateLiveScore(null, $game);
 
     return redirect()->route('games.for-division-season', ['division_id' => $game->division_id, 'season_id' => $game->season_id])->with('success', 'Wedstrijd succesvol bijgewerkt!');
 }
+
 
 
 
@@ -1754,29 +1774,32 @@ public function showGamesForDivisionAndSeason(Request $request, $division_id, $s
     }
 
     public function editForm(Game $game)
-    {
-        $game->load([
-            'homeTeam' => function ($query) {
-                $query->with(['club.teams.players']);
-            },
-            'awayTeam' => function ($query) {
-                $query->with(['club.teams.players']);
-            },
-            'manches', 
-            'belles'
-        ]);
+{
+    // Laad de benodigde relaties voor de wedstrijd en spelers
+    $game->load([
+        'homeTeam' => function ($query) {
+            $query->with(['club.teams.players']);
+        },
+        'awayTeam' => function ($query) {
+            $query->with(['club.teams.players']);
+        },
+        'manches', 
+        'belles'
+    ]);
 
-        $homeTeamPlayers = $game->homeTeam->club->teams->flatMap(function ($team) {
-            return $team->players;
-        })->unique('id');
+    // Haal alle spelers van het thuisteam en teams binnen dezelfde club op
+    $homeTeamPlayers = $game->homeTeam->club->teams->flatMap(function ($team) {
+        return $team->players;
+    })->unique('id');
 
-        $awayTeamPlayers = $game->awayTeam->club->teams->flatMap(function ($team) {
-            return $team->players;
-        })->unique('id');
+    // Haal alle spelers van het uitteam en teams binnen dezelfde club op
+    $awayTeamPlayers = $game->awayTeam->club->teams->flatMap(function ($team) {
+        return $team->players;
+    })->unique('id');
 
-        return view('games.match_form', compact('game', 'homeTeamPlayers', 'awayTeamPlayers'));
-    }
-
+    // Toon de bewerkingspagina voor de wedstrijd met alle spelers en gegevens
+    return view('games.match_form', compact('game', 'homeTeamPlayers', 'awayTeamPlayers'));
+}
     public function play(Game $game)
     {
         $this->authorize('update', $game);
