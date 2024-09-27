@@ -9,14 +9,19 @@ use App\Models\Team;
 use App\Models\Season;
 use App\Models\Division;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use App\Services\GameService;
 use App\Services\RankingService;
+use Illuminate\Support\Facades\Log;
+
 class DivisionController extends Controller
 {
     protected $rankingService;
-    public function __construct(RankingService $rankingService)
+    protected $gameService;
+
+    public function __construct(RankingService $rankingService, GameService $gameService)
     {
         $this->rankingService = $rankingService;
+        $this->gameService = $gameService;
     }
     public function index()
     {
@@ -66,24 +71,20 @@ class DivisionController extends Controller
 
         $gamesByDate = $games->groupBy('date');
 
-        $now = Carbon::now('Europe/Brussels');
+        // Gebruik de GameService om te bepalen of de wedstrijd gestart kan worden
         foreach ($games as $game) {
-            $limitTime = Carbon::parse($game->date)->addHours(3);
-            
-            // De wedstrijd is nog speelbaar als deze nog niet is goedgekeurd, ongeacht het tijdstip
-            $game->canStillBePlayed = !$game->is_approved || $now->lessThan($limitTime);
+            $game->can_start = $this->gameService->canStartGame($game);
 
+            // Log de status van de wedstrijd
             Log::info('Game Details', [
                 'game_id' => $game->id,
                 'game_date' => $game->date,
-                'limit_time' => $limitTime,
                 'is_approved' => $game->is_approved,
-                'canStillBePlayed' => $game->canStillBePlayed,
+                'can_start' => $game->can_start,
             ]);
         }
 
-        $rankingService = new RankingService();
-        $standings = $rankingService->calculateDivisionStandings($division, $currentSeasonId);
+        $standings = $this->rankingService->calculateDivisionStandings($division, $currentSeasonId);
 
         Log::info('Division data retrieved', [
             'games_count' => $games->count(),
@@ -97,9 +98,6 @@ class DivisionController extends Controller
         return response()->view('errors.500', [], 500);
     }
 }
-
-
-
 
     public function getTeamsByDivision($divisionId)
     {

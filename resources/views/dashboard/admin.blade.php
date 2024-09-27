@@ -1,11 +1,5 @@
 @extends('layouts.app')
 
-@section('header')
-<h2 class="font-semibold text-xl leading-tight">
-    {{ __('Dashboard') }}
-</h2>
-@endsection
-
 @section('content')
 <div class="container py-5">
     <div class="row">
@@ -88,22 +82,8 @@
             </div>
         </div>
 
-        <div class="col-md-12">
-            <div class="card mb-4 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-ad"></i> Sponsorbeheer</h5>
-                    <a href="{{ route('sponsors.index') }}" class="btn btn-outline-secondary d-block mb-2">
-                        <i class="fas fa-eye"></i> Bekijk Sponsors
-                    </a>
-                    <a href="{{ route('sponsors.create') }}" class="btn btn-outline-secondary d-block mb-2">
-                        <i class="fas fa-plus"></i> Voeg Sponsor Toe
-                    </a>
-                </div>
-            </div>
-        </div>
-
-         <!-- Wachtende Goedkeuringen van vandaag en gisteren -->
-         <div class="col-md-12 mb-4">
+        <!-- Wachtende Goedkeuringen van vandaag en gisteren -->
+        <div class="col-md-12 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title">
@@ -119,26 +99,26 @@
                             <ul class="list-group list-group-flush">
                                 @foreach($pendingGames as $pendingGame)
                                     @if($pendingGame->homeTeam && $pendingGame->awayTeam)
-                                    <li class="list-group-item d-flex justify-content-between align-items-center p-1">
-                                        <span>
-                                            <a href="{{ route('teams.show', $pendingGame->homeTeam->id) }}" class="{{ $pendingGame->home_score > $pendingGame->away_score ? 'font-weight-bold' : '' }}">
-                                                {{ $pendingGame->homeTeam->name }}
-                                            </a>
-                                            vs
-                                            <a href="{{ route('teams.show', $pendingGame->awayTeam->id) }}" class="{{ $pendingGame->away_score > $pendingGame->home_score ? 'font-weight-bold' : '' }}">
-                                                {{ $pendingGame->awayTeam->name }}
-                                            </a>
-                                            ({{ $pendingGame->home_score ?? 0 }} - {{ $pendingGame->away_score ?? 0 }})
-                                            <span class="ml-2">{{ \Carbon\Carbon::parse($pendingGame->date)->format('d-m-Y') }}</span>
-                                        </span>
-                                    
-                                        @php
-                                            $liveScore = \App\Models\LiveScore::where('game_id', $pendingGame->id)->first();
-                                            $forfeitTeam = $liveScore ? json_decode($liveScore->data, true)['forfeit_team'] ?? null : null;
-                                        @endphp
-                                    
-                                        <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Goedkeuren</a>
-                                    </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center p-1">
+                                            <span>
+                                                <a href="{{ route('teams.show', $pendingGame->homeTeam->id) }}" class="{{ $pendingGame->home_score > $pendingGame->away_score ? 'font-weight-bold' : '' }}">
+                                                    {{ $pendingGame->homeTeam->name }}
+                                                </a>
+                                                vs
+                                                <a href="{{ route('teams.show', $pendingGame->awayTeam->id) }}" class="{{ $pendingGame->away_score > $pendingGame->home_score ? 'font-weight-bold' : '' }}">
+                                                    {{ $pendingGame->awayTeam->name }}
+                                                </a>
+                                                ({{ $pendingGame->home_score ?? 0 }} - {{ $pendingGame->away_score ?? 0 }})
+                                                <span class="ml-2">{{ \Carbon\Carbon::parse($pendingGame->date)->format('d-m-Y') }}</span>
+                                            </span>
+
+                                            @php
+                                                $liveScore = \App\Models\LiveScore::where('game_id', $pendingGame->id)->first();
+                                                $forfeitTeam = $liveScore ? json_decode($liveScore->data, true)['forfeit_team'] ?? null : null;
+                                            @endphp
+
+                                            <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Goedkeuren</a>
+                                        </li>
                                     @endif
                                 @endforeach
                             </ul>
@@ -147,8 +127,76 @@
                 </div>
             </div>
         </div>
+
+        <!-- Wedstrijden van Vandaag en Gisteren per Divisie -->
+        <div class="col-md-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-calendar-day"></i> Wedstrijden
+                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#todayGamesList" aria-expanded="false" aria-controls="todayGamesList">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </h5>
+                
+                    <div class="collapse" id="todayGamesList">
+                        @if(isset($todayGames) && !$todayGames->isEmpty())
+                            @foreach($divisions as $division)
+                                @php
+                                    $divisionGames = $todayGames->filter(function($game) use ($division) {
+                                        return $game->division_id === $division->id;
+                                    });
+                                @endphp
+                                
+                                @if(!$divisionGames->isEmpty())
+                                    <h6 class="font-weight-bold">{{ $division->name }}</h6>
+                                    <ul class="list-group list-group-flush mb-3">
+                                        @foreach($divisionGames as $todayGame)
+                                            <li class="list-group-item d-flex justify-content-between align-items-center p-1">
+                                                <span>
+                                                    @if($todayGame->homeTeam)
+                                                        <a href="{{ route('teams.show', $todayGame->homeTeam->id) }}">
+                                                            {{ $todayGame->homeTeam->name }}
+                                                        </a>
+                                                    @else
+                                                        Onbekend Team
+                                                    @endif
+                                
+                                                    vs
+                                
+                                                    @if($todayGame->awayTeam)
+                                                        <a href="{{ route('teams.show', $todayGame->awayTeam->id) }}">
+                                                            {{ $todayGame->awayTeam->name }}
+                                                        </a>
+                                                    @else
+                                                        Onbekend Team
+                                                    @endif
+                                
+                                                    ({{ $todayGame->home_score ?? 0 }} - {{ $todayGame->away_score ?? 0 }})
+                                
+                                                    <span class="ml-2">{{ \Carbon\Carbon::parse($todayGame->date)->format('d-m-Y') }}</span>
+                                                </span>
+                                
+                                                @if($todayGame->can_start)
+                                                    <a href="{{ route('games.form', $todayGame->id) }}" class="btn btn-primary btn-sm">Speel Wedstrijd</a>
+                                                @else
+                                                    <span class="badge badge-secondary">Niet Beschikbaar</span>
+                                                @endif
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                            @endforeach
+                        @else
+                            <p>Geen wedstrijden beschikbaar om te spelen.</p>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('selectAll').addEventListener('change', function (e) {
@@ -156,7 +204,5 @@
             checkboxes.forEach(checkbox => checkbox.checked = e.target.checked);
         });
     });
-    </script>
+</script>
 @endsection
-
-

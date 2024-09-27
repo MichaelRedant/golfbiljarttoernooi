@@ -13,53 +13,63 @@
             <h1>Welkom {{ auth()->user()->name }}</h1>
         </div>
 
+        <!-- Te Spelen Wedstrijden (van gisteren en vandaag) -->
         @if(isset($todayGames) && $todayGames->isNotEmpty())
-            <div class="col-md-12 mb-4">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-calendar-day"></i> Wedstrijden van Vandaag ({{ \Carbon\Carbon::today()->format('d-m-Y') }})</h5>
-                        <table class="table table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Datum</th>
-                                    <th>Thuis Team</th>
-                                    <th>Uit Team</th>
-                                    <th>Actie</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($todayGames as $game)
-                                    <tr>
-                                        <td>{{ \Carbon\Carbon::parse($game->date)->format('d-m-Y') }}</td>
-                                        <td>
-                                            <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
-                                        </td>
-                                        <td>
-                                            <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
-                                        </td>
-                                        <td>
-                                            @if(auth()->check() && auth()->user()->team_id == $game->home_team_id)
-                                                <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-success">
-                                                    <i class="fas fa-play"></i> Start Wedstrijd
-                                                </a>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+        <div class="col-md-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-calendar-day"></i> Te Spelen Wedstrijden ({{ \Carbon\Carbon::today()->format('d-m-Y') }})</h5>
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Datum</th>
+                                <th>Thuis Team</th>
+                                <th>Uit Team</th>
+                                <th>Actie</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($todayGames as $game)
+                            <tr>
+                                <td>{{ \Carbon\Carbon::parse($game->date)->format('d-m-Y') }}</td>
+                                <td>
+                                    <a href="{{ route('teams.show', $game->homeTeam->id) }}">{{ $game->homeTeam->name }}</a>
+                                </td>
+                                <td>
+                                    <a href="{{ route('teams.show', $game->awayTeam->id) }}">{{ $game->awayTeam->name }}</a>
+                                </td>
+                                <td>
+                                    @if($game->can_start && auth()->user()->team_id == $game->home_team_id)
+                                        <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-play"></i> Spelen
+                                        </a>
+                                    @elseif($game->away_team_approved || auth()->user()->isAdmin() || auth()->user()->team_id == $game->home_team_id || auth()->user()->team_id == $game->away_team_id)
+                                        <!-- Controleer of de wedstrijd is goedgekeurd door het uitteam, admin is, of als de gebruiker in het thuis- of uitteam zit -->
+                                        <a href="{{ route('games.show', $game->id) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Bekijken
+                                        </a>
+                                    @else
+                                        <button class="btn btn-sm btn-secondary" disabled>
+                                            <i class="fas fa-clock"></i> Niet Beschikbaar
+                                        </button>
+                                    @endif
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
+        </div>
         @else
-            <div class="col-md-12 mb-4">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-calendar-day"></i> Geen wedstrijden vandaag</h5>
-                        <p>Er zijn geen wedstrijden gepland voor vandaag.</p>
-                    </div>
+        <div class="col-md-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-calendar-day"></i> Geen wedstrijden vandaag of gisteren</h5>
+                    <p>Er zijn geen wedstrijden beschikbaar om te spelen.</p>
                 </div>
             </div>
+        </div>
         @endif
 
         <div class="col-md-6 mb-4">
@@ -136,7 +146,7 @@
                                 @foreach($pendingGames as $pendingGame)
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                         {{ $pendingGame->homeTeam->name }} vs {{ $pendingGame->awayTeam->name }} 
-                                        <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Laten goedkeuren</a>
+                                        <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Goedkeuren</a>
                                     </li>
                                 @endforeach
                             </ul>

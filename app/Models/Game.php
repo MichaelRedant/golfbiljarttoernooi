@@ -82,4 +82,11 @@ public function getIsFinishedAttribute()
         return $this->date->isPast() && $this->manches()->count() > 0;
     }
 
+    public function getCanStartAttribute()
+    {
+        // Gebruik de GameService om te bepalen of de wedstrijd kan starten
+        $gameService = app(\App\Services\GameService::class);
+        return $gameService->canStartGame($this);
+    }
+
 }

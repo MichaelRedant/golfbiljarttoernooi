@@ -66,15 +66,18 @@
                                             @if($game->home_score !== null && $game->away_score !== null)
                                                 <td>
                                                     <a href="{{ route('games.show', $game->id) }}" class="btn btn-sm btn-primary">
-                                                        <i class="fas fa-eye"></i> Wedstrijd bekijken
+                                                        <i class="fas fa-eye"></i> Bekijken
                                                     </a>
                                                 </td>
                                             @elseif(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->team_id == $game->home_team_id) && \Carbon\Carbon::parse($game->date)->isToday())
                                                 <td>
                                                     <a href="{{ route('games.form', $game->id) }}" class="btn btn-sm btn-success">
-                                                        <i class="fas fa-play"></i> Start Wedstrijd
+                                                        <i class="fas fa-play"></i> Spelen
                                                     </a>
                                                 </td>
+                                            @else
+                                                <!-- Lege cel als er geen actie beschikbaar is -->
+                                                <td></td>
                                             @endif
                                         @elseif ($game->bye_team_id)
                                             <td colspan="5">
