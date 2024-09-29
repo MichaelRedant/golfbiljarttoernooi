@@ -493,6 +493,38 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.removeItem(`matchFormDataExpiry_${gameId}`);
         }
     }
+    
+    const scoreInputs = document.querySelectorAll('.manche, .belle');
+
+scoreInputs.forEach(input => {
+    input.addEventListener('input', function(event) {
+        const value = this.value;
+
+        // Alleen 1 of 2 toestaan als invoer
+        if (value !== '1' && value !== '2') {
+            this.value = ''; // Wis ongeldige invoer
+        }
+    });
+
+    // Optioneel: voorkomen dat ongeldige tekens worden getypt
+    input.addEventListener('keydown', function(event) {
+        // Toestaan van backspace, tab, enter, pijltoetsen
+        if (
+            event.key === 'Backspace' || 
+            event.key === 'Tab' || 
+            event.key === 'Enter' || 
+            event.key === 'ArrowLeft' || 
+            event.key === 'ArrowRight'
+        ) {
+            return;
+        }
+
+        // Alleen '1' of '2' toestaan
+        if (event.key !== '1' && event.key !== '2') {
+            event.preventDefault(); // Voorkom andere invoer
+        }
+    });
+});
 
     function updateTeamNames() {
         document.querySelectorAll('.player-select').forEach(select => {
