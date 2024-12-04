@@ -74,8 +74,13 @@
                                 <a href="{{ route('players.show', $player->id) }}">{{ $player->name }}</a>
                             </td>
                             <td>
-                                <a href="{{ route('teams.show', $player->team_id) }}">{{ $player->team_name }}</a>
+                                @if($player->team_id)
+                                    <a href="{{ route('teams.show', $player->team_id) }}">{{ $player->team_name }}</a>
+                                @else
+                                    Geen team
+                                @endif
                             </td>
+                            
                             @if(auth()->user() && auth()->user()->role === 'admin')
                             <td>
                                 <a href="{{ route('players.edit', $player->id) }}" class="btn btn-sm btn-info">

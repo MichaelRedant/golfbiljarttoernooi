@@ -8,8 +8,12 @@
         </div>
         <div class="card-body">
             <div class="mb-3">
-                <strong><i class="fas fa-users"></i> Team:</strong> 
-                <a href="{{ route('teams.show', $player->team_id) }}">{{ $player->team->name }}</a>
+                <strong><i class="fas fa-users"></i> Team:</strong>
+                @if($player->team)
+                    <a href="{{ route('teams.show', $player->team_id) }}">{{ $player->team->name }}</a>
+                @else
+                    Geen team
+                @endif
             </div>
             <form action="{{ route('players.show', $player->id) }}" method="GET">
                 <div class="form-group">
@@ -94,7 +98,13 @@
                             <tr class="{{ $standing['player_id'] == $player->id ? 'table-success' : '' }}">
                                 <td>{{ $index + 1 }}</td>
                                 <td><a href="{{ route('players.show', $standing['player_id']) }}">{{ $standing['player_name'] }}</a></td>
-                                <td><a href="{{ route('teams.show', $standing['team_id']) }}">{{ $standing['team_name'] }}</a></td>
+                                <td>
+                                    @if($standing['team_id'])
+                                        <a href="{{ route('teams.show', $standing['team_id']) }}">{{ $standing['team_name'] }}</a>
+                                    @else
+                                        Geen team
+                                    @endif
+                                </td>
                                 <td>{{ $standing['matches_played'] }}</td>
                                 <td>{{ $standing['matches_won'] }}</td>
                                 <td>{{ $standing['matches_lost'] }}</td>

@@ -59,7 +59,7 @@
             <hr>
 
             <h3 class="pt-4 text-center">Algemene boetes</h3>
-            <p>Afwezig Algemene Vergadering: 25,00 euro</p>
+            <p>Afwezig Algemene Vergadering: 50,00 euro</p>
             <p>3de maal: uitsluiting op jaarbasis</p>
             <p>Te laat komen op Algemene Vergadering: 10,00 euro</p>
             <p>Minstens 1 persoon/club aanwezig maar iedereen is toegelaten.</p>

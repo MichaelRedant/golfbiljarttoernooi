@@ -1,12 +1,13 @@
 <?php
 namespace App\Services;
 
-use App\Models\Division;
 use App\Models\Game;
-use App\Models\Player;
-use App\Models\PlayerSeasonStat;
 use App\Models\Team;
+use App\Models\Player;
+use App\Models\CupGame;
+use App\Models\Division;
 use App\Models\TeamSeasonStat;
+use App\Models\PlayerSeasonStat;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -392,15 +393,15 @@ public function calculatePlayerStandings($divisionId, $seasonId)
     Log::info('Calculating player standings.', ['division_id' => $divisionId, 'season_id' => $seasonId]);
 
     // Stap 1: Haal alle spelers op die normaal in deze divisie spelen
-    $players = Player::whereHas('team.divisions', function($query) use ($divisionId) {
+    $players = Player::whereHas('team.divisions', function ($query) use ($divisionId) {
         $query->where('divisions.id', $divisionId);
     })
-    ->with(['team.club.teams.gamesHome' => function($query) use ($seasonId, $divisionId) {
+    ->with(['team.club.teams.gamesHome' => function ($query) use ($seasonId, $divisionId) {
         $query->where('season_id', $seasonId)
               ->where('division_id', $divisionId)
               ->whereNotNull('home_score')
               ->whereNotNull('away_score');
-    }, 'team.club.teams.gamesAway' => function($query) use ($seasonId, $divisionId) {
+    }, 'team.club.teams.gamesAway' => function ($query) use ($seasonId, $divisionId) {
         $query->where('season_id', $seasonId)
               ->where('division_id', $divisionId)
               ->whereNotNull('home_score')
@@ -409,23 +410,24 @@ public function calculatePlayerStandings($divisionId, $seasonId)
     ->get();
 
     // Stap 2: Voeg spelers toe die in deze divisie hebben gespeeld maar er normaal niet in zitten
-    $additionalPlayers = Player::whereHas('team.club.teams.gamesHome', function($query) use ($divisionId, $seasonId) {
-        $query->where('division_id', $divisionId)
-              ->where('season_id', $seasonId)
-              ->whereNotNull('home_score')
-              ->whereNotNull('away_score');
-    })->orWhereHas('team.club.teams.gamesAway', function($query) use ($divisionId, $seasonId) {
+    $additionalPlayers = Player::whereHas('team.club.teams.gamesHome', function ($query) use ($divisionId, $seasonId) {
         $query->where('division_id', $divisionId)
               ->where('season_id', $seasonId)
               ->whereNotNull('home_score')
               ->whereNotNull('away_score');
     })
-    ->with(['team.club.teams.gamesHome' => function($query) use ($seasonId, $divisionId) {
+    ->orWhereHas('team.club.teams.gamesAway', function ($query) use ($divisionId, $seasonId) {
+        $query->where('division_id', $divisionId)
+              ->where('season_id', $seasonId)
+              ->whereNotNull('home_score')
+              ->whereNotNull('away_score');
+    })
+    ->with(['team.club.teams.gamesHome' => function ($query) use ($seasonId, $divisionId) {
         $query->where('season_id', $seasonId)
               ->where('division_id', $divisionId)
               ->whereNotNull('home_score')
               ->whereNotNull('away_score');
-    }, 'team.club.teams.gamesAway' => function($query) use ($seasonId, $divisionId) {
+    }, 'team.club.teams.gamesAway' => function ($query) use ($seasonId, $divisionId) {
         $query->where('season_id', $seasonId)
               ->where('division_id', $divisionId)
               ->whereNotNull('home_score')
@@ -438,11 +440,12 @@ public function calculatePlayerStandings($divisionId, $seasonId)
 
     // Stap 3: Bereken de standings
     $standings = $players->map(function ($player) use ($divisionId, $seasonId) {
-        $teamGames = $player->team->club->teams->flatMap(function($team) use ($seasonId, $divisionId) {
-            return $team->gamesHome->merge($team->gamesAway)->filter(function($game) use ($seasonId, $divisionId) {
+        // Haal alle wedstrijden (home en away) van het team van de speler op
+        $teamGames = $player->team->club->teams->flatMap(function ($team) use ($seasonId, $divisionId) {
+            return $team->gamesHome->merge($team->gamesAway)->filter(function ($game) use ($seasonId, $divisionId) {
                 return $game->season_id == $seasonId && $game->division_id == $divisionId;
             });
-        });
+        })->unique('id'); // Vermijd dubbele wedstrijden
 
         $matchesWon = 0;
         $matchesLost = 0;
@@ -455,7 +458,7 @@ public function calculatePlayerStandings($divisionId, $seasonId)
                     // Update matches gewonnen/verloren
                     if ($manche->winner_id == $player->id) {
                         $matchesWon++;
-                    } else {
+                    } elseif (!is_null($manche->winner_id)) {
                         $matchesLost++;
                     }
 
@@ -484,8 +487,8 @@ public function calculatePlayerStandings($divisionId, $seasonId)
             }
         }
 
-        $points = $matchesWon; // Veronderstelling: elke gewonnen match levert 1 punt op
         $matchesPlayed = $matchesWon + $matchesLost;
+        $points = $matchesWon; // Elke gewonnen match levert 1 punt op
 
         return [
             'player_id' => $player->id,
@@ -500,7 +503,7 @@ public function calculatePlayerStandings($divisionId, $seasonId)
             'points' => $points,
         ];
     })
-    ->sort(function($a, $b) {
+    ->sort(function ($a, $b) {
         // Sorteer eerst op punten (dalend)
         if ($a['points'] != $b['points']) {
             return $b['points'] - $a['points'];
@@ -553,7 +556,7 @@ public function calculatePlayerStandingsForAllDivisions(Team $team, $seasonId)
     // Stap 1: Haal alle spelers van het team op
     $players = $team->players;
 
-    // Stap 2: Bereken de statistieken voor elk van deze spelers over alle divisies
+    // Stap 2: Bereken de statistieken voor elke speler over alle divisies
     $standings = $players->map(function ($player) use ($seasonId) {
         // Haal alle wedstrijden (home en away) van de speler op voor alle divisies in het seizoen
         $teamGames = $player->team->gamesHome()
@@ -567,7 +570,8 @@ public function calculatePlayerStandingsForAllDivisions(Team $team, $seasonId)
                     ->whereNotNull('home_score')
                     ->whereNotNull('away_score')
                     ->get()
-            );
+            )
+            ->unique('id'); // Vermijd dubbele wedstrijden
 
         $matchesWon = 0;
         $matchesLost = 0;
@@ -581,7 +585,7 @@ public function calculatePlayerStandingsForAllDivisions(Team $team, $seasonId)
                     // Update matches gewonnen/verloren
                     if ($manche->winner_id == $player->id) {
                         $matchesWon++;
-                    } else {
+                    } elseif (!is_null($manche->winner_id)) {
                         $matchesLost++;
                     }
 
@@ -610,8 +614,8 @@ public function calculatePlayerStandingsForAllDivisions(Team $team, $seasonId)
             }
         }
 
-        $points = $matchesWon; // Veronderstelling: elke gewonnen match levert 1 punt op
         $matchesPlayed = $matchesWon + $matchesLost;
+        $points = $matchesWon; // Elke gewonnen match levert 1 punt op
 
         return [
             'player_id' => $player->id,
@@ -637,7 +641,7 @@ public function calculatePlayerStandingsForAllDivisions(Team $team, $seasonId)
         }
         // Als nog gelijk, sorteer op gespeelde wedstrijden (dalend)
         if ($a['matches_played'] != $b['matches_played']) {
-            return $b['matches_played'] - $a['matches_played']; // Inverse logica om teams met 0 gespeelde wedstrijden onderaan te plaatsen
+            return $b['matches_played'] - $a['matches_played'];
         }
         // Als nog gelijk, sorteer op naam (alfabetisch)
         return strcmp($a['player_name'], $b['player_name']);
@@ -650,5 +654,91 @@ public function calculatePlayerStandingsForAllDivisions(Team $team, $seasonId)
     return $standings;
 }
 
+
+public function updateCupTeamStats(CupGame $game)
+    {
+        Log::info('Updating cup team progress for CupGame', ['game_id' => $game->id]);
+
+        $homeScore = $game->home_score;
+        $awayScore = $game->away_score;
+
+        // Controleer of de game een geldig seizoen heeft (optioneel)
+        if (!$game->cup) {
+            Log::error('Cup not found for the game', ['game_id' => $game->id]);
+            return;
+        }
+
+        // Bepaal welk team doorgaat op basis van de score
+        if ($homeScore > $awayScore) {
+            $winningTeam = $game->home_team_id;
+            Log::info('Home team won the game', ['home_team_id' => $game->home_team_id]);
+        } elseif ($awayScore > $homeScore) {
+            $winningTeam = $game->away_team_id;
+            Log::info('Away team won the game', ['away_team_id' => $game->away_team_id]);
+        } else {
+            Log::error('The game ended in a tie, but ties should not be possible in cup games.', ['game_id' => $game->id]);
+            return;
+        }
+
+        // Markeer de game als goedgekeurd
+        $game->update([
+            'away_team_approved' => true,
+        ]);
+
+        $this->advanceTeamToNextRound($winningTeam, $game->cup);
+
+
+        Log::info('Cup team progress updated successfully', ['winning_team_id' => $winningTeam]);
+    }
+
+    /**
+ * Bepaal de naam van de volgende ronde op basis van de huidige ronde.
+ *
+ * @param string $currentRoundName
+ * @return string
+ */
+private function getNextRoundName($currentRoundName)
+{
+    $roundOrder = ['1/8 Finale', '1/4 Finale', 'Halve Finale', 'Finale'];
+
+    $currentIndex = array_search($currentRoundName, $roundOrder);
+    return $roundOrder[$currentIndex + 1] ?? 'Finale'; // Standaard naar 'Finale' als de naam niet in de lijst staat
+}
+
+
+    /**
+ * Stuur het winnende team door naar de volgende ronde.
+ *
+ * @param int $winningTeamId
+ * @param Cup $cup
+ */
+public function advanceTeamToNextRound($winningTeamId, $cup)
+{
+    Log::info('Advancing team to the next round', ['winning_team_id' => $winningTeamId, 'cup_id' => $cup->id]);
+
+    // Haal de huidige ronde op
+    $currentRound = $cup->rounds()->latest('id')->first();
+
+    // Controleer of er een volgende ronde bestaat
+    $nextRound = $cup->rounds()->create([
+        'cup_id' => $cup->id,
+        'round_name' => $this->getNextRoundName($currentRound->round_name), // Gebruik een methode om de volgende ronde naam op te halen
+        'is_knockout' => true, // Veronderstel dat alle rondes knock-out rondes zijn
+    ]);
+
+    Log::info('Next round created', ['next_round_id' => $nextRound->id]);
+
+    // Maak een bekerwedstrijd aan voor de winnaar in de volgende ronde
+    CupGame::create([
+        'cup_round_id' => $nextRound->id,
+        'home_team_id' => $winningTeamId, // Het winnende team gaat door naar de volgende ronde
+        'date' => now(), // Stel de datum in of gebruik logica voor een wedstrijdschema
+        'home_team_approved' => 0,
+        'away_team_approved' => 0,
+        'forfeit_confirmed' => 0,
+    ]);
+
+    Log::info('Cup game created for next round', ['next_round_id' => $nextRound->id, 'winning_team_id' => $winningTeamId]);
+}
 
 }

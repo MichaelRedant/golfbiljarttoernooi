@@ -1,10 +1,13 @@
 <?php
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\{
     ClubController, GameController, TeamController, UserController, BelleController, HomeController,
     MancheController, SponsorController, PlayerController, SeasonController, ProfileController, NewsController,
-    RankingController, DivisionController, ReservePlayerController, DashboardController, Auth\AuthenticatedSessionController, Auth\PasswordResetLinkController, Auth\NewPasswordController
+    RankingController, CupController, CupGameController, DivisionController, ReservePlayerController, DashboardController, Auth\AuthenticatedSessionController, Auth\PasswordResetLinkController, Auth\NewPasswordController
 };
+use App\Models\Cup;
+use App\Models\CupGame;
 
 // Publicly accessible routes
 Route::get('/clubs', [ClubController::class, 'index'])->name('clubs.index');
@@ -50,6 +53,69 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 
 // Home route
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// Cup routes
+// Cups CRUD routes
+Route::resource('cups', CupController::class);
+Route::get('/cups/{cup}/show', [CupController::class, 'show'])->name('cups.show');
+
+// Specifieke acties voor de CupController
+Route::post('/create', [CupController::class, 'store'])->name('cups.store');
+Route::post('/round/generate', [CupController::class, 'generateRound'])->name('cups.generateRound');
+Route::post('/game/{game}/score', [CupController::class, 'registerScore'])->name('cups.registerScore');
+
+// Team selectie routes
+Route::get('/{cup}/select-teams', [CupController::class, 'showTeamSelection'])->name('cups.select-teams');
+Route::post('/{cup}/store-selected-teams', [CupController::class, 'storeSelectedTeams'])->name('cups.storeSelectedTeams');
+
+// Game selectie routes
+Route::get('/{cup}/add-game', [CupController::class, 'addGame'])->name('cups.addGame');
+Route::get('/{cup}/select-games', [CupController::class, 'selectGames'])->name('cups.select-games');
+Route::post('/{cup}/store-games', [CupController::class, 'storeSelectedGames'])->name('cups.store-games');
+
+// Game routes voor de Cup
+Route::get('/{cup}/games/{game}/edit', [CupController::class, 'editGame'])->name('cups.games.edit');
+Route::put('/{cup}/games/{game}', [CupController::class, 'updateGame'])->name('cups.games.update');
+Route::delete('/{cup}/games/{game}', [CupController::class, 'destroyGame'])->name('cups.games.destroy');
+Route::get('/beker/archive', [CupController::class, 'archive'])->name('cups.archive');
+
+// Start en live score routes
+Route::get('/{cup}/games/{game}/start', [CupGameController::class, 'startGame'])->name('cups.games.start');
+Route::get('/cup-games/{game}/live-score', [CupGameController::class, 'fetchLiveScore']);
+
+Route::prefix('beker')->group(function () {
+    Route::get('/{cup}/games/{game}/match-form', [CupGameController::class, 'editForm'])->name('cup_match_form');
+});
+
+Route::get('/cups/{cup}/games/{cupGame}/request-approval', [CupGameController::class, 'requestApproval'])->name('cupGames.requestApproval');
+
+
+
+Route::post('cups/{cup}/games', [CupController::class, 'storeGame'])->name('cups.storeGame');
+Route::get('/cup-games/{game}/show', [CupGameController::class, 'show'])->name('cup_game.show');
+Route::get('/cup-games/{game}/edit', [CupGameController::class, 'edit'])->name('cupGames.edit');
+
+/// Ophalen van de live score voor een specifieke Cup Game
+Route::put('/cup-games/{game}/update-live-score', [CupGameController::class, 'updateLiveScore'])
+    ->name('cup-games.update-live-score');
+
+Route::get('/cup-games/{game}/total-score', [CupGameController::class, 'getTotalScoreData'])->name('cup-games.total-score');
+
+// Bijwerken van de live score voor een specifieke Cup Game
+// Route in web.php
+Route::post('/cups/{cup}/games/{game}/approve', [CupGameController::class, 'approveGame'])->name('cupGames.approve');
+
+
+// Routes voor het ophalen van teams per divisie en seizoen
+Route::get('/cups/divisions/{division}/seasons/{season}/teams', [CupController::class, 'getTeamsByDivisionAndSeason'])->name('cups.getTeamsByDivisionAndSeason');
+Route::get('/api/divisions/{division}/teams', [DivisionController::class, 'getTeamsByDivision'])->name('divisions.getTeams');
+
+// Routes voor cup match-edit en update
+Route::get('cup/match/{game}', [GameController::class, 'editForm'])->name('cup.match.edit');
+Route::post('cup/match/{game}/update', [CupGameController::class, 'update'])->name('cup.match.update');
+
+
+
 
 // News routes
 Route::resource('news', NewsController::class);

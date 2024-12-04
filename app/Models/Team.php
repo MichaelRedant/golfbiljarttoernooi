@@ -51,6 +51,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
     {
         return $this->belongsTo(Club::class);
     }
+    
 
     // Nieuwe functie om statistieken op te slaan of bij te werken
     public function updateOrCreateSeasonStats($seasonId, $gamesWon, $gamesLost, $gamesDraw, $points)
@@ -68,6 +69,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
             ]
         );
     }
+
+    public function teamSeasonStats()
+{
+    return $this->hasMany(TeamSeasonStat::class);
+}
+
 
     // Functie om statistieken voor een seizoen op te halen
     public function getSeasonStats($seasonId)

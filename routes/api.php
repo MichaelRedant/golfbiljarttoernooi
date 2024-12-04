@@ -4,6 +4,7 @@ use App\Models\Season;
 use App\Models\Division;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CupController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\DivisionController;
 /*
@@ -34,3 +35,15 @@ Route::get('/api/division/{division_id}/seasons', function($division_id) {
         'currentSeasonId' => $currentSeasonId
     ]);
 });
+
+Route::get('/divisions/{division_id}/seasons/{season_id}/teams', function($division_id, $season_id) {
+    $teams = \App\Models\Team::whereHas('divisions', function ($query) use ($division_id) {
+        $query->where('division_id', $division_id);
+    })->whereHas('teamSeasonStats', function ($query) use ($season_id) {
+        $query->where('season_id', $season_id);
+    })->get();
+
+    return response()->json($teams);
+});
+
+

@@ -2,33 +2,37 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\ScoreUpdated;
-use App\Models\Division;
+use Exception;
+use Carbon\Carbon;
 use App\Models\Game;
-use App\Models\LiveScore;
+use App\Models\Team;
 use App\Models\Manche;
 use App\Models\Player;
-use App\Models\PlayerSeasonStat;
 use App\Models\Season;
-use App\Models\Team;
-use App\Models\TeamSeasonStat;
-use App\Notifications\GameApprovalNotification;
-use App\Services\GameService;
-use App\Services\RankingService;
-use Carbon\Carbon;
-use Exception;
+use App\Models\CupGame;
+use App\Models\Division;
+use App\Models\LiveScore;
+use App\Events\ScoreUpdated;
 use Illuminate\Http\Request;
+use App\Services\GameService;
+use App\Models\TeamSeasonStat;
+use App\Models\PlayerSeasonStat;
+use App\Services\RankingService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Notifications\GameApprovalNotification;
+use App\Services\LiveScoreService;
 
 class GameController extends Controller
 {
     
     protected $rankingService;
+    protected $liveScoreService;
 
-    public function __construct(RankingService $rankingService)
+    public function __construct(RankingService $rankingService , LiveScoreService $liveScoreService)
     {
         $this->rankingService = $rankingService;
+        $this->liveScoreService = $liveScoreService;
     }
 
     public function index(Request $request)
@@ -359,7 +363,8 @@ public function update(Request $request, Game $game)
     $this->updatePlayerStats($game);
     $this->updateGameStats($game);
 
-    $this->updateLiveScore(null, $game);
+    $this->updateLiveScore(new Request(), $game);
+
 
     return redirect()->route('games.for-division-season', ['division_id' => $game->division_id, 'season_id' => $game->season_id])
         ->with('success', 'Wedstrijd succesvol bijgewerkt!');
@@ -967,21 +972,46 @@ public function updateAllPlayerStats()
 
 
 
-    public function show(Request $request, Division $division, Game $game)
-    {
-        $currentSeasonId = $request->query('season_id', Season::latest('id')->value('id'));
-        $seasons = Season::all();
-        $season = Season::find($currentSeasonId);
-        $game->load(['homeTeam', 'awayTeam', 'manches.player1', 'manches.player2']);
+public function show(Request $request, Division $division, Game $game)
+{
+    Log::info('Entering show method in GameController');
 
+    // Log de aangevraagde URL en de route-parameters
+    Log::info('Request URL:', ['url' => $request->fullUrl()]);
+    Log::info('Route parameters:', ['division_id' => $division->id, 'game_id' => $game->id]);
+
+    // Seizoeninformatie ophalen
+    $currentSeasonId = $request->query('season_id', Season::latest('id')->value('id'));
+    Log::info('Current Season ID:', ['season_id' => $currentSeasonId]);
+
+    if (!$currentSeasonId) {
+        Log::warning('Geen actief seizoen gevonden');
+        return back()->withErrors('Geen actief seizoen gevonden.');
+    }
+
+    // Seizoenen ophalen
+    $seasons = Season::all();
+    Log::info('Fetched Seasons:', ['seasons' => $seasons->pluck('id')->toArray()]);
+
+    $season = Season::find($currentSeasonId);
+    if (!$season) {
+        Log::error('Season not found with ID:', ['season_id' => $currentSeasonId]);
+    } else {
+        Log::info('Current Season:', $season->toArray());
+    }
+
+    // Game- en manches-informatie ophalen
+    try {
+        $game->load(['homeTeam', 'awayTeam', 'manches.player1', 'manches.player2']);
         Log::info('Game data:', $game->toArray());
         Log::info('Manches data:', $game->manches->toArray());
+    } catch (\Exception $e) {
+        Log::error('Failed to load game relationships:', ['error' => $e->getMessage()]);
+        return back()->withErrors('Er is een fout opgetreden bij het laden van de wedstrijdgegevens.');
+    }
 
-        if (!$currentSeasonId) {
-            return back()->withErrors('Geen actief seizoen gevonden.');
-        }
-
-        // Fetch all games for the current division and selected season
+    // Games ophalen voor de huidige divisie en het geselecteerde seizoen
+    try {
         $games = Game::with(['homeTeam', 'awayTeam'])
                      ->where('division_id', $division->id)
                      ->where('season_id', $currentSeasonId)
@@ -990,33 +1020,64 @@ public function updateAllPlayerStats()
                      ->groupBy(function($game) {
                          return \Carbon\Carbon::parse($game->date)->format('d-m-Y');
                      });
+        Log::info('Fetched Games for Division and Season:', ['game_count' => $games->count()]);
+    } catch (\Exception $e) {
+        Log::error('Error fetching games for division and season:', ['error' => $e->getMessage()]);
+    }
 
-        // Fetch standings
+    // Standings ophalen
+    try {
         $standings = $this->calculateDivisionStandings($division, $currentSeasonId);
+        Log::info('Calculated Standings:', ['standings' => $standings]);
+    } catch (\Exception $e) {
+        Log::error('Error calculating division standings:', ['error' => $e->getMessage()]);
+    }
 
-        // Fetch past games with pagination
+    // Vorige games ophalen met paginering
+    try {
         $pastGames = Game::with(['homeTeam', 'awayTeam'])
                          ->where('division_id', $division->id)
                          ->where('season_id', $currentSeasonId)
                          ->where('date', '<', now())
                          ->orderBy('date', 'desc')
                          ->paginate(5);
-
-        return view('games.show', compact('division', 'games', 'game', 'standings', 'seasons', 'currentSeasonId', 'season', 'pastGames'));
+        Log::info('Fetched Past Games:', ['past_game_count' => $pastGames->total()]);
+    } catch (\Exception $e) {
+        Log::error('Error fetching past games with pagination:', ['error' => $e->getMessage()]);
     }
 
-    public function showGame(Game $game)
+    Log::info('Rendering games.show view');
+    return view('games.show', compact('division', 'games', 'game', 'standings', 'seasons', 'currentSeasonId', 'season', 'pastGames'));
+}
+
+public function showGame(Game $game)
 {
-    // Laad de nodige relaties: thuisteam, uitteam en manches met spelers
-    $game->load(['homeTeam', 'awayTeam', 'manches.player1', 'manches.player2']);
-    
+    // Controleer of de functie wordt aangeroepen
+    Log::info('Entering showGame function', ['game_id' => $game->id]);
+
+    try {
+        // Laad de nodige relaties: thuisteam, uitteam en manches met spelers
+        $game->load(['homeTeam', 'awayTeam', 'manches.player1', 'manches.player2']);
+        Log::info('Game relaties geladen', ['game' => $game->toArray()]);
+    } catch (\Exception $e) {
+        Log::error('Error loading game relationships in showGame', ['error' => $e->getMessage()]);
+        return back()->withErrors('Er is een fout opgetreden bij het laden van de game-gegevens.');
+    }
+
     // Zoek naar de meest recente update van de manches
-    $mostRecentManche = $game->manches()->orderBy('updated_at', 'desc')->first();
-    
+    try {
+        $mostRecentManche = $game->manches()->orderBy('updated_at', 'desc')->first();
+        Log::info('Meest recente manche gevonden', ['mostRecentManche' => $mostRecentManche ? $mostRecentManche->toArray() : 'None found']);
+    } catch (\Exception $e) {
+        Log::error('Error finding most recent manche in showGame', ['error' => $e->getMessage()]);
+    }
+
     $scores = [];
 
-    // Als er recente wijzigingen zijn in de manches, gebruik die gegevens
+    // Controleer of de manches recent zijn bijgewerkt
     if ($mostRecentManche && $mostRecentManche->updated_at > ($game->updated_at ?? now())) {
+        Log::info('Gebruik manche data, recent bijgewerkt');
+
         foreach ($game->manches as $manche) {
             $homePlayerName = optional($manche->player1)->first_name . ' ' . optional($manche->player1)->last_name;
             $awayPlayerName = optional($manche->player2)->first_name . ' ' . optional($manche->player2)->last_name;
@@ -1035,16 +1096,23 @@ public function updateAllPlayerStats()
             ];
         }
     } else {
-        // Anders gebruik de LiveScore gegevens
+        Log::info('Geen recente manche updates, gebruik LiveScore gegevens');
+        
         $liveScore = LiveScore::where('game_id', $game->id)->first();
+        
+        if (!$liveScore) {
+            Log::warning('Geen LiveScore gevonden voor game', ['game_id' => $game->id]);
+        } else {
+            Log::info('LiveScore gevonden', ['liveScore' => $liveScore->toArray()]);
+        }
+
         $liveData = $liveScore ? json_decode($liveScore->data, true) : null;
 
         if ($liveData && isset($liveData['scores'])) {
             foreach ($liveData['scores'] as $score) {
-                // Zoek de juiste teamnaam voor de speler
                 $homePlayerTeamName = $this->getPlayerActualTeamName($score['home_player_name']);
                 $awayPlayerTeamName = $this->getPlayerActualTeamName($score['away_player_name']);
-                
+
                 $scores[] = [
                     'home_player_name' => $score['home_player_name'] ?? 'Onbekend',
                     'home_player_team' => $homePlayerTeamName,
@@ -1058,20 +1126,22 @@ public function updateAllPlayerStats()
         }
     }
 
+    Log::info('Rendering games.show view', ['game_id' => $game->id, 'scores' => $scores]);
+
     return view('games.show', compact('game', 'scores', 'liveData'));
 }
 
 
 public function updateLiveScore(Request $request = null, Game $game)
 {
-    Log::info('Updating LiveScore for game.', ['game_id' => $game->id]);
+   Log::info('Updating LiveScore for game.', ['game_id' => $game->id]);
 
     $user = auth()->user();
     $gameService = new GameService();
 
     // Controleer of de game kan worden gestart, geef door of de gebruiker admin is
     if (!$gameService->canStartGame($game, $user->role === 'admin')) {
-        Log::warning('Live score update attempted outside of allowed timeframe.', [
+       Log::warning('Live score update attempted outside of allowed timeframe.', [
             'game_id' => $game->id,
             'current_time' => Carbon::now(),
             'allowed_start' => Carbon::parse($game->date)->subHours(2),
@@ -1083,7 +1153,7 @@ public function updateLiveScore(Request $request = null, Game $game)
 
     // Ga verder met het bijwerken van de live score
     if ($request) {
-        Log::info('Received request to update live score.', $request->all());
+       Log::info('Received request to update live score.', $request->all());
 
         $validatedData = $request->validate([
             'home_score' => 'required|integer',
@@ -1099,125 +1169,59 @@ public function updateLiveScore(Request $request = null, Game $game)
         // Verzamelen van spelers-ID's
         $playerIds = array_map('intval', array_filter(array_merge(
             [$validatedData['home_captain'], $validatedData['away_captain'], $validatedData['home_reserve'], $validatedData['away_reserve']],
-            array_column($validatedData['scores'], 'home_player'),
-            array_column($validatedData['scores'], 'away_player')
+            array_column($validatedData['scores'] ?? [], 'home_player'),
+            array_column($validatedData['scores'] ?? [], 'away_player')
         )));
 
-        Log::info('Player IDs to search:', $playerIds);
-
-        // Haal spelers op
-        $players = Player::with('team')->whereIn('id', $playerIds)->get()->keyBy('id')->toArray();
+        if (!empty($playerIds)) {
+            $players = Player::with('team')->whereIn('id', $playerIds)->get()->keyBy('id')->toArray();
+        } else {
+            $players = [];
+        }
 
         Log::info('Players found:', $players);
 
         // Opstellen van kapitein- en reservenaam voor het thuis- en uitteam
-        $homeCaptainName = isset($validatedData['home_captain']) && isset($players[$validatedData['home_captain']]) 
-            ? $players[$validatedData['home_captain']]['first_name'] . ' ' . $players[$validatedData['home_captain']]['last_name'] 
+        $homeCaptainName = isset($players[$validatedData['home_captain']])
+            ? $players[$validatedData['home_captain']]['first_name'] . ' ' . $players[$validatedData['home_captain']]['last_name']
             : '';
 
-        $awayCaptainName = isset($validatedData['away_captain']) && isset($players[$validatedData['away_captain']]) 
-            ? $players[$validatedData['away_captain']]['first_name'] . ' ' . $players[$validatedData['away_captain']]['last_name'] 
+        $awayCaptainName = isset($players[$validatedData['away_captain']])
+            ? $players[$validatedData['away_captain']]['first_name'] . ' ' . $players[$validatedData['away_captain']]['last_name']
             : '';
 
-        $homeReserveName = isset($validatedData['home_reserve']) && isset($players[$validatedData['home_reserve']]) 
-            ? $players[$validatedData['home_reserve']]['first_name'] . ' ' . $players[$validatedData['home_reserve']]['last_name'] 
+        $homeReserveName = isset($players[$validatedData['home_reserve']])
+            ? $players[$validatedData['home_reserve']]['first_name'] . ' ' . $players[$validatedData['home_reserve']]['last_name']
             : '';
 
-        $awayReserveName = isset($validatedData['away_reserve']) && isset($players[$validatedData['away_reserve']]) 
-            ? $players[$validatedData['away_reserve']]['first_name'] . ' ' . $players[$validatedData['away_reserve']]['last_name'] 
+        $awayReserveName = isset($players[$validatedData['away_reserve']])
+            ? $players[$validatedData['away_reserve']]['first_name'] . ' ' . $players[$validatedData['away_reserve']]['last_name']
             : '';
-
-        Log::info('Resolved names:', [
-            'homeCaptain' => $homeCaptainName,
-            'awayCaptain' => $awayCaptainName,
-            'homeReserve' => $homeReserveName,
-            'awayReserve' => $awayReserveName,
-        ]);
 
         $scores = [];
         if (isset($validatedData['scores'])) {
             foreach ($validatedData['scores'] as $index => $score) {
-                $winnerId = null;
+                $homePlayerName = isset($players[$score['home_player']])
+                    ? $players[$score['home_player']]['first_name'] . ' ' . $players[$score['home_player']]['last_name']
+                    : 'Niet gestart';
 
-                $homePlayerName = 'Nog niet gestart';
-                $homePlayerTeamName = $game->homeTeam->name ?? '';
-                $awayPlayerName = 'Nog niet gestart';
-                $awayPlayerTeamName = $game->awayTeam->name ?? '';
+                $awayPlayerName = isset($players[$score['away_player']])
+                    ? $players[$score['away_player']]['first_name'] . ' ' . $players[$score['away_player']]['last_name']
+                    : 'Niet gestart';
 
-                // Behandeling van forfeit scenario's
-                if ($score['home_player'] === 'forfeit') {
-                    $homePlayerName = 'Forfait';
-                    $homePlayerTeamName = $game->homeTeam->name ?? '';
+                // Controleer of de scores numeriek zijn, zo niet, zet ze op null
+                $score['1M'] = is_numeric($score['1M']) ? intval($score['1M']) : null;
+                $score['2M'] = is_numeric($score['2M']) ? intval($score['2M']) : null;
+                $score['Belle'] = is_numeric($score['Belle']) ? intval($score['Belle']) : null;
 
-                    if (isset($players[$score['away_player']])) {
-                        $awayPlayerName = $players[$score['away_player']]['first_name'] . ' ' . $players[$score['away_player']]['last_name'];
-                        $awayPlayerTeamName = $players[$score['away_player']]['team']['name'];
-                    }
-
-                    $score['1M'] = 2;
-                    $score['2M'] = 2;
-                    $score['Belle'] = null;
-
-                    $winnerId = isset($players[$score['away_player']]) ? $score['away_player'] : null;
-                } elseif ($score['away_player'] === 'forfeit') {
-                    if (isset($players[$score['home_player']])) {
-                        $homePlayerName = $players[$score['home_player']]['first_name'] . ' ' . $players[$score['home_player']]['last_name'];
-                        $homePlayerTeamName = $players[$score['home_player']]['team']['name'];
-                    }
-
-                    $awayPlayerName = 'Forfait';
-                    $awayPlayerTeamName = $game->awayTeam->name ?? '';
-
-                    $score['1M'] = 1;
-                    $score['2M'] = 1;
-                    $score['Belle'] = null;
-
-                    $winnerId = isset($players[$score['home_player']]) ? $score['home_player'] : null;
-                } else {
-                    // Normale verwerking van een gespeelde wedstrijd
-                    if (isset($players[$score['home_player']])) {
-                        $homePlayerName = $players[$score['home_player']]['first_name'] . ' ' . $players[$score['home_player']]['last_name'];
-                        $homePlayerTeamName = $players[$score['home_player']]['team']['name'];
-                    }
-                
-                    if (isset($players[$score['away_player']])) {
-                        $awayPlayerName = $players[$score['away_player']]['first_name'] . ' ' . $players[$score['away_player']]['last_name'];
-                        $awayPlayerTeamName = $players[$score['away_player']]['team']['name'];
-                    }
-                
-                    // Controleer of de scores numeriek zijn, zo niet, zet ze op null
-                    $score['1M'] = is_numeric($score['1M']) ? intval($score['1M']) : null;
-                    $score['2M'] = is_numeric($score['2M']) ? intval($score['2M']) : null;
-                    $score['Belle'] = is_numeric($score['Belle']) ? intval($score['Belle']) : null;
-                
-                    // Geef de volledige score-array door aan determineWinner
-                    if (!empty($score)) {
-                        $winnerId = $this->determineWinner($score, $score['home_player'], $score['away_player']);
-                    }
-                }
-
-                $score['home_player_name'] = $homePlayerName;
-                $score['away_player_name'] = $awayPlayerName;
-
-                Log::info('Score entry resolved:', [
-                    'homePlayer' => $homePlayerName,
-                    'homeTeam' => $homePlayerTeamName,
-                    'awayPlayer' => $awayPlayerName,
-                    'awayTeam' => $awayPlayerTeamName,
-                    '1M' => $score['1M'],
-                    '2M' => $score['2M'],
-                    'Belle' => $score['Belle'],
-                    'WinnerId' => $winnerId,
-                ]);
+                $winnerId = $this->determineWinner($score, $score['home_player'], $score['away_player']);
 
                 $scores[] = [
                     'home_player_name' => $homePlayerName,
-                    'home_player_team' => $homePlayerTeamName,
                     'away_player_name' => $awayPlayerName,
-                    'away_player_team' => $awayPlayerTeamName,
-                    '1M' => $score['1M'] !== null ? $score['1M'] : '',
-                    '2M' => $score['2M'] !== null ? $score['2M'] : '',
-                    'Belle' => $score['Belle'] !== null ? $score['Belle'] : '',
+                    '1M' => $score['1M'] ?? '',
+                    '2M' => $score['2M'] ?? '',
+                    'Belle' => $score['Belle'] ?? '',
                     'WinnerId' => $winnerId,
                 ];
 
@@ -1225,8 +1229,8 @@ public function updateLiveScore(Request $request = null, Game $game)
                 Manche::updateOrCreate(
                     ['game_id' => $game->id, 'number' => $index + 1],
                     [
-                        'player1_id' => isset($players[$score['home_player']]) ? $score['home_player'] : null,
-                        'player2_id' => isset($players[$score['away_player']]) ? $score['away_player'] : null,
+                        'player1_id' => $score['home_player'] === 'forfeit' ? null : $score['home_player'],
+                        'player2_id' => $score['away_player'] === 'forfeit' ? null : $score['away_player'],
                         'score1' => $score['1M'],
                         'score2' => $score['2M'],
                         'belle_score' => $score['Belle'],
@@ -1237,8 +1241,8 @@ public function updateLiveScore(Request $request = null, Game $game)
         }
 
         $dataToStore = [
-            'home_team_name' => $game->homeTeam->name ?? 'Nog niet gestart',
-            'away_team_name' => $game->awayTeam->name ?? 'Nog niet gestart',
+            'home_team_name' => $game->homeTeam->name ?? 'Niet gestart',
+            'away_team_name' => $game->awayTeam->name ?? 'Niet gestart',
             'home_score' => $validatedData['home_score'],
             'away_score' => $validatedData['away_score'],
             'home_captain_name' => $homeCaptainName,
@@ -1246,9 +1250,6 @@ public function updateLiveScore(Request $request = null, Game $game)
             'home_reserve_name' => $homeReserveName,
             'away_reserve_name' => $awayReserveName,
             'scores' => $scores,
-            'forfeit_team' => $validatedData['forfeit_team'] ?? null,
-            'division_name' => $game->division->name ?? '',
-            'game_date' => $game->date ? $game->date->format('Y-m-d') : '',
         ];
 
         Log::info('Final data to be stored in LiveScore:', $dataToStore);
@@ -1262,58 +1263,8 @@ public function updateLiveScore(Request $request = null, Game $game)
         Log::info('Live score updated successfully for game.', ['game_id' => $game->id]);
 
         return response()->json(['success' => true]);
-
-    } else {
-        // Haal bestaande data op en update zonder request
-        $game->load(['homeTeam', 'awayTeam', 'division', 'manches.player1.team', 'manches.player2.team']);
-
-        $scores = [];
-
-        foreach ($game->manches as $manche) {
-            $homePlayerName = $manche->player1 ? $manche->player1->first_name . ' ' . $manche->player1->last_name : 'Nog niet gestart';
-            $homePlayerTeam = $manche->player1 && $manche->player1->team ? $manche->player1->team->name : '';
-
-            $awayPlayerName = $manche->player2 ? $manche->player2->first_name . ' ' . $manche->player2->last_name : 'Nog niet gestart';
-            $awayPlayerTeam = $manche->player2 && $manche->player2->team ? $manche->player2->team->name : '';
-
-            $scores[] = [
-                'home_player_name' => $homePlayerName,
-                'home_player_team' => $homePlayerTeam,
-                'away_player_name' => $awayPlayerName,
-                'away_player_team' => $awayPlayerTeam,
-                '1M' => $manche->score1 !== null ? $manche->score1 : '',
-                '2M' => $manche->score2 !== null ? $manche->score2 : '',
-                'Belle' => $manche->belle_score !== null ? $manche->belle_score : '',
-            ];
-        }
-
-        $dataToStore = [
-            'home_team_name' => $game->homeTeam->name ?? 'Nog niet gestart',
-            'away_team_name' => $game->awayTeam->name ?? 'Nog niet gestart',
-            'home_score' => $game->home_score ?? 0,
-            'away_score' => $game->away_score ?? 0,
-            'home_captain_name' => '',
-            'away_captain_name' => '',
-            'home_reserve_name' => '',
-            'away_reserve_name' => '',
-            'scores' => $scores,
-            'forfeit_team' => $game->forfeit_by,
-            'division_name' => $game->division->name ?? '',
-            'game_date' => $game->date ? $game->date->format('Y-m-d') : '',
-        ];
-
-        Log::info('Final data to be stored in LiveScore:', $dataToStore);
-
-        // Update of maak de live score aan
-        LiveScore::updateOrCreate(
-            ['game_id' => $game->id],
-            ['data' => json_encode($dataToStore)]
-        );
-
-        Log::info('Live score updated successfully for game.', ['game_id' => $game->id]);
     }
 }
-
 
 
 
@@ -1382,69 +1333,103 @@ public function fetchLiveScore(Game $game)
     }
 }
 
+protected function processManche(CupGame $game, int $index, array $scoreData)
+{
+    // Controleer of de spelerdata geldig is en integerwaarden bevat
+    if (empty($scoreData['home_player']) || empty($scoreData['away_player'])) {
+        Log::warning('Player data missing for manche.', [
+            'game_id' => $game->id,
+            'manche_number' => $index + 1,
+            'home_player' => $scoreData['home_player'] ?? 'None',
+            'away_player' => $scoreData['away_player'] ?? 'None'
+        ]);
+        return; // Sla manche over als er geen spelers zijn
+    }
 
+    // Valideer en converteer scores naar numerieke waarden, gebruik null voor "N/A"
+    $homeScore = $this->validateScore($scoreData['1M']);
+    $awayScore = $this->validateScore($scoreData['2M']);
+    
+    // Belle score alleen verwerken als beide scores gelijk zijn en niet "N/A" zijn
+    $belleScore = null;
+    if ($homeScore !== null && $awayScore !== null && $homeScore === $awayScore) {
+        $belleScore = $this->validateScore($scoreData['Belle']);
+    }
+
+    // Winnaar bepalen op basis van scores
+    $winnerId = $this->determineWinner($scoreData, $scoreData['home_player'], $scoreData['away_player']);
+
+    Log::info('Processing manche for game', [
+        'game_id' => $game->id,
+        'manche_number' => $index + 1,
+        'home_player' => $scoreData['home_player'],
+        'away_player' => $scoreData['away_player'],
+        'home_score' => $homeScore,
+        'away_score' => $awayScore,
+        'belle_score' => $belleScore,
+        'winner_id' => $winnerId
+    ]);
+
+    try {
+        // Update of creëer de manche
+        Manche::updateOrCreate(
+            [
+                'game_id' => $game->id,
+                'number' => $index + 1,
+            ],
+            [
+                'player1_id' => $scoreData['home_player'],
+                'player2_id' => $scoreData['away_player'],
+                'score1' => $homeScore,
+                'score2' => $awayScore,
+                'belle_score' => $belleScore,
+                'winner_id' => $winnerId,
+            ]
+        );
+
+        Log::info('Manche successfully processed and saved.', [
+            'game_id' => $game->id,
+            'manche_number' => $index + 1,
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Failed to process manche for game', [
+            'game_id' => $game->id,
+            'manche_number' => $index + 1,
+            'error' => $e->getMessage()
+        ]);
+    }
+}
+
+protected function validateScore($score)
+{
+    // Valideer of de score een integer is, anders null
+    if ($score === 'N/A' || $score === null || !is_numeric($score)) {
+        return null;
+    }
+    return intval($score);
+}
+
+ 
 public function showLiveScores()
 {
-    Log::info('Entering showLiveScores method');
+    Log::info('Entering showLiveScores method in GameController');
 
-    // Haal de huidige datum en de datum van twee dagen geleden op
-    $twoDaysAgo = Carbon::now()->subDays(2)->format('Y-m-d');
-    $currentDate = Carbon::now()->format('Y-m-d');
-    Log::info('Current date:', ['date' => $currentDate]);
-    Log::info('Two days ago:', ['date' => $twoDaysAgo]);
+    $liveData = $this->liveScoreService->getLiveScoresForGames();
 
-    // Haal de wedstrijden op die binnen de laatste 48 uur plaatsvinden
-    $games = Game::with(['homeTeam', 'awayTeam', 'division'])
-                 ->whereBetween('date', [$twoDaysAgo, $currentDate])
-                 ->get();
-    Log::info('Games found:', ['games' => $games->toArray()]);
+    // Controleer of er live wedstrijden zijn
+    $hasLiveMatches = $liveData->isNotEmpty();
+    Log::info('Are there live matches today?', ['has_live_matches' => $hasLiveMatches]);
 
-    // Haal de live scores op voor de gevonden wedstrijden
-    $liveScores = LiveScore::whereIn('game_id', $games->pluck('id'))->get()->keyBy('game_id');
-    Log::info('Live scores found:', ['live_scores' => $liveScores->toArray()]);
-
-    // Verwerk de wedstrijden en koppel de live scores aan de bijbehorende wedstrijd
-    $liveData = $games->map(function ($game) use ($liveScores) {
-        // Zorg ervoor dat de live score gegevens beschikbaar zijn of anders een leeg array teruggeven
-        $data = $liveScores->get($game->id) ? json_decode($liveScores->get($game->id)->data, true) : [];
-
-        // Voeg basisgegevens over de wedstrijd toe, controleer op null waarden
-        $data['home_team_name'] = $game->homeTeam->name ?? 'Onbekend';
-        $data['away_team_name'] = $game->awayTeam->name ?? 'Onbekend';
-        $data['division_name'] = $game->division->name ?? 'Geen divisie';
-        $data['game_date'] = $game->date ? $game->date->format('Y-m-d') : 'Onbekende datum';
-
-        // De teamnamen zijn al aanwezig in $data['scores'], dus we hoeven ze niet opnieuw op te halen
-        // Controleer of 'home_player_team' en 'away_player_team' aanwezig zijn in elke score
-        if (isset($data['scores'])) {
-            foreach ($data['scores'] as &$score) {
-                // Als de teamnaam niet is ingesteld, stel deze dan in op basis van de wedstrijdgegevens
-                if (!isset($score['home_player_team']) || empty($score['home_player_team'])) {
-                    $score['home_player_team'] = $game->homeTeam->name ?? 'Onbekend';
-                }
-                if (!isset($score['away_player_team']) || empty($score['away_player_team'])) {
-                    $score['away_player_team'] = $game->awayTeam->name ?? 'Onbekend';
-                }
-            }
-        } else {
-            $data['message'] = 'Live scores zijn nog niet beschikbaar.';
-        }
-
-        Log::info('Live data for game:', ['game_id' => $game->id, 'live_data' => $data]);
-
-        return $data;
-    });
-
-    // Als er geen live wedstrijden zijn, toon een bericht aan de gebruiker
     if ($liveData->isEmpty()) {
         return view('live-scores', ['message' => 'Er zijn geen live wedstrijden beschikbaar voor vandaag.']);
     }
 
     Log::info('Displaying live scores', ['liveData' => $liveData->toArray()]);
 
-    // Toon de live scores
-    return view('live-scores', ['liveData' => $liveData]);
+    return view('live-scores', ['liveData' => $liveData, 'hasLiveMatches' => $hasLiveMatches]);
 }
+
 
 
 
@@ -1508,7 +1493,8 @@ public function forfeitRequest(Request $request, Game $game)
         Manche::where('game_id', $game->id)->delete();
 
         // Update the LiveScore data
-        $this->updateLiveScore(null, $game);
+        $this->updateLiveScore(new Request(), $game);
+
 
         return redirect()->route('games.show', $game->id)->with('success', 'Forfaitverzoek ingediend.');
     }
@@ -1530,7 +1516,8 @@ public function confirmForfeit(Request $request, Game $game)
         ]);
 
         // Update the LiveScore data
-        $this->updateLiveScore(null, $game);
+        $this->updateLiveScore(new Request(), $game);
+
 
         return redirect()->route('games.show', $game->id)->with('success', 'Forfait bevestigd.');
     }

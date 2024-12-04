@@ -7,6 +7,7 @@ use App\Models\Game;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Season;
+use App\Models\CupGame;
 use App\Models\Division;
 use Illuminate\Http\Request;
 use App\Services\GameService;
@@ -52,9 +53,10 @@ class DashboardController extends Controller
 
     $todayGames = collect();
     $pendingGames = collect();
+    $pendingCupGames = collect();
 
     if ($user->role === 'admin') {
-        // Haal alle wedstrijden van gisteren en vandaag op
+        // Haal alle gewone wedstrijden van gisteren en vandaag op
         $todayGames = Game::with(['homeTeam', 'awayTeam'])
             ->where(function ($query) use ($today, $yesterday) {
                 $query->whereDate('date', $today)
@@ -62,12 +64,12 @@ class DashboardController extends Controller
             })
             ->get();
 
-        // Haal goedkeuringen op
+        // Haal goedkeuringen op voor gewone wedstrijden
         $pendingGames = Game::with('liveScore')
             ->where('away_team_approved', false)
             ->whereBetween('date', [$yesterday, $today])
             ->get()
-            ->map(function($game) {
+            ->map(function ($game) {
                 $liveScore = $game->liveScore ? json_decode($game->liveScore->data, true) : null;
                 if ($liveScore) {
                     $game->home_score = $liveScore['home_score'] ?? $game->home_score;
@@ -76,8 +78,23 @@ class DashboardController extends Controller
                 return $game;
             });
 
-        Log::info('Pending games for admin', ['pending_games_count' => $pendingGames->count()]);
-        return view('dashboard.admin', compact('divisions', 'currentSeason', 'pendingGames', 'seasons', 'todayGames'));
+        // Haal goedkeuringen op voor bekerwedstrijden
+        $pendingCupGames = CupGame::with('homeTeam', 'awayTeam', 'liveScore')
+            ->where('away_team_approved', false)
+            ->whereBetween('date', [$yesterday, $today])
+            ->get()
+            ->map(function ($cupGame) {
+                $liveScore = $cupGame->liveScore ? json_decode($cupGame->liveScore->data, true) : null;
+                if ($liveScore) {
+                    $cupGame->home_score = $liveScore['home_score'] ?? $cupGame->home_score;
+                    $cupGame->away_score = $liveScore['away_score'] ?? $cupGame->away_score;
+                }
+                return $cupGame;
+            });
+
+        Log::info('Pending games for admin', ['pending_games_count' => $pendingGames->count(), 'pending_cup_games_count' => $pendingCupGames->count()]);
+
+        return view('dashboard.admin', compact('divisions', 'currentSeason', 'pendingGames', 'pendingCupGames', 'seasons', 'todayGames'));
     } elseif ($user->role === 'team') {
         $team = $user->team;
         if (!$team) {
@@ -87,9 +104,11 @@ class DashboardController extends Controller
                 'seasons' => $seasons,
                 'currentSeason' => $currentSeason,
                 'currentSeasonId' => $currentSeasonId,
+                'gameService' => $this->gameService,
                 'teamRanking' => null,
                 'upcomingGames' => collect(),
                 'pendingGames' => collect(),
+                'pendingCupGames' => collect(),
             ]);
         }
 
@@ -103,7 +122,7 @@ class DashboardController extends Controller
             ->where('season_id', $currentSeasonId)
             ->get();
 
-        // Haal wedstrijden van gisteren en vandaag op, ongeacht het gekozen seizoen
+        // Haal reguliere wedstrijden van gisteren en vandaag op
         $todayGames = Game::where(function ($query) use ($team) {
             $query->where('home_team_id', $team->id)
                 ->orWhere('away_team_id', $team->id);
@@ -112,15 +131,25 @@ class DashboardController extends Controller
         ->whereDate('date', '<=', $today)
         ->get();
 
-        // Voeg de can_start eigenschap toe aan elk Game-object
+        // Voeg bekerwedstrijden van gisteren en vandaag toe
+        $todayCupGames = CupGame::where(function ($query) use ($team) {
+            $query->where('home_team_id', $team->id)
+                ->orWhere('away_team_id', $team->id);
+        })
+        ->whereDate('date', '>=', $yesterday)
+        ->whereDate('date', '<=', $today)
+        ->get();
+
+        // Voeg de reguliere wedstrijden en bekerwedstrijden samen
+        $todayGames = $todayGames->merge($todayCupGames);
+
+        // Voeg de `can_start` eigenschap toe aan elk `Game` object
         foreach ($todayGames as $game) {
             $game->can_start = $this->gameService->canStartGame($game);
-            
-            // Controleer of de wedstrijd goedgekeurd is door het uitteam
             $game->is_approved = $game->away_team_approved;
         }
 
-        // Haal goedkeuringen op voor het team van vandaag en gisteren
+        // Haal goedkeuringen op voor het team van vandaag en gisteren (gewone wedstrijden)
         $pendingGames = Game::with('liveScore')
             ->where('away_team_id', $team->id)
             ->where('away_team_approved', false)
@@ -135,15 +164,45 @@ class DashboardController extends Controller
                 return $game;
             });
 
+        // Haal goedkeuringen op voor bekerwedstrijden van het team
+        $pendingCupGames = CupGame::with('homeTeam', 'awayTeam', 'liveScore')
+            ->where(function ($query) use ($team) {
+                $query->where('home_team_id', $team->id)
+                    ->orWhere('away_team_id', $team->id);
+            })
+            ->where('away_team_approved', false)
+            ->whereBetween('date', [$yesterday, $today])
+            ->get()
+            ->map(function ($cupGame) {
+                $liveScore = $cupGame->liveScore ? json_decode($cupGame->liveScore->data, true) : null;
+                if ($liveScore) {
+                    $cupGame->home_score = $liveScore['home_score'] ?? $cupGame->home_score;
+                    $cupGame->away_score = $liveScore['away_score'] ?? $cupGame->away_score;
+                }
+                return $cupGame;
+            });
+
         Log::info('Team dashboard data', [
             'team' => $team,
             'teamRanking' => $teamRanking,
             'upcomingGames' => $upcomingGames,
             'pendingGames' => $pendingGames,
-            'todayGames' => $todayGames
+            'pendingCupGames' => $pendingCupGames,
+            'todayGames' => $todayGames,
         ]);
 
-        return view('dashboard.team', compact('team', 'currentSeason', 'seasons', 'teamRanking', 'upcomingGames', 'currentSeasonId', 'pendingGames', 'todayGames'));
+        return view('dashboard.team', [
+            'team' => $team,
+            'currentSeason' => $currentSeason,
+            'seasons' => $seasons,
+            'teamRanking' => $teamRanking,
+            'upcomingGames' => $upcomingGames,
+            'currentSeasonId' => $currentSeasonId,
+            'pendingGames' => $pendingGames,
+            'pendingCupGames' => $pendingCupGames,
+            'todayGames' => $todayGames,
+            'gameService' => $this->gameService,
+        ]);
     } else {
         Log::info('Default dashboard');
         return view('dashboard.admin');

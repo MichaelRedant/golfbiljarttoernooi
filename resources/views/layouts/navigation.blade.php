@@ -24,12 +24,26 @@
                         @endforeach
                     </div>
                 </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownCups" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Beker
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownCups">
+                        @foreach ($cups as $cup)
+                        <a class="dropdown-item" href="{{ route('cups.show', $cup->id) }}">
+                            {{ $cup->name }}
+                        </a>
+                        @endforeach
+                        <a class="dropdown-item" href="{{ route('cups.archive') }}">Archief</a>
+                    </div>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('rankings.index') }}">Rankings</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ $hasLiveMatches ? 'text-primary' : '' }}" href="{{ route('live-scores') }}">Live</a>
+                    <a class="nav-link {{ $hasLiveMatchesOrCupGames ? 'text-primary' : '' }}" href="{{ route('live-scores') }}">Live</a>
                 </li>
+                
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownInfo" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Informatie

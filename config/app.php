@@ -70,7 +70,8 @@ return [
     |
     */
 
-    'timezone' => 'Europe/Brussels',
+    'timezone' => 'Europe/Amsterdam',
+
 
 
     /*

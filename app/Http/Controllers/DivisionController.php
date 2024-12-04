@@ -44,11 +44,21 @@ class DivisionController extends Controller
         }
     }
 
-    public function show(Request $request, Division $division)
+    public function show(Request $request, $divisionId)
 {
-    Log::info('DivisionController@show reached', ['division_id' => $division->id]);
+    Log::info('DivisionController@show reached', ['division_id' => $divisionId]);
 
     try {
+        // Haal de divisie op via het ID
+        $division = Division::find($divisionId);
+
+        // Controleer of de divisie bestaat
+        if (!$division) {
+            Log::warning('Division not found for ID: ' . $divisionId);
+            return response()->view('errors.404', [], 404); // Retourneer 404 als divisie niet bestaat
+        }
+
+        // Haal het laatste seizoen op
         $latestSeason = Season::latest()->first();
         if (!$latestSeason) {
             Log::warning('No active season found');
@@ -60,9 +70,11 @@ class DivisionController extends Controller
             return view('divisions.show', compact('division', 'gamesByDate', 'standings', 'seasons', 'currentSeasonId'));
         }
 
+        // Haal huidige seizoen op (standaard laatste)
         $currentSeasonId = $request->query('season_id', $latestSeason->id);
-        $seasons = Season::all();
+        $seasons = Season::all(); // Alle seizoenen
 
+        // Haal de wedstrijden op voor de divisie en het huidige seizoen
         $games = Game::with(['homeTeam', 'awayTeam'])
                      ->where('division_id', $division->id)
                      ->where('season_id', $currentSeasonId)
@@ -71,11 +83,11 @@ class DivisionController extends Controller
 
         $gamesByDate = $games->groupBy('date');
 
-        // Gebruik de GameService om te bepalen of de wedstrijd gestart kan worden
+        // Bepaal per wedstrijd of deze gestart kan worden
         foreach ($games as $game) {
             $game->can_start = $this->gameService->canStartGame($game);
 
-            // Log de status van de wedstrijd
+            // Log details van elke wedstrijd
             Log::info('Game Details', [
                 'game_id' => $game->id,
                 'game_date' => $game->date,
@@ -84,20 +96,24 @@ class DivisionController extends Controller
             ]);
         }
 
+        // Bereken de standen voor de divisie
         $standings = $this->rankingService->calculateDivisionStandings($division, $currentSeasonId);
 
+        // Log gegevens van de divisie
         Log::info('Division data retrieved', [
             'games_count' => $games->count(),
             'standings_count' => count($standings),
         ]);
 
+        // Retourneer het divisie-overzicht
         return view('divisions.show', compact('division', 'gamesByDate', 'standings', 'seasons', 'currentSeasonId'));
 
-    } catch (\Exception $e) {
+    }catch (\Exception $e) {
         Log::error('Error retrieving division data: ' . $e->getMessage());
-        return response()->view('errors.500', [], 500);
+        abort(500); // Gebruik de standaard 500-foutpagina van Laravel
     }
 }
+
 
     public function getTeamsByDivision($divisionId)
     {

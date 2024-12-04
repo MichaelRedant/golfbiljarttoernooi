@@ -24,13 +24,13 @@
                                 <i class="fas fa-eye"></i> Bekijk Wedstrijden van {{ $division->name }}
                             </a>
                         @endforeach
+                        
                     @else
                         <p>Geen seizoenen of reeksen beschikbaar.</p>
                     @endif
                 </div>
             </div>
         </div>
-
         <div class="col-md-4">
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
@@ -64,6 +64,9 @@
                     <a href="{{ route('players.index') }}" class="btn btn-outline-secondary d-block mb-2">
                         <i class="fas fa-user"></i> Spelers Beheren
                     </a>
+                    <a href="{{ route('cups.index') }}" class="btn btn-outline-secondary d-block mb-2">
+                        <i class="fas fa-trophy"></i> Beker Beheer
+                    </a>
                 </div>
             </div>
         </div>
@@ -82,51 +85,90 @@
             </div>
         </div>
 
-        <!-- Wachtende Goedkeuringen van vandaag en gisteren -->
-        <div class="col-md-12 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="fas fa-check"></i> Wachtende Goedkeuringen
-                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#pendingGamesList" aria-expanded="false" aria-controls="pendingGamesList">
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                    </h5>
-                    <div class="collapse" id="pendingGamesList">
-                        @if($pendingGames->isEmpty())
-                            <p>Geen wedstrijden wachten op goedkeuring.</p>
-                        @else
-                            <ul class="list-group list-group-flush">
-                                @foreach($pendingGames as $pendingGame)
-                                    @if($pendingGame->homeTeam && $pendingGame->awayTeam)
-                                        <li class="list-group-item d-flex justify-content-between align-items-center p-1">
-                                            <span>
-                                                <a href="{{ route('teams.show', $pendingGame->homeTeam->id) }}" class="{{ $pendingGame->home_score > $pendingGame->away_score ? 'font-weight-bold' : '' }}">
-                                                    {{ $pendingGame->homeTeam->name }}
-                                                </a>
-                                                vs
-                                                <a href="{{ route('teams.show', $pendingGame->awayTeam->id) }}" class="{{ $pendingGame->away_score > $pendingGame->home_score ? 'font-weight-bold' : '' }}">
-                                                    {{ $pendingGame->awayTeam->name }}
-                                                </a>
-                                                ({{ $pendingGame->home_score ?? 0 }} - {{ $pendingGame->away_score ?? 0 }})
-                                                <span class="ml-2">{{ \Carbon\Carbon::parse($pendingGame->date)->format('d-m-Y') }}</span>
-                                            </span>
 
-                                            @php
-                                                $liveScore = \App\Models\LiveScore::where('game_id', $pendingGame->id)->first();
-                                                $forfeitTeam = $liveScore ? json_decode($liveScore->data, true)['forfeit_team'] ?? null : null;
-                                            @endphp
+       <!-- Wachtende Goedkeuringen van reguliere wedstrijden -->
+<div class="col-md-12 mb-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="fas fa-check"></i> Wachtende Goedkeuringen (Reguliere Wedstrijden)
+                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#pendingGamesList" aria-expanded="false" aria-controls="pendingGamesList">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </h5>
+            <div class="collapse" id="pendingGamesList">
+                @if($pendingGames->isEmpty())
+                    <p>Geen wedstrijden wachten op goedkeuring.</p>
+                @else
+                    <ul class="list-group list-group-flush">
+                        @foreach($pendingGames as $pendingGame)
+                            @if($pendingGame->homeTeam && $pendingGame->awayTeam)
+                                <li class="list-group-item d-flex justify-content-between align-items-center p-1">
+                                    <span>
+                                        <a href="{{ route('teams.show', $pendingGame->homeTeam->id) }}" class="{{ $pendingGame->home_score > $pendingGame->away_score ? 'font-weight-bold' : '' }}">
+                                            {{ $pendingGame->homeTeam->name }}
+                                        </a>
+                                        vs
+                                        <a href="{{ route('teams.show', $pendingGame->awayTeam->id) }}" class="{{ $pendingGame->away_score > $pendingGame->home_score ? 'font-weight-bold' : '' }}">
+                                            {{ $pendingGame->awayTeam->name }}
+                                        </a>
+                                        ({{ $pendingGame->home_score ?? 0 }} - {{ $pendingGame->away_score ?? 0 }})
+                                        <span class="ml-2">{{ \Carbon\Carbon::parse($pendingGame->date)->format('d-m-Y') }}</span>
+                                    </span>
 
-                                            <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Goedkeuren</a>
-                                        </li>
-                                    @endif
-                                @endforeach
-                            </ul>
-                        @endif
-                    </div>
-                </div>
+                                    <a href="{{ route('games.requestApproval', $pendingGame->id) }}" class="btn btn-primary btn-sm">Goedkeuren</a>
+                                </li>
+                            @endif
+                        @endforeach
+                    </ul>
+                @endif
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Wachtende Goedkeuringen van bekerwedstrijden -->
+<div class="col-md-12 mb-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="fas fa-trophy"></i> Wachtende Goedkeuringen (Bekerwedstrijden)
+                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#pendingCupGamesList" aria-expanded="false" aria-controls="pendingCupGamesList">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </h5>
+            <div class="collapse" id="pendingCupGamesList">
+                @if($pendingCupGames->isEmpty())
+                    <p>Geen bekerwedstrijden wachten op goedkeuring.</p>
+                @else
+                    <ul class="list-group list-group-flush">
+                        @foreach($pendingCupGames as $pendingCupGame)
+                            @if($pendingCupGame->homeTeam && $pendingCupGame->awayTeam)
+                                <li class="list-group-item d-flex justify-content-between align-items-center p-1">
+                                    <span>
+                                        <a href="{{ route('teams.show', $pendingCupGame->homeTeam->id) }}" class="{{ $pendingCupGame->home_score > $pendingCupGame->away_score ? 'font-weight-bold' : '' }}">
+                                            {{ $pendingCupGame->homeTeam->name }}
+                                        </a>
+                                        vs
+                                        <a href="{{ route('teams.show', $pendingCupGame->awayTeam->id) }}" class="{{ $pendingCupGame->away_score > $pendingCupGame->home_score ? 'font-weight-bold' : '' }}">
+                                            {{ $pendingCupGame->awayTeam->name }}
+                                        </a>
+                                        ({{ $pendingCupGame->home_score ?? 0 }} - {{ $pendingCupGame->away_score ?? 0 }})
+                                        <span class="ml-2">{{ \Carbon\Carbon::parse($pendingCupGame->date)->format('d-m-Y') }}</span>
+                                    </span>
+
+                                    <a href="{{ route('cupGames.requestApproval', ['cup' => $pendingCupGame->cup_id, 'cupGame' => $pendingCupGame->id]) }}" class="btn btn-primary btn-sm">Goedkeuren</a>
+
+                                </li>
+                            @endif
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
 
         <!-- Wedstrijden van Vandaag en Gisteren per Divisie -->
         <div class="col-md-12 mb-4">
