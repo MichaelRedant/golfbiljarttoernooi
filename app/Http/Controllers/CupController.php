@@ -135,21 +135,25 @@ public function show(Cup $cup)
 
                 if ($firstLeg) {
                     // Bereken de totale score van beide wedstrijden
-                    $totalHomeScore = $firstLeg->home_score + $game->home_score;
-                    $totalAwayScore = $firstLeg->away_score + $game->away_score;
+                    $totalHomeScore = ($firstLeg->home_score ?? 0) + ($game->home_score ?? 0);
+                    $totalAwayScore = ($firstLeg->away_score ?? 0) + ($game->away_score ?? 0);
+
+                    // Controleer of teams bestaan voordat je toegang krijgt tot hun naam
+                    $homeTeamName = $game->homeTeam->name ?? 'Onbekend';
+                    $awayTeamName = $game->awayTeam->name ?? 'Onbekend';
 
                     // Bepaal de winnaar
                     if ($totalHomeScore > $totalAwayScore) {
-                        $winner = $game->homeTeam->name;
+                        $winner = $homeTeamName;
                     } elseif ($totalAwayScore > $totalHomeScore) {
-                        $winner = $game->awayTeam->name;
+                        $winner = $awayTeamName;
                     } else {
                         $winner = 'Gelijkspel';
                     }
 
                     $roundWinners[$round->id][] = [
-                        'home_team' => $game->homeTeam->name,
-                        'away_team' => $game->awayTeam->name,
+                        'home_team' => $homeTeamName,
+                        'away_team' => $awayTeamName,
                         'total_home_score' => $totalHomeScore,
                         'total_away_score' => $totalAwayScore,
                         'winner' => $winner
@@ -161,6 +165,7 @@ public function show(Cup $cup)
 
     return view('cups.show', compact('cup', 'roundWinners'));
 }
+
 
 
 public function archive()

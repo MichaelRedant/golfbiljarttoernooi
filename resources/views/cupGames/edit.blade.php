@@ -17,6 +17,7 @@
         </div>
     </div>
     @if($game->round->round_name === '1/8 Finale Terugwedstrijd' || $game->round->round_name === '1/4 Finale Terugwedstrijd')
+    @if(isset($totalScore))
     <div class="card mt-4" id="totalScoreCard">
         <div class="card-header">Totale Score</div>
         <div class="card-body" id="totalScoreContent">
@@ -26,6 +27,8 @@
             <h5><strong>Totaal:</strong> {{ $game->homeTeam->name }} {{ $totalScore['total_home_score'] }} - {{ $totalScore['total_away_score'] }} {{ $game->awayTeam->name }}</h5>
         </div>
     </div>
+@endif
+
     @endif
     
     

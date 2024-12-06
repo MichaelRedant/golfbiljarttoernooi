@@ -166,13 +166,13 @@
                                     </td>
                                     <td class="small" data-label="Team" id="away-team-{{ $i }}"></td>
                                     <td data-label="1M">
-                                        <input type="number" class="form-control manche" name="scores[{{ $i }}][1M]" maxlength="1" pattern="[12]" step="1" required value="0">
+                                        <input type="number" class="form-control manche" name="scores[{{ $i }}][1M]" maxlength="1" pattern="[12]" step="1" value="{{ old('scores.'.$i.'.1M') ?? '' }}">
                                     </td>
                                     <td data-label="2M">
-                                        <input type="number" class="form-control manche" name="scores[{{ $i }}][2M]" maxlength="1" pattern="[12]" step="1" required value="0">
+                                        <input type="number" class="form-control manche" name="scores[{{ $i }}][2M]" maxlength="1" pattern="[12]" step="1" value="{{ old('scores.'.$i.'.2M') ?? '' }}">
                                     </td>
                                     <td data-label="Belle">
-                                        <input type="number" class="form-control belle" name="scores[{{ $i }}][Belle]" maxlength="1" pattern="[12]" step="1"  readonly value="0">
+                                        <input type="number" class="form-control belle" name="scores[{{ $i }}][Belle]" maxlength="1" pattern="[12]" step="1" readonly value="{{ old('scores.'.$i.'.Belle') ?? '' }}">
                                     </td>
                                 </tr>
                                 @endfor
@@ -263,7 +263,6 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchLiveScoreData();
     loadFormData();
 
-    // Polling mechanism for live score updates
     setInterval(fetchLiveScoreData, pollingInterval);
 
 
@@ -305,45 +304,58 @@ document.addEventListener('DOMContentLoaded', function() {
 function fetchLiveScoreData() {
     fetch(`/cup-games/${gameId}/live-score`)
         .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
             return response.json();
         })
         .then(data => {
             if (data && Array.isArray(data.scores)) {
-                console.log('Live score data:', data);
-                populateForm(data);  // Vul het formulier met live score gegevens
-                updateResults();     // Update de resultaten op de pagina
+                populateForm(data);
+                updateResults();
             } else {
-                console.warn('Live score data does not contain a valid scores array:', data);
+                console.warn('Ongeldige live score data ontvangen:', data);
             }
         })
-        .catch(error => {
-            console.error('Error fetching live score:', error);
-        });
+        .catch(error => console.error('Fout bij ophalen van live score data:', error));
+}
+
+
+
+function initializeDefaultScores(data) {
+    // Creates default scores for 6 matches
+    return Array.from({ length: 6 }).map(() => ({
+        home_player_name: 'Nog niet gestart',
+        away_player_name: 'Nog niet gestart',
+        home_player_team: data.home_team_name || 'Onbekend',
+        away_player_team: data.away_team_name || 'Onbekend',
+        '1M': '',
+        '2M': '',
+        Belle: '',
+        WinnerId: null
+    }));
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Add input validation for manche and belle fields
     const inputs = document.querySelectorAll('.manche, .belle');
 
     inputs.forEach(input => {
         input.addEventListener('input', function (e) {
             const value = e.target.value;
             if (!/^[12]?$/.test(value)) {
-                e.target.value = value.slice(0, -1); // Laatste invoer verwijderen
+                e.target.value = value.slice(0, -1); // Remove last input if invalid
             }
         });
 
         input.addEventListener('keypress', function (e) {
             if (e.target.value.length >= 1) {
-                e.preventDefault();
+                e.preventDefault(); // Prevent further input after one character
             }
         });
     });
+
+    // Start polling for live scores
+    setInterval(fetchLiveScoreData, 10000); // Adjust polling interval as needed
 });
-
-
 
 
 function updateAvailableOptions() {
@@ -783,141 +795,76 @@ function loadFormData() {
 function populateForm(data) {
     console.log('Populating form with data:', data);
 
-    // Check if scores is an array, if not, log error and return
-    if (!Array.isArray(data.scores)) {
-        console.error('Expected scores to be an array but received:', data.scores);
+    // Update team scores
+    const homeScoreInput = document.getElementById('home_score');
+    const awayScoreInput = document.getElementById('away_score');
 
-        // Attempt to fix the structure if it's an object with players
-        if (data.scores && typeof data.scores === 'object' && data.scores.home_players && data.scores.away_players) {
-            if (data.scores.home_players.length === data.scores.away_players.length && data.scores.home_players.length > 0) {
-                console.log('Converting home_players and away_players into scores array');
-                data.scores = data.scores.home_players.map((homePlayer, index) => {
-                    const awayPlayer = data.scores.away_players[index] || { name: 'Nog niet gestart', team: 'Onbekend' };
-                    return {
-                        home_player_name: homePlayer.name,
-                        home_player_team: homePlayer.team,
-                        away_player_name: awayPlayer.name,
-                        away_player_team: awayPlayer.team,
-                        '1M': '',
-                        '2M': '',
-                        'Belle': '',
-                        'WinnerId': null
-                    };
-                });
-            } else {
-                console.error('Mismatch between home_players and away_players array lengths or one of them is empty.');
-                return;
-            }
-        } else {
-            console.warn('Cannot proceed with populating form. Invalid scores data format.');
-            return;
-        }
-    }
+    if (homeScoreInput) homeScoreInput.value = data.home_score || 0;
+    if (awayScoreInput) awayScoreInput.value = data.away_score || 0;
 
-    // Populate standard fields
-    for (const key in data) {
-        if (data.hasOwnProperty(key)) {
-            const element = document.querySelector(`[name="${key}"]`);
-            if (element) {
-                console.log(`Populating field ${key} with value:`, data[key]);
-                element.value = data[key] !== null ? data[key] : ''; // Fallback to empty string if value is null
-            }
-        }
-    }
-
-    // Populate score arrays
-    data.scores.forEach((score, index) => {
-        const homePlayerInput = document.querySelector(`[name="scores[${index}][home_player]"]`);
-        const awayPlayerInput = document.querySelector(`[name="scores[${index}][away_player]"]`);
-        const firstMancheInput = document.querySelector(`[name="scores[${index}][1M]"]`);
-        const secondMancheInput = document.querySelector(`[name="scores[${index}][2M]"]`);
-        const belleInput = document.querySelector(`[name="scores[${index}][Belle]"]`);
-
-        // Check if home player select element exists
-        if (homePlayerInput && score.home_player_name) {
-            const homePlayerOption = Array.from(homePlayerInput.options).find(option => option.text.trim() === score.home_player_name.trim());
-            if (homePlayerOption) {
-                homePlayerInput.value = homePlayerOption.value;
-                console.log(`Setting home player for row ${index}: ${score.home_player_name}`);
-            } else {
-                console.warn(`Home player ${score.home_player_name} not found in options for row ${index}`);
-            }
-        }
-
-        // Check if away player select element exists
-        if (awayPlayerInput && score.away_player_name) {
-            const awayPlayerOption = Array.from(awayPlayerInput.options).find(option => option.text.trim() === score.away_player_name.trim());
-            if (awayPlayerOption) {
-                awayPlayerInput.value = awayPlayerOption.value;
-                console.log(`Setting away player for row ${index}: ${score.away_player_name}`);
-            } else {
-                console.warn(`Away player ${score.away_player_name} not found in options for row ${index}`);
-            }
-        }
-
-        // Update manche and belle inputs if they exist
-        if (firstMancheInput) {
-            firstMancheInput.value = score['1M'] !== null ? score['1M'] : ''; // Null fallback
-        }
-        if (secondMancheInput) {
-            secondMancheInput.value = score['2M'] !== null ? score['2M'] : ''; // Null fallback
-        }
-        if (belleInput) {
-            belleInput.value = score.Belle !== null ? score.Belle : ''; // Null fallback
-        }
-    });
-
-    // Populate captains and reserves
+    // Update captain and reserve players
     populateCaptainsAndReserves(data);
+
+    // Update player selections and scores
+    if (Array.isArray(data.scores)) {
+        data.scores.forEach((score, index) => {
+            const homePlayerInput = document.querySelector(`[name="scores[${index}][home_player]"]`);
+            const awayPlayerInput = document.querySelector(`[name="scores[${index}][away_player]"]`);
+            const firstMancheInput = document.querySelector(`[name="scores[${index}][1M]"]`);
+            const secondMancheInput = document.querySelector(`[name="scores[${index}][2M]"]`);
+            const belleInput = document.querySelector(`[name="scores[${index}][Belle]"]`);
+
+            // Populate player selection fields
+            if (homePlayerInput && score.home_player_name) {
+                const homePlayerOption = Array.from(homePlayerInput.options).find(option => option.text.trim() === score.home_player_name.trim());
+                if (homePlayerOption) homePlayerInput.value = homePlayerOption.value;
+            }
+
+            if (awayPlayerInput && score.away_player_name) {
+                const awayPlayerOption = Array.from(awayPlayerInput.options).find(option => option.text.trim() === score.away_player_name.trim());
+                if (awayPlayerOption) awayPlayerInput.value = awayPlayerOption.value;
+            }
+
+            // Populate score fields
+            if (firstMancheInput) firstMancheInput.value = score['1M'] || '';
+            if (secondMancheInput) secondMancheInput.value = score['2M'] || '';
+            if (belleInput) belleInput.value = score['Belle'] || '';
+        });
+    } else {
+        console.warn('Scores data is not valid or missing:', data.scores);
+    }
 }
 
-// Helper function for captains and reserves
+// Helper function to populate captains and reserves
 function populateCaptainsAndReserves(data) {
     const homeCaptainInput = document.querySelector('select[name="home_captain"]');
     const awayCaptainInput = document.querySelector('select[name="away_captain"]');
     const homeReserveInput = document.querySelector('select[name="home_reserve"]');
     const awayReserveInput = document.querySelector('select[name="away_reserve"]');
 
+    // Populate captain and reserve fields
     if (homeCaptainInput && data.home_captain_name) {
         const homeCaptainOption = Array.from(homeCaptainInput.options).find(option => option.text.includes(data.home_captain_name));
-        if (homeCaptainOption) {
-            homeCaptainInput.value = homeCaptainOption.value;
-            console.log(`Setting home captain: ${data.home_captain_name}`);
-        } else {
-            console.warn(`Home captain ${data.home_captain_name} not found`);
-        }
+        if (homeCaptainOption) homeCaptainInput.value = homeCaptainOption.value;
     }
 
     if (awayCaptainInput && data.away_captain_name) {
         const awayCaptainOption = Array.from(awayCaptainInput.options).find(option => option.text.includes(data.away_captain_name));
-        if (awayCaptainOption) {
-            awayCaptainInput.value = awayCaptainOption.value;
-            console.log(`Setting away captain: ${data.away_captain_name}`);
-        } else {
-            console.warn(`Away captain ${data.away_captain_name} not found`);
-        }
+        if (awayCaptainOption) awayCaptainInput.value = awayCaptainOption.value;
     }
 
     if (homeReserveInput && data.home_reserve_name) {
         const homeReserveOption = Array.from(homeReserveInput.options).find(option => option.text.includes(data.home_reserve_name));
-        if (homeReserveOption) {
-            homeReserveInput.value = homeReserveOption.value;
-            console.log(`Setting home reserve: ${data.home_reserve_name}`);
-        } else {
-            console.warn(`Home reserve ${data.home_reserve_name} not found`);
-        }
+        if (homeReserveOption) homeReserveInput.value = homeReserveOption.value;
     }
 
     if (awayReserveInput && data.away_reserve_name) {
         const awayReserveOption = Array.from(awayReserveInput.options).find(option => option.text.includes(data.away_reserve_name));
-        if (awayReserveOption) {
-            awayReserveInput.value = awayReserveOption.value;
-            console.log(`Setting away reserve: ${data.away_reserve_name}`);
-        } else {
-            console.warn(`Away reserve ${data.away_reserve_name} not found`);
-        }
+        if (awayReserveOption) awayReserveInput.value = awayReserveOption.value;
     }
 }
+
+
 
 
 fetch(`/games/${gameId}/live-score`, {
@@ -1273,6 +1220,7 @@ function updateTeamNames() {
         }
     });
 }
+
 
     updateResults();
     updateAvailableOptions();

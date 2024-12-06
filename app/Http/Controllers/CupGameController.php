@@ -73,55 +73,78 @@ protected function isAggregateDraw(CupGame $game)
 
 
 
-public function startGame(Cup $cup, CupGame $game) 
+public function startGame(Cup $cup, CupGame $game)
 {
-    $user = auth()->user(); 
-    $isAdmin = $user && $user->role === 'admin'; 
+    $user = auth()->user();
+    $isAdmin = $user && $user->role === 'admin';
 
     Log::info('startGame method hit', ['cup_id' => $cup->id, 'game_id' => $game->id, 'user_id' => $user->id, 'is_admin' => $isAdmin]);
 
     if ($this->gameService->canStartGame($game, $isAdmin)) 
     {
         Log::info('Starting cup game', ['game_id' => $game->id, 'user_id' => $user->id]);
+        
+        // Controleer of de wedstrijd daadwerkelijk bestaat in de games-tabel
+        if (!$game->exists) {
+            Log::error('Game does not exist in the database', ['game_id' => $game->id]);
+            return redirect()->back()->withErrors('De geselecteerde wedstrijd bestaat niet in het systeem.');
+        }
+
+        // Update de status van de game
         $game->update(['status' => 'started']);
         
-        // Check if LiveScore exists, if not, create it with proper initial data
-        if (!$game->liveScore) { 
-            $initialScores = []; 
-            for ($i = 0; $i < 6; $i++) {  // Assuming max 6 manches
-                $initialScores[] = [ 
+        // Check of LiveScore al bestaat
+        if (!$game->liveScore) {
+            $initialScores = [];
+            for ($i = 0; $i < 6; $i++) { // Assuming max 6 manches
+                $initialScores[] = [
                     'home_player_name' => 'Nog niet gestart',
                     'away_player_name' => 'Nog niet gestart',
                     'home_player_team' => $game->homeTeam->name ?? 'Onbekend',
                     'away_player_team' => $game->awayTeam->name ?? 'Onbekend',
-                    '1M' => null, '2M' => null, 'Belle' => null, 'WinnerId' => null 
-                ]; 
+                    '1M' => null, 
+                    '2M' => null, 
+                    'Belle' => null, 
+                    'WinnerId' => null,
+                ];
             }
-            LiveScore::create([
-                'game_id' => $game->id,
-                'data' => json_encode([
-                    'home_team_name' => $game->homeTeam->name ?? 'Onbekend',
-                    'away_team_name' => $game->awayTeam->name ?? 'Onbekend',
-                    'home_score' => 0,
-                    'away_score' => 0,
-                    'scores' => $initialScores,
-                    'division_name' => $game->division->name ?? '',
-                    'game_date' => $game->date ? $game->date->format('Y-m-d') : 'Onbekende datum'
-                ]),
-            ]); 
-            Log::info('Live score created for cup game ID: ' . $game->id);
+
+            try {
+                // Creëer de LiveScore met transactionele veiligheid
+                DB::transaction(function () use ($game, $initialScores) {
+                    LiveScore::create([
+                        'game_id' => $game->id,
+                        'data' => json_encode([
+                            'home_team_name' => $game->homeTeam->name ?? 'Onbekend',
+                            'away_team_name' => $game->awayTeam->name ?? 'Onbekend',
+                            'home_score' => 0,
+                            'away_score' => 0,
+                            'scores' => $initialScores,
+                            'division_name' => $game->division->name ?? '',
+                            'game_date' => $game->date ? $game->date->format('Y-m-d') : 'Onbekende datum',
+                        ]),
+                    ]);
+                });
+
+                Log::info('Live score created for cup game ID: ' . $game->id);
+            } catch (\Exception $e) {
+                Log::error('Error creating live score', [
+                    'game_id' => $game->id,
+                    'error' => $e->getMessage(),
+                ]);
+                return redirect()->back()->withErrors('Er is een fout opgetreden bij het aanmaken van de live score.');
+            }
         }
-        
+
         Log::info('Redirecting to cup_match_form', ['cup_id' => $cup->id, 'game_id' => $game->id]);
         
         return redirect()->route('cup_match_form', ['cup' => $cup->id, 'game' => $game->id])
-    ->with('success', 'Wedstrijd gestart!');
-
-
+            ->with('success', 'Wedstrijd gestart!');
     }
 
     return redirect()->back()->with('error', 'Je bent niet bevoegd om deze wedstrijd te starten.');
 }
+
 
 
 public function show(Cup $cup, CupGame $game)
@@ -223,6 +246,7 @@ public function edit(CupGame $game)
 
     $user = auth()->user();
 
+    // Controleer of de gebruiker bevoegd is
     if ($user->role !== 'admin') {
         Log::warning('Unauthorized access attempt to edit a game', [
             'user_id' => $user->id,
@@ -250,10 +274,26 @@ public function edit(CupGame $game)
     $homeTeamPlayers = $game->homeTeam->club->teams->flatMap(fn($team) => $team->players)->unique('id');
     $awayTeamPlayers = $game->awayTeam->club->teams->flatMap(fn($team) => $team->players)->unique('id');
 
-    $scores = $liveData['scores'] ?? [];
-    $testmatchScores = $liveData['testmatch_scores'] ?? [];
+    Log::info('Players fetched for editing', [
+        'home_team_players' => $homeTeamPlayers->pluck('id')->toArray(),
+        'away_team_players' => $awayTeamPlayers->pluck('id')->toArray(),
+    ]);
 
-    // Totale score berekenen
+    // Verwerk spelersnamen in de scores
+    $scores = $liveData['scores'] ?? [];
+    foreach ($scores as &$score) {
+        $score['home_player_name'] = $this->getPlayerName($score['home_player'] ?? null, $homeTeamPlayers);
+        $score['away_player_name'] = $this->getPlayerName($score['away_player'] ?? null, $awayTeamPlayers);
+    }
+
+    // Verwerk testmatch scores
+    $testmatchScores = $liveData['testmatch_scores'] ?? [];
+    foreach ($testmatchScores as &$testmatchScore) {
+        $testmatchScore['home_player_name'] = $this->getPlayerName($testmatchScore['home_player'] ?? null, $homeTeamPlayers);
+        $testmatchScore['away_player_name'] = $this->getPlayerName($testmatchScore['away_player'] ?? null, $awayTeamPlayers);
+    }
+
+    // Totale score berekenen op basis van gespeelde manches
     $homeScore = array_reduce($scores, fn($carry, $item) => $carry + ($item['1M'] == 1 ? 1 : 0), 0);
     $awayScore = array_reduce($scores, fn($carry, $item) => $carry + ($item['1M'] == 2 ? 1 : 0), 0);
 
@@ -262,29 +302,46 @@ public function edit(CupGame $game)
 
 
 
+
+
+
 public function editForm(Cup $cup, CupGame $game)
 {
     Log::info('editForm method called', ['cup_id' => $cup->id, 'game_id' => $game->id]);
 
-    // Load required game relations
+    // Laad de benodigde relaties voor de wedstrijd en spelers
     $game->load([
-        'homeTeam.players', // Load only players belonging directly to the home team
-        'awayTeam.players',  
-        'manches.player1', 
+        'homeTeam' => function ($query) {
+            $query->with(['club.teams.players']);
+        },
+        'awayTeam' => function ($query) {
+            $query->with(['club.teams.players']);
+        },
+        'manches.player1',
         'manches.player2',
-        'round'
+        'round',
     ]);
 
     Log::info('Loaded game relations successfully', ['game_id' => $game->id]);
 
-    // Check if LiveScore exists, otherwise create an initial one
+    // Haal alle spelers van het thuisteam en teams binnen dezelfde club op
+    $homeTeamPlayers = $game->homeTeam->club->teams->flatMap(function ($team) {
+        return $team->players;
+    })->unique('id');
+
+    // Haal alle spelers van het uitteam en teams binnen dezelfde club op
+    $awayTeamPlayers = $game->awayTeam->club->teams->flatMap(function ($team) {
+        return $team->players;
+    })->unique('id');
+
+    // Haal of creëer de LiveScore voor de wedstrijd
     $liveScore = LiveScore::firstOrCreate(
         ['game_id' => $game->id],
         ['data' => json_encode([
             'home_team_name' => $game->homeTeam->name ?? 'Onbekend',
             'away_team_name' => $game->awayTeam->name ?? 'Onbekend',
-            'home_score' => 0,
-            'away_score' => 0,
+            'home_score' => $game->home_score ?? 0,
+            'away_score' => $game->away_score ?? 0,
             'scores' => array_fill(0, 6, [
                 'home_player_name' => 'Nog niet gestart',
                 'away_player_name' => 'Nog niet gestart',
@@ -293,49 +350,71 @@ public function editForm(Cup $cup, CupGame $game)
                 '1M' => null,
                 '2M' => null,
                 'Belle' => null,
-                'WinnerId' => null
+                'WinnerId' => null,
             ]),
-            'division_name' => $game->division->name ?? '',
-            'game_date' => $game->date ? $game->date->format('Y-m-d') : 'Onbekende datum'
         ])]
     );
 
     Log::info('LiveScore loaded or created successfully', ['game_id' => $game->id]);
 
-    // Convert the live score data to an array
+    // Decode LiveScore data
     $liveScoreData = json_decode($liveScore->data, true);
 
-    $homeTeamPlayers = $game->homeTeam->players;
-    $awayTeamPlayers = $game->awayTeam->players;
-
-    // Load the manches and make sure they are consistent with the live score
-    $scores = $game->manches->count() > 0 ? $game->manches->map(function ($manche) {
+    // Bereid de scores voor
+    $scores = collect($liveScoreData['scores'] ?? [])->map(function ($score) use ($game) {
         return [
-            'home_player_name' => $manche->player1 ? $manche->player1->first_name . ' ' . $manche->player1->last_name : 'Nog niet gestart',
-            'away_player_name' => $manche->player2 ? $manche->player2->first_name . ' ' . $manche->player2->last_name : 'Nog niet gestart',
-            '1M' => $manche->score1 ?? 'N/A',
-            '2M' => $manche->score2 ?? 'N/A',
-            'Belle' => $manche->belle_score ?? 'N/A',
+            'home_player_name' => $score['home_player_name'] ?? 'Nog niet gestart',
+            'away_player_name' => $score['away_player_name'] ?? 'Nog niet gestart',
+            '1M' => $score['1M'] ?? null,
+            '2M' => $score['2M'] ?? null,
+            'Belle' => $score['Belle'] ?? null,
+            'WinnerId' => $score['WinnerId'] ?? null,
         ];
-    })->toArray() : ($liveScoreData['scores'] ?? []);
+    })->toArray();
 
+    // Controleer of een testmatch vereist is
     $testMatchRequired = $this->requiresTestMatch($game);
 
-    // Calculate the total score if applicable
-    $totalScore = $this->getTotalScore($game);
-    if ($totalScore === null) {
-        $totalScore = [
-            'first_leg_home_score' => 0,
-            'first_leg_away_score' => 0,
-            'second_leg_home_score' => 0,
-            'second_leg_away_score' => 0,
-            'total_home_score' => 0,
-            'total_away_score' => 0,
+    // Voeg extra logica toe voor testmatch indien nodig
+    $testMatchScores = collect($liveScoreData['testmatch_scores'] ?? [])->map(function ($testMatch) {
+        return [
+            'home_player_name' => $testMatch['home_player_name'] ?? 'Nog niet gestart',
+            'away_player_name' => $testMatch['away_player_name'] ?? 'Nog niet gestart',
+            '1M' => $testMatch['1M'] ?? null,
         ];
-    }
+    })->toArray();
 
-    return view('cups.cup_match_form', compact('game', 'homeTeamPlayers', 'awayTeamPlayers', 'testMatchRequired', 'scores', 'liveScoreData', 'totalScore'));
+    // Bereken de totale score voor terugwedstrijden
+    $totalScore = $this->getTotalScore($game) ?? [
+        'first_leg_home_score' => 0,
+        'first_leg_away_score' => 0,
+        'second_leg_home_score' => 0,
+        'second_leg_away_score' => 0,
+        'total_home_score' => 0,
+        'total_away_score' => 0,
+    ];
+
+    Log::info('Prepared data for the view', [
+        'testMatchRequired' => $testMatchRequired,
+        'totalScore' => $totalScore,
+        'scores' => $scores,
+        'testMatchScores' => $testMatchScores,
+    ]);
+
+    // Return de bewerkingspagina voor de CupGame
+    return view('cups.cup_match_form', compact(
+        'game',
+        'homeTeamPlayers',
+        'awayTeamPlayers',
+        'scores',
+        'testMatchRequired',
+        'testMatchScores',
+        'totalScore',
+        'liveScoreData'
+    ));
 }
+
+
 
 
 public function showLiveScores()
@@ -608,48 +687,35 @@ public function update(Request $request, CupGame $game)
 {
     $liveScore = LiveScore::where('game_id', $game->id)->first();
 
+    $defaultScores = array_map(function () use ($game) {
+        return [
+            'home_player_name' => 'Nog niet gestart',
+            'away_player_name' => 'Nog niet gestart',
+            'home_player_team' => $game->homeTeam->name ?? 'Onbekend',
+            'away_player_team' => $game->awayTeam->name ?? 'Onbekend',
+            '1M' => '',
+            '2M' => '',
+            'Belle' => '',
+            'WinnerId' => null,
+        ];
+    }, range(0, 5));
+
     if ($liveScore) {
         $data = json_decode($liveScore->data, true);
-
-        // Controleer of 'scores' bestaat en zorg ervoor dat het altijd een array is
-        if (!isset($data['scores']) || !is_array($data['scores'])) {
-            $data['scores'] = array_map(function($index) use ($game) {
-                return [
-                    'home_player_name' => 'Nog niet gestart',
-                    'away_player_name' => 'Nog niet gestart',
-                    'home_player_team' => $game->homeTeam->name ?? 'Onbekend',
-                    'away_player_team' => $game->awayTeam->name ?? 'Onbekend',
-                    '1M' => '',
-                    '2M' => '',
-                    'Belle' => '',
-                    'WinnerId' => null
-                ];
-            }, range(0, 5));
-        }
+        $data['scores'] = $data['scores'] ?? $defaultScores;
 
         return response()->json($data);
     } else {
-        // Geef een standaard response terug als er geen LiveScore is gevonden
         return response()->json([
             'home_team_name' => $game->homeTeam->name ?? 'Onbekend',
             'away_team_name' => $game->awayTeam->name ?? 'Onbekend',
             'home_score' => $game->home_score ?? 0,
             'away_score' => $game->away_score ?? 0,
-            'scores' => array_map(function($index) use ($game) {
-                return [
-                    'home_player_name' => 'Nog niet gestart',
-                    'away_player_name' => 'Nog niet gestart',
-                    'home_player_team' => $game->homeTeam->name ?? 'Onbekend',
-                    'away_player_team' => $game->awayTeam->name ?? 'Onbekend',
-                    '1M' => '',
-                    '2M' => '',
-                    'Belle' => '',
-                    'WinnerId' => null
-                ];
-            }, range(0, 5)),
+            'scores' => $defaultScores,
         ]);
     }
 }
+
 
 protected function getPlayerIdByName($name)
 {
