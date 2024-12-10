@@ -2,18 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\Cup;
-use App\Models\CupGame;
 use App\Models\Game;
-use App\Models\LiveScore;
+use App\Models\Team;
 use App\Models\Manche;
 use App\Models\Player;
 use App\Models\Season;
-use App\Models\Team;
+use App\Models\CupGame;
+use App\Models\LiveScore;
+use App\Models\LiveScoreCup;
+use Illuminate\Http\Request;
 use App\Services\GameService;
 use App\Services\LiveScoreService;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -112,7 +113,7 @@ public function startGame(Cup $cup, CupGame $game)
             try {
                 // Creëer de LiveScore met transactionele veiligheid
                 DB::transaction(function () use ($game, $initialScores) {
-                    LiveScore::create([
+                    LiveScoreCup::create([
                         'game_id' => $game->id,
                         'data' => json_encode([
                             'home_team_name' => $game->homeTeam->name ?? 'Onbekend',
@@ -216,7 +217,7 @@ public function show(Cup $cup, CupGame $game)
         }
     } else {
         // Gebruik LiveScore-gegevens als er geen recente manches zijn
-        $liveScore = LiveScore::where('game_id', $game->id)->first();
+        $liveScore = LiveScoreCup::where('game_id', $game->id)->first();
         $liveData = $liveScore ? json_decode($liveScore->data, true) : null;
 
         if ($liveData && isset($liveData['scores'])) {
@@ -267,7 +268,7 @@ public function edit(CupGame $game)
     ]);
 
     // Haal live score gegevens op
-    $liveScore = LiveScore::where('game_id', $game->id)->first();
+    $liveScore = LiveScoreCup::where('game_id', $game->id)->first();
     $liveData = $liveScore ? json_decode($liveScore->data, true) : null;
 
     // Spelerinformatie ophalen
@@ -300,11 +301,6 @@ public function edit(CupGame $game)
     return view('cupGames.edit', compact('game', 'homeTeamPlayers', 'awayTeamPlayers', 'scores', 'testmatchScores', 'homeScore', 'awayScore'));
 }
 
-
-
-
-
-
 public function editForm(Cup $cup, CupGame $game)
 {
     Log::info('editForm method called', ['cup_id' => $cup->id, 'game_id' => $game->id]);
@@ -335,7 +331,7 @@ public function editForm(Cup $cup, CupGame $game)
     })->unique('id');
 
     // Haal of creëer de LiveScore voor de wedstrijd
-    $liveScore = LiveScore::firstOrCreate(
+    $liveScore = LiveScoreCup::firstOrCreate(
         ['game_id' => $game->id],
         ['data' => json_encode([
             'home_team_name' => $game->homeTeam->name ?? 'Onbekend',
@@ -352,6 +348,11 @@ public function editForm(Cup $cup, CupGame $game)
                 'Belle' => null,
                 'WinnerId' => null,
             ]),
+            'testmatch_scores' => array_fill(0, 3, [
+                'home_player_name' => 'Nog niet gestart',
+                'away_player_name' => 'Nog niet gestart',
+                '1M' => null,
+            ]),
         ])]
     );
 
@@ -360,29 +361,43 @@ public function editForm(Cup $cup, CupGame $game)
     // Decode LiveScore data
     $liveScoreData = json_decode($liveScore->data, true);
 
-    // Bereid de scores voor
-    $scores = collect($liveScoreData['scores'] ?? [])->map(function ($score) use ($game) {
-        return [
-            'home_player_name' => $score['home_player_name'] ?? 'Nog niet gestart',
-            'away_player_name' => $score['away_player_name'] ?? 'Nog niet gestart',
-            '1M' => $score['1M'] ?? null,
-            '2M' => $score['2M'] ?? null,
-            'Belle' => $score['Belle'] ?? null,
-            'WinnerId' => $score['WinnerId'] ?? null,
-        ];
-    })->toArray();
+    // Valideer en standaardiseer wedstrijdscores
+    $liveScoreData['scores'] = array_map(function ($score) use ($game) {
+        return array_merge([
+            'home_player_name' => 'Nog niet gestart',
+            'away_player_name' => 'Nog niet gestart',
+            'home_player_team' => $game->homeTeam->name ?? 'Onbekend',
+            'away_player_team' => $game->awayTeam->name ?? 'Onbekend',
+            '1M' => null,
+            '2M' => null,
+            'Belle' => null,
+            'WinnerId' => null,
+        ], $score);
+    }, $liveScoreData['scores'] ?? array_fill(0, 6, []));
+
+    // Valideer en standaardiseer `TestMatch`-scores
+    $liveScoreData['testmatch_scores'] = array_map(function ($testMatch) use ($game) {
+        return array_merge([
+            'home_player_name' => 'Nog niet gestart',
+            'away_player_name' => 'Nog niet gestart',
+            '1M' => null,
+        ], $testMatch);
+    }, $liveScoreData['testmatch_scores'] ?? array_fill(0, 3, []));
+
+    // Werk LiveScore bij als wijzigingen zijn aangebracht
+    $liveScore->data = json_encode($liveScoreData);
+    $liveScore->save();
+
+    Log::info('Scores and TestMatch scores validated and saved.', ['game_id' => $game->id]);
+
+    // Bereid de wedstrijdscores voor de view voor
+    $scores = collect($liveScoreData['scores'])->toArray();
+
+    // Bereid de testmatchscores voor de view voor
+    $testMatchScores = collect($liveScoreData['testmatch_scores'])->toArray();
 
     // Controleer of een testmatch vereist is
     $testMatchRequired = $this->requiresTestMatch($game);
-
-    // Voeg extra logica toe voor testmatch indien nodig
-    $testMatchScores = collect($liveScoreData['testmatch_scores'] ?? [])->map(function ($testMatch) {
-        return [
-            'home_player_name' => $testMatch['home_player_name'] ?? 'Nog niet gestart',
-            'away_player_name' => $testMatch['away_player_name'] ?? 'Nog niet gestart',
-            '1M' => $testMatch['1M'] ?? null,
-        ];
-    })->toArray();
 
     // Bereken de totale score voor terugwedstrijden
     $totalScore = $this->getTotalScore($game) ?? [
@@ -394,7 +409,7 @@ public function editForm(Cup $cup, CupGame $game)
         'total_away_score' => 0,
     ];
 
-    Log::info('Prepared data for the view', [
+    Log::info('Prepared data for the view.', [
         'testMatchRequired' => $testMatchRequired,
         'totalScore' => $totalScore,
         'scores' => $scores,
@@ -413,8 +428,6 @@ public function editForm(Cup $cup, CupGame $game)
         'liveScoreData'
     ));
 }
-
-
 
 
 public function showLiveScores()
@@ -539,7 +552,7 @@ public function update(Request $request, CupGame $game)
     }
 
     // Update LiveScore met de bijgewerkte manche gegevens
-    $liveScore = LiveScore::where('game_id', $game->id)->first();
+    $liveScore = LiveScoreCup::where('game_id', $game->id)->first();
     if ($liveScore) {
         $liveScoreData = json_decode($liveScore->data, true);
         $liveScoreData['home_score'] = $validatedData['home_score'] ?? $liveScoreData['home_score'];
@@ -685,7 +698,7 @@ public function update(Request $request, CupGame $game)
     // Functie voor het ophalen van live scores voor een wedstrijd
     public function fetchLiveScore(CupGame $game)
 {
-    $liveScore = LiveScore::where('game_id', $game->id)->first();
+    $liveScore = LiveScoreCup::where('game_id', $game->id)->first();
 
     $defaultScores = array_map(function () use ($game) {
         return [
@@ -894,7 +907,7 @@ public function updateLiveScore(Request $request, CupGame $game)
         Log::info('Final data to be stored in LiveScore:', $dataToStore);
 
         // Update of maak de live score aan
-        LiveScore::updateOrCreate(
+        LiveScoreCup::updateOrCreate(
             ['game_id' => $game->id],
             ['data' => json_encode($dataToStore)]
         );
@@ -913,18 +926,13 @@ public function updateLiveScore(Request $request, CupGame $game)
         return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
 }
-
-
-
-
-
     
-    public function requestApproval($cup_id, $game_id)
+public function requestApproval($cup_id, $game_id)
 {
     Log::info('requestApproval called', ['cup_id' => $cup_id, 'game_id' => $game_id]);
 
-    // Fetch the game with its related teams and clubs
-    $game = CupGame::with(['homeTeam', 'awayTeam', 'homeTeam.club', 'awayTeam.club', 'liveScore'])
+    // Fetch the game with its related teams, clubs, and live score
+    $game = CupGame::with(['homeTeam', 'awayTeam', 'homeTeam.club', 'awayTeam.club', 'liveScoreCup'])
         ->where('id', $game_id)
         ->first();
 
@@ -944,20 +952,18 @@ public function updateLiveScore(Request $request, CupGame $game)
     Log::info('Game found', ['game' => $game]);
 
     // Extract live score data if available
-    $liveData = $game->liveScore ? json_decode($game->liveScore->data, true) : null;
+    $liveScore = $game->liveScoreCup;
+    $liveData = $liveScore ? json_decode($liveScore->data, true) : null;
+
     if ($liveData) {
         Log::info('Live data found for game', ['liveData' => $liveData]);
     } else {
         Log::info('No live data found for game', ['game_id' => $game_id]);
     }
 
+    // Return the view with game and live data
     return view('cupGames.approval', compact('game', 'liveData'));
 }
-
-
-
-
-    
 
 public function approveGame(Request $request, Cup $cup, CupGame $game)
 {
@@ -975,129 +981,130 @@ public function approveGame(Request $request, Cup $cup, CupGame $game)
     $isDryRun = $request->has('dry_run');
     Log::info('Dry run mode:', ['isDryRun' => $isDryRun]);
 
-    if ($user->team_id == $game->away_team_id || $user->role == 'admin') {
-        Log::info('User authorized to approve game', ['user_id' => $user->id]);
+    // Controleer of de gebruiker bevoegd is
+    if ($user->team_id != $game->away_team_id && $user->role !== 'admin') {
+        Log::warning('Ongeautoriseerde gebruiker probeerde goed te keuren', [
+            'user_id' => $user->id,
+            'game_id' => $game->id,
+        ]);
+        return redirect()->route('dashboard')->withErrors(['msg' => 'Je bent niet bevoegd om deze wedstrijd goed te keuren.']);
+    }
 
-        $liveScore = LiveScore::where('game_id', $game->id)->first();
-        if (!$liveScore) {
-            Log::error('Geen live score gegevens gevonden', ['game_id' => $game->id]);
-            return redirect()->route('dashboard')->withErrors(['msg' => 'Geen live score gegevens gevonden voor deze wedstrijd.']);
+    Log::info('User authorized to approve game', ['user_id' => $user->id]);
+
+    // Haal LiveScoreCup op
+    $liveScore = LiveScoreCup::where('game_id', $game->id)->first();
+    if (!$liveScore) {
+        Log::error('Geen live score gegevens gevonden', ['game_id' => $game->id]);
+        return redirect()->route('dashboard')->withErrors(['msg' => 'Geen live score gegevens gevonden voor deze wedstrijd.']);
+    }
+
+    $liveData = json_decode($liveScore->data, true);
+    if (!$liveData) {
+        Log::error('Fout bij het decoderen van live score data', ['game_id' => $game->id]);
+        return redirect()->route('dashboard')->withErrors(['msg' => 'Ongeldige live score data.']);
+    }
+    Log::info('LiveScore Data:', ['live_data' => $liveData]);
+
+    $testMatchScores = $liveData['testmatch_scores'] ?? [];
+    Log::info('Testmatch data:', ['testMatchScores' => $testMatchScores]);
+
+    DB::beginTransaction();
+    try {
+        // Update de game scores
+        $game->home_score = $liveData['home_score'] ?? 0;
+        $game->away_score = $liveData['away_score'] ?? 0;
+        Log::info('Updating game scores for approval', [
+            'home_score' => $game->home_score,
+            'away_score' => $game->away_score,
+        ]);
+
+        if (!$isDryRun) {
+            $game->away_team_approved = true;
+            $game->save();
+            Log::info('Wedstrijd succesvol goedgekeurd', ['game_id' => $game->id]);
         }
 
-        $liveData = json_decode($liveScore->data, true);
-        Log::info('LiveScore Data:', ['live_data' => $liveData]);
+        // Verwerk de hoofd scores
+        foreach ($liveData['scores'] ?? [] as $index => $score) {
+            $homePlayerName = $score['home_player_name'] ?? 'Onbekend';
+            $awayPlayerName = $score['away_player_name'] ?? 'Onbekend';
 
-        $testMatchScores = $liveData['testmatch_scores'] ?? [];
-        Log::info('Testmatch data:', ['testMatchScores' => $testMatchScores]);
+            $homePlayerId = $this->getPlayerIdByName($homePlayerName);
+            $awayPlayerId = $this->getPlayerIdByName($awayPlayerName);
 
-        DB::beginTransaction();
-        try {
-            // Update the game scores
-            $game->home_score = $liveData['home_score'];
-            $game->away_score = $liveData['away_score'];
-            Log::info('Updating game scores for approval', [
-                'home_score' => $game->home_score,
-                'away_score' => $game->away_score,
+            $winnerId = $this->determineWinner($score, $homePlayerId, $awayPlayerId);
+
+            Log::info('Manche verwerkt', [
+                'game_id' => $game->id,
+                'home_player_id' => $homePlayerId,
+                'away_player_id' => $awayPlayerId,
+                'score1' => $score['1M'] ?? null,
+                'score2' => $score['2M'] ?? null,
+                'belle_score' => $score['Belle'] ?? null,
+                'winner_id' => $winnerId,
             ]);
 
             if (!$isDryRun) {
-                $game->away_team_approved = true;
-                $game->save();
-                Log::info('Wedstrijd succesvol goedgekeurd', ['game_id' => $game->id]);
+                Manche::updateOrCreate(
+                    [
+                        'game_id' => $game->id,
+                        'number' => $index + 1,
+                    ],
+                    [
+                        'player1_id' => $homePlayerId,
+                        'player2_id' => $awayPlayerId,
+                        'score1' => $score['1M'] ?? null,
+                        'score2' => $score['2M'] ?? null,
+                        'belle_score' => $score['Belle'] ?? null,
+                        'winner_id' => $winnerId,
+                    ]
+                );
             }
-
-            // Process the main scores
-            foreach ($liveData['scores'] as $index => $score) {
-                $homePlayerName = $score['home_player_name'];
-                $awayPlayerName = $score['away_player_name'];
-
-                $homePlayerId = $this->getPlayerIdByName($homePlayerName);
-                $awayPlayerId = $this->getPlayerIdByName($awayPlayerName);
-
-                $winnerId = $this->determineWinner($score, $homePlayerId, $awayPlayerId);
-
-                Log::info('Manche verwerkt', [
-                    'game_id' => $game->id,
-                    'home_player_id' => $homePlayerId,
-                    'away_player_id' => $awayPlayerId,
-                    'score1' => $score['1M'],
-                    'score2' => $score['2M'],
-                    'belle_score' => $score['Belle'] !== '' ? $score['Belle'] : null,
-                    'winner_id' => $winnerId,
-                ]);
-
-                if (!$isDryRun) {
-                    Manche::updateOrCreate(
-                        [
-                            'game_id' => $game->id,
-                            'number' => $index + 1,
-                        ],
-                        [
-                            'player1_id' => $homePlayerId,
-                            'player2_id' => $awayPlayerId,
-                            'score1' => $score['1M'],
-                            'score2' => $score['2M'],
-                            'belle_score' => $score['Belle'] !== '' ? $score['Belle'] : null,
-                            'winner_id' => $winnerId,
-                        ]
-                    );
-                }
-            }
-
-            // Process the testmatch scores
-            foreach ($testMatchScores as $index => $testmatch) {
-                $homePlayerName = $testmatch['home_player_name'];
-                $awayPlayerName = $testmatch['away_player_name'];
-
-                $homePlayerId = $this->getPlayerIdByName($homePlayerName);
-                $awayPlayerId = $this->getPlayerIdByName($awayPlayerName);
-
-                Log::info('Testmatch verwerkt', [
-                    'game_id' => $game->id,
-                    'home_player_id' => $homePlayerId,
-                    'away_player_id' => $awayPlayerId,
-                    '1M' => $testmatch['1M'],
-                ]);
-
-                if (!$isDryRun) {
-                    Manche::updateOrCreate(
-                        [
-                            'game_id' => $game->id,
-                            'number' => 100 + $index, // Offset for testmatches
-                        ],
-                        [
-                            'player1_id' => $homePlayerId,
-                            'player2_id' => $awayPlayerId,
-                            'score1' => $testmatch['1M'],
-                            'score2' => null, // No second manche for testmatch
-                            'belle_score' => null,
-                            'winner_id' => $testmatch['1M'] == 1 ? $homePlayerId : ($testmatch['1M'] == 2 ? $awayPlayerId : null),
-                        ]
-                    );
-                }
-            }
-
-            DB::commit();
-            Log::info('Wedstrijd goedgekeurd', ['game_id' => $game->id]);
-            return redirect()->route('home')->with('success', 'Wedstrijd succesvol goedgekeurd!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Fout tijdens goedkeuren van wedstrijd', ['error' => $e->getMessage()]);
-            return redirect()->route('dashboard')->withErrors(['msg' => $e->getMessage()]);
         }
+
+        // Verwerk de testmatch scores
+        foreach ($testMatchScores as $index => $testmatch) {
+            $homePlayerName = $testmatch['home_player_name'] ?? 'Onbekend';
+            $awayPlayerName = $testmatch['away_player_name'] ?? 'Onbekend';
+
+            $homePlayerId = $this->getPlayerIdByName($homePlayerName);
+            $awayPlayerId = $this->getPlayerIdByName($awayPlayerName);
+
+            Log::info('Testmatch verwerkt', [
+                'game_id' => $game->id,
+                'home_player_id' => $homePlayerId,
+                'away_player_id' => $awayPlayerId,
+                '1M' => $testmatch['1M'] ?? null,
+            ]);
+
+            if (!$isDryRun) {
+                Manche::updateOrCreate(
+                    [
+                        'game_id' => $game->id,
+                        'number' => 100 + $index, // Offset voor testmatches
+                    ],
+                    [
+                        'player1_id' => $homePlayerId,
+                        'player2_id' => $awayPlayerId,
+                        'score1' => $testmatch['1M'] ?? null,
+                        'score2' => null, // Geen tweede manche voor testmatch
+                        'belle_score' => null,
+                        'winner_id' => $testmatch['1M'] == 1 ? $homePlayerId : ($testmatch['1M'] == 2 ? $awayPlayerId : null),
+                    ]
+                );
+            }
+        }
+
+        DB::commit();
+        Log::info('Wedstrijd goedgekeurd', ['game_id' => $game->id]);
+        return redirect()->route('home')->with('success', 'Wedstrijd succesvol goedgekeurd!');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Fout tijdens goedkeuren van wedstrijd', ['error' => $e->getMessage()]);
+        return redirect()->route('dashboard')->withErrors(['msg' => $e->getMessage()]);
     }
-
-    Log::warning('Ongeautoriseerde gebruiker probeerde goed te keuren', [
-        'user_id' => $user->id,
-        'game_id' => $game->id,
-    ]);
-
-    return redirect()->route('dashboard')->withErrors(['msg' => 'Je bent niet bevoegd om deze wedstrijd goed te keuren.']);
 }
-
-
-
-
 
  // Controleer of beide teams de wedstrijd hebben goedgekeurd
  protected function checkApprovalStatus(CupGame $game)
@@ -1134,7 +1141,7 @@ public function approveGame(Request $request, Cup $cup, CupGame $game)
          }
  
          // Haal de huidige scores op uit de LiveScore voor de terugwedstrijd
-         $liveScore = LiveScore::where('game_id', $game->id)->first();
+         $liveScore = LiveScoreCup::where('game_id', $game->id)->first();
          if (!$liveScore) {
              Log::error('No live score found for return game', ['game_id' => $game->id]);
              return null;

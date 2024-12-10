@@ -490,29 +490,21 @@ public function destroyGame(Cup $cup, CupGame $game)
         ->where('away_team_id', $game->home_team_id)
         ->first();
 
-    // Verwijder corresponderende wedstrijd indien gevonden
+    // Log een waarschuwing in plaats van de corresponderende wedstrijd te verwijderen
     if ($correspondingGameNext) {
-        $correspondingGameNext->delete();
-        Log::info('Corresponderende wedstrijd (volgende ID) succesvol verwijderd', ['game_id' => $correspondingGameNext->id]);
+        Log::info('Corresponderende wedstrijd (volgende ID) gevonden, maar niet verwijderd', ['game_id' => $correspondingGameNext->id]);
     } elseif ($correspondingGamePrevious) {
-        $correspondingGamePrevious->delete();
-        Log::info('Corresponderende wedstrijd (vorige ID) succesvol verwijderd', ['game_id' => $correspondingGamePrevious->id]);
+        Log::info('Corresponderende wedstrijd (vorige ID) gevonden, maar niet verwijderd', ['game_id' => $correspondingGamePrevious->id]);
     } else {
         Log::warning('Geen corresponderende wedstrijd gevonden voor wedstrijd ID: ' . $currentGameId);
     }
 
-    // Verwijder de huidige wedstrijd
+    // Verwijder alleen de huidige wedstrijd
     $game->delete();
-    Log::info('Wedstrijd succesvol verwijderd', ['game_id' => $currentGameId]);
+    Log::info('Alleen de geselecteerde wedstrijd is verwijderd', ['game_id' => $currentGameId]);
 
-    return redirect()->route('cups.show', $cup->id)->with('success', 'Wedstrijd(en) succesvol verwijderd.');
+    return redirect()->route('cups.show', $cup->id)->with('success', 'Wedstrijd succesvol verwijderd.');
 }
-
-
-
-
-
-
 
     // 7. Edit a Cup
     public function edit(Cup $cup)

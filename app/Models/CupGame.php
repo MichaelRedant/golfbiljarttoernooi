@@ -49,10 +49,12 @@ protected $casts = [
         return $this->belongsTo(CupRound::class, 'cup_round_id');
     }
 
-    public function liveScore()
+    public function liveScoreCup()
     {
-        return $this->hasOne(LiveScore::class, 'game_id', 'id');
+        return $this->hasOne(LiveScoreCup::class, 'game_id');
     }
+    
+    
 
     public function getIsFinishedAttribute()
     {

@@ -13,10 +13,15 @@
         <p>{{ $message }}</p>
     @else
         @php
-            // Groepeer wedstrijden per divisie of ronde (voor cup games)
+            // Groepeer wedstrijden per beker en ronde
             $groupedGames = [];
             foreach($liveData as $data) {
-                $groupName = $data['division_name'] ?? ($data['round_name'] ?? 'Onbekende Reeks/Ronde');
+                // Voor cup games: gebruik bekernaam en ronde
+                if (isset($data['cup_name'], $data['round_name'])) {
+                    $groupName = $data['cup_name'] . ' - ' . $data['round_name'];
+                } else {
+                    $groupName = $data['division_name'] ?? ($data['round_name'] ?? 'Onbekende Reeks/Ronde');
+                }
                 $groupedGames[$groupName][] = $data;
             }
         @endphp
@@ -50,9 +55,6 @@
                                                                 | Forfait door {{ $data['forfeit_team'] == 'home' ? $data['home_team_name'] : $data['away_team_name'] }} (Score: {{ $data['forfeit_team'] == 'home' ? '0 - 6' : '6 - 0' }})
                                                             @else
                                                                 | Score: {{ $data['home_score'] ?? '' }} - {{ $data['away_score'] ?? '' }}
-                                                            @endif
-                                                            @if(isset($data['round_name']))
-                                                                <span class="badge badge-danger ml-2">Beker</span>
                                                             @endif
                                                         </span>
                                                         <i class="fas fa-chevron-down"></i>

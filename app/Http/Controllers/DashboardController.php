@@ -26,6 +26,8 @@ class DashboardController extends Controller
         $this->gameService = $gameService;
     }
 
+
+
     public function index(Request $request)
 {
     Log::info('DashboardController@index reached');
@@ -79,7 +81,7 @@ class DashboardController extends Controller
             });
 
         // Haal goedkeuringen op voor bekerwedstrijden
-        $pendingCupGames = CupGame::with('homeTeam', 'awayTeam', 'liveScore')
+        $pendingCupGames = CupGame::with('homeTeam', 'awayTeam', 'liveScoreCup')
             ->where('away_team_approved', false)
             ->whereBetween('date', [$yesterday, $today])
             ->get()
@@ -165,7 +167,7 @@ class DashboardController extends Controller
             });
 
         // Haal goedkeuringen op voor bekerwedstrijden van het team
-        $pendingCupGames = CupGame::with('homeTeam', 'awayTeam', 'liveScore')
+        $pendingCupGames = CupGame::with('homeTeam', 'awayTeam', 'liveScoreCup')
             ->where(function ($query) use ($team) {
                 $query->where('home_team_id', $team->id)
                     ->orWhere('away_team_id', $team->id);

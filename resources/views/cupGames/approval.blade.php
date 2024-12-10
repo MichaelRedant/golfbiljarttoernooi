@@ -76,9 +76,9 @@
                 <th>Wedstrijdscore</th>
                 <td>
                     @php
-                        $liveData = $game->liveScore ? json_decode($game->liveScore->data, true) : null;
+                        $liveData = $liveData ?? [];
                     @endphp
-                    @if($liveData)
+                    @if(!empty($liveData))
                         <span class="badge">{{ $liveData['home_score'] ?? 'N/A' }}</span> - 
                         <span class="badge">{{ $liveData['away_score'] ?? 'N/A' }}</span>
                     @else
