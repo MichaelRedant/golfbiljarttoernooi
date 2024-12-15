@@ -1052,11 +1052,11 @@ public function show(Request $request, Division $division, Game $game)
 
 public function showGame(Game $game)
 {
-    // Controleer of de functie wordt aangeroepen
+    // Log het begin van de functie
     Log::info('Entering showGame function', ['game_id' => $game->id]);
 
     try {
-        // Laad de nodige relaties: thuisteam, uitteam en manches met spelers
+        // Laad de benodigde relaties
         $game->load(['homeTeam', 'awayTeam', 'manches.player1', 'manches.player2']);
         Log::info('Game relaties geladen', ['game' => $game->toArray()]);
     } catch (\Exception $e) {
@@ -1064,72 +1064,76 @@ public function showGame(Game $game)
         return back()->withErrors('Er is een fout opgetreden bij het laden van de game-gegevens.');
     }
 
-    // Zoek naar de meest recente update van de manches
+    $scores = [];
+    $liveData = null;
+
     try {
+        // Zoek naar de meest recente update van de manches
         $mostRecentManche = $game->manches()->orderBy('updated_at', 'desc')->first();
         Log::info('Meest recente manche gevonden', ['mostRecentManche' => $mostRecentManche ? $mostRecentManche->toArray() : 'None found']);
-    } catch (\Exception $e) {
-        Log::error('Error finding most recent manche in showGame', ['error' => $e->getMessage()]);
-    }
 
-    $scores = [];
+        // Controleer of de manches recent zijn bijgewerkt
+        if ($mostRecentManche && $mostRecentManche->updated_at > ($game->updated_at ?? now())) {
+            Log::info('Gebruik manche data, recent bijgewerkt');
+            foreach ($game->manches as $manche) {
+                $homePlayerName = optional($manche->player1)->first_name . ' ' . optional($manche->player1)->last_name;
+                $awayPlayerName = optional($manche->player2)->first_name . ' ' . optional($manche->player2)->last_name;
 
-    // Controleer of de manches recent zijn bijgewerkt
-    if ($mostRecentManche && $mostRecentManche->updated_at > ($game->updated_at ?? now())) {
-        Log::info('Gebruik manche data, recent bijgewerkt');
-
-        foreach ($game->manches as $manche) {
-            $homePlayerName = optional($manche->player1)->first_name . ' ' . optional($manche->player1)->last_name;
-            $awayPlayerName = optional($manche->player2)->first_name . ' ' . optional($manche->player2)->last_name;
-
-            $homePlayerTeamName = $this->getPlayerActualTeamName($homePlayerName);
-            $awayPlayerTeamName = $this->getPlayerActualTeamName($awayPlayerName);
-
-            $scores[] = [
-                'home_player_name' => $homePlayerName ?? 'Onbekend',
-                'home_player_team' => $homePlayerTeamName,
-                'away_player_name' => $awayPlayerName ?? 'Onbekend',
-                'away_player_team' => $awayPlayerTeamName,
-                '1M' => $manche->score1 ?? 'N/A',
-                '2M' => $manche->score2 ?? 'N/A',
-                'Belle' => $manche->belle_score ?? 'N/A',
-            ];
-        }
-    } else {
-        Log::info('Geen recente manche updates, gebruik LiveScore gegevens');
-        
-        $liveScore = LiveScore::where('game_id', $game->id)->first();
-        
-        if (!$liveScore) {
-            Log::warning('Geen LiveScore gevonden voor game', ['game_id' => $game->id]);
-        } else {
-            Log::info('LiveScore gevonden', ['liveScore' => $liveScore->toArray()]);
-        }
-
-        $liveData = $liveScore ? json_decode($liveScore->data, true) : null;
-
-        if ($liveData && isset($liveData['scores'])) {
-            foreach ($liveData['scores'] as $score) {
-                $homePlayerTeamName = $this->getPlayerActualTeamName($score['home_player_name']);
-                $awayPlayerTeamName = $this->getPlayerActualTeamName($score['away_player_name']);
+                $homePlayerTeamName = $this->getPlayerActualTeamName($homePlayerName);
+                $awayPlayerTeamName = $this->getPlayerActualTeamName($awayPlayerName);
 
                 $scores[] = [
-                    'home_player_name' => $score['home_player_name'] ?? 'Onbekend',
+                    'home_player_name' => $homePlayerName ?: 'Onbekend',
                     'home_player_team' => $homePlayerTeamName,
-                    'away_player_name' => $score['away_player_name'] ?? 'Onbekend',
+                    'away_player_name' => $awayPlayerName ?: 'Onbekend',
                     'away_player_team' => $awayPlayerTeamName,
-                    '1M' => $score['1M'] ?? 'N/A',
-                    '2M' => $score['2M'] ?? 'N/A',
-                    'Belle' => $score['Belle'] ?? 'N/A',
+                    '1M' => $manche->score1 ?: 'N/A',
+                    '2M' => $manche->score2 ?: 'N/A',
+                    'Belle' => $manche->belle_score ?: 'N/A',
                 ];
             }
+        } else {
+            Log::info('Geen recente manche updates, gebruik LiveScore gegevens');
+
+            $liveScore = LiveScore::where('game_id', $game->id)->first();
+
+            if (!$liveScore) {
+                Log::warning('Geen LiveScore gevonden voor game', ['game_id' => $game->id]);
+            } else {
+                Log::info('LiveScore gevonden', ['liveScore' => $liveScore->toArray()]);
+                $liveData = json_decode($liveScore->data, true);
+            }
+
+            if ($liveData && isset($liveData['scores'])) {
+                foreach ($liveData['scores'] as $score) {
+                    $homePlayerTeamName = $this->getPlayerActualTeamName($score['home_player_name']);
+                    $awayPlayerTeamName = $this->getPlayerActualTeamName($score['away_player_name']);
+
+                    $scores[] = [
+                        'home_player_name' => $score['home_player_name'] ?? 'Onbekend',
+                        'home_player_team' => $homePlayerTeamName,
+                        'away_player_name' => $score['away_player_name'] ?? 'Onbekend',
+                        'away_player_team' => $awayPlayerTeamName,
+                        '1M' => $score['1M'] ?? 'N/A',
+                        '2M' => $score['2M'] ?? 'N/A',
+                        'Belle' => $score['Belle'] ?? 'N/A',
+                    ];
+                }
+            }
         }
+    } catch (\Exception $e) {
+        Log::error('Error processing game data in showGame', ['error' => $e->getMessage()]);
+        return back()->withErrors('Er is een fout opgetreden bij het verwerken van de wedstrijdgegevens.');
     }
 
     Log::info('Rendering games.show view', ['game_id' => $game->id, 'scores' => $scores]);
 
+    // Zorg ervoor dat $liveData altijd gedefinieerd is, zelfs als het null is
+    $liveData = $liveData ?: [];
+
     return view('games.show', compact('game', 'scores', 'liveData'));
 }
+
 
 
 public function updateLiveScore(Request $request = null, Game $game)
