@@ -320,22 +320,25 @@ function fetchLiveScoreData() {
         .then(data => {
             console.log("Received live score data:", data);
 
-            if (data) {
-                // Synchroniseer de gegevens met het formulier
-                populateForm(data);
+            // Validatie: Controleer of 'data.scores' een array is
+            if (!data || !Array.isArray(data.scores)) {
+                console.warn("Invalid or missing 'scores' array in live score data:", data.scores);
 
-                // Werk de resultaten en teamnamen bij
-                updateResults();
-                updateTeamNames();
-
-                // Zorg ervoor dat beschikbare opties worden bijgewerkt
-                updateAvailableOptions();
-
-                console.log("Live score data successfully synchronized with the form.");
-            } else {
-                console.warn("Invalid or missing live score data:", data);
-                alert("Geen geldige live score gegevens ontvangen van de server. Probeer opnieuw.");
+                // Maak een lege scores array als fallback
+                data.scores = initializeDefaultScores(data);
             }
+
+            // Synchroniseer de gegevens met het formulier
+            populateForm(data);
+
+            // Werk de resultaten en teamnamen bij
+            updateResults();
+            updateTeamNames();
+
+            // Zorg ervoor dat beschikbare opties worden bijgewerkt
+            updateAvailableOptions();
+
+            console.log("Live score data successfully synchronized with the form.");
         })
         .catch(error => {
             console.error("Error fetching live score data:", error);
@@ -344,12 +347,7 @@ function fetchLiveScoreData() {
 }
 
 
-
-
-
-
 function initializeDefaultScores(data) {
-    // Creates default scores for 6 matches
     return Array.from({ length: 6 }).map(() => ({
         home_player_name: 'Nog niet gestart',
         away_player_name: 'Nog niet gestart',
@@ -358,9 +356,10 @@ function initializeDefaultScores(data) {
         '1M': '',
         '2M': '',
         Belle: '',
-        WinnerId: null
+        WinnerId: null,
     }));
 }
+
 
 document.addEventListener('DOMContentLoaded', () => {
     // Add input validation for manche and belle fields
@@ -638,80 +637,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-
-/* function updateCupLiveScore(gameId) {
-    const homeScore = document.getElementById('home_score').value;
-    const awayScore = document.getElementById('away_score').value;
-    const homeCaptain = document.querySelector('select[name="home_captain"]').value;
-    const awayCaptain = document.querySelector('select[name="away_captain"]').value;
-    const homeReserve = document.querySelector('select[name="home_reserve"]').value;
-    const awayReserve = document.querySelector('select[name="away_reserve"]').value;
-
-    // Verwerken van de scores
-    const scores = [];
-    const rows = document.querySelectorAll('tbody tr');
-    
-    rows.forEach((row, index) => {
-        const homePlayer = row.querySelector(`select[name="scores[${index}][home_player]"]`).value;
-        const awayPlayer = row.querySelector(`select[name="scores[${index}][away_player]"]`).value;
-        const firstManche = row.querySelector(`input[name="scores[${index}][1M]"]`).value;
-        const secondManche = row.querySelector(`input[name="scores[${index}][2M]"]`).value;
-        const belle = row.querySelector(`input[name="scores[${index}][Belle]"]`).value;
-
-        // Voeg alleen scores toe als beide spelers geselecteerd zijn
-        if (homePlayer && awayPlayer) {
-            scores.push({
-                home_player: homePlayer || null,
-                away_player: awayPlayer || null,
-                '1M': firstManche || null,
-                '2M': secondManche || null,
-                Belle: belle || null,
-            });
-        }
-    });
-
-    // Controleer of er scores zijn toegevoegd
-    if (scores.length === 0) {
-        console.warn('Geen scores om op te slaan.');
-        return;
-    }
-
-    // Data versturen naar de server
-    fetch(`/cup-games/${gameId}/update-live-score`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({
-            home_score: homeScore,
-            away_score: awayScore,
-            home_captain: homeCaptain || null,
-    away_captain: awayCaptain || null,
-    home_reserve: homeReserve || null,
-    away_reserve: awayReserve || null,
-            scores: scores.filter(score => 
-        score.home_player && score.away_player // Include only valid rows
-    ),
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log('Live score succesvol opgeslagen.');
-        } else {
-            console.error('Er trad een fout op bij het opslaan van de live score.');
-            //('Fout bij het opslaan van de live score.');
-        }
-    })
-    .catch(error => {
-        console.error('Error updating live score:', error);
-        //('Er is een fout opgetreden bij het bijwerken van de live score.');
-    });
-}
- */
-
-
  function saveFormData() {
     const formElement = document.getElementById('cupMatchForm');
 
@@ -779,129 +704,6 @@ function loadFormData() {
         .catch(error => console.error('Error fetching live score data:', error));
 }
 
-/* function updateCupLiveScore(gameId) {
-    console.log("Starting updateCupLiveScore for Game ID:", gameId);
-
-    const homeScoreInput = document.getElementById('home_score');
-    const awayScoreInput = document.getElementById('away_score');
-    const homeCaptainInput = document.querySelector('select[name="home_captain"]');
-    const awayCaptainInput = document.querySelector('select[name="away_captain"]');
-    const homeReserveInput = document.querySelector('select[name="home_reserve"]');
-    const awayReserveInput = document.querySelector('select[name="away_reserve"]');
-
-    const homeScore = homeScoreInput ? homeScoreInput.value : null;
-    const awayScore = awayScoreInput ? awayScoreInput.value : null;
-    const homeCaptain = homeCaptainInput ? homeCaptainInput.value : null;
-    const awayCaptain = awayCaptainInput ? awayCaptainInput.value : null;
-    const homeReserve = homeReserveInput ? homeReserveInput.value : null;
-    const awayReserve = awayReserveInput ? awayReserveInput.value : null;
-
-    console.log("Game Details:", {
-        homeScore,
-        awayScore,
-        homeCaptain,
-        awayCaptain,
-        homeReserve,
-        awayReserve,
-    });
-
-    // Collect score data
-    const rows = document.querySelectorAll('tbody tr');
-    const scores = [];
-    rows.forEach((row, index) => {
-        const homePlayerSelect = row.querySelector(`select[name="scores[${index}][home_player]"]`);
-        const awayPlayerSelect = row.querySelector(`select[name="scores[${index}][away_player]"]`);
-        const firstMancheInput = row.querySelector(`input[name="scores[${index}][1M]"]`);
-        const secondMancheInput = row.querySelector(`input[name="scores[${index}][2M]"]`);
-        const belleInput = row.querySelector(`input[name="scores[${index}][Belle]"]`);
-
-        console.log(`Processing row ${index}:`, {
-            homePlayerSelect,
-            awayPlayerSelect,
-            firstMancheInput,
-            secondMancheInput,
-            belleInput,
-        });
-
-        // Skip rows with missing elements
-        if (!homePlayerSelect || !awayPlayerSelect || !firstMancheInput || !secondMancheInput || !belleInput) {
-            console.warn(`Row ${index} is missing required fields and will be skipped.`);
-            return;
-        }
-
-        const homePlayer = homePlayerSelect.value || null;
-        const awayPlayer = awayPlayerSelect.value || null;
-        const firstManche = firstMancheInput.value || null;
-        const secondManche = secondMancheInput.value || null;
-        const belle = belleInput.value || null;
-
-        console.log(`Row ${index} values:`, {
-            homePlayer,
-            awayPlayer,
-            firstManche,
-            secondManche,
-            belle,
-        });
-
-        if (homePlayer && awayPlayer) {
-            scores.push({
-                home_player: homePlayer,
-                away_player: awayPlayer,
-                '1M': firstManche,
-                '2M': secondManche,
-                Belle: belle,
-            });
-        } else {
-            console.warn(`Row ${index} has incomplete player selections.`);
-        }
-    });
-
-    if (scores.length === 0) {
-        console.warn("No valid scores found to send to the server.");
-        return;
-    }
-
-    console.log("Final Scores to Send:", scores);
-
-    // Send data to the server
-    fetch(`/cup-games/${gameId}/update-live-score`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-        },
-        body: JSON.stringify({
-            home_score: homeScore,
-            away_score: awayScore,
-            home_captain: homeCaptain,
-            away_captain: awayCaptain,
-            home_reserve: homeReserve,
-            away_reserve: awayReserve,
-            scores: scores,
-        }),
-    })
-        .then((response) => {
-            if (!response.ok) {
-                throw new Error('Failed to update live score');
-            }
-            return response.json();
-        })
-        .then((data) => {
-            if (data.success) {
-                console.log('Live score updated successfully:', data);
-            } else {
-                //('Error occurred while saving live score.');
-                console.error('Server Response Error:', data);
-            }
-        })
-        .catch((error) => {
-            console.error('Error updating live score:', error);
-            //('Error occurred while updating the live score.');
-        });
-}
- */
-
-
 // Function to populate the form fields with live score data
 function populateForm(data) {
     console.log('Populating form with data:', data);
@@ -911,13 +713,13 @@ function populateForm(data) {
     const awayScoreInput = document.getElementById('away_score');
 
     if (homeScoreInput) {
-        homeScoreInput.value = data.home_score || 0;
+        homeScoreInput.value = data.home_score ?? 0; // Default to 0 if no home score
     } else {
         console.warn('Home score input field not found.');
     }
 
     if (awayScoreInput) {
-        awayScoreInput.value = data.away_score || 0;
+        awayScoreInput.value = data.away_score ?? 0; // Default to 0 if no away score
     } else {
         console.warn('Away score input field not found.');
     }
@@ -926,7 +728,7 @@ function populateForm(data) {
     populateCaptainsAndReserves(data);
 
     // Update player selections and scores
-    if (Array.isArray(data.scores)) {
+    if (Array.isArray(data.scores) && data.scores.length > 0) {
         data.scores.forEach((score, index) => {
             const homePlayerInput = document.querySelector(`[name="scores[${index}][home_player]"]`);
             const awayPlayerInput = document.querySelector(`[name="scores[${index}][away_player]"]`);
@@ -937,11 +739,7 @@ function populateForm(data) {
             // Populate home player
             if (homePlayerInput) {
                 const homePlayerOption = Array.from(homePlayerInput.options).find(option => option.text.includes(score.home_player_name));
-                if (homePlayerOption) {
-                    homePlayerInput.value = homePlayerOption.value;
-                } else {
-                    console.warn(`Home player "${score.home_player_name}" not found in options.`);
-                }
+                homePlayerInput.value = homePlayerOption ? homePlayerOption.value : '';
             } else {
                 console.warn(`Home player input field for index ${index} not found.`);
             }
@@ -949,30 +747,26 @@ function populateForm(data) {
             // Populate away player
             if (awayPlayerInput) {
                 const awayPlayerOption = Array.from(awayPlayerInput.options).find(option => option.text.includes(score.away_player_name));
-                if (awayPlayerOption) {
-                    awayPlayerInput.value = awayPlayerOption.value;
-                } else {
-                    console.warn(`Away player "${score.away_player_name}" not found in options.`);
-                }
+                awayPlayerInput.value = awayPlayerOption ? awayPlayerOption.value : '';
             } else {
                 console.warn(`Away player input field for index ${index} not found.`);
             }
 
             // Populate score fields
             if (firstMancheInput) {
-                firstMancheInput.value = score['1M'] || '';
+                firstMancheInput.value = score['1M'] || ''; // Default to empty string
             } else {
                 console.warn(`First manche input field for index ${index} not found.`);
             }
 
             if (secondMancheInput) {
-                secondMancheInput.value = score['2M'] || '';
+                secondMancheInput.value = score['2M'] || ''; // Default to empty string
             } else {
                 console.warn(`Second manche input field for index ${index} not found.`);
             }
 
             if (belleInput) {
-                belleInput.value = score['Belle'] || '';
+                belleInput.value = score['Belle'] || ''; // Default to empty string
             } else {
                 console.warn(`Belle input field for index ${index} not found.`);
             }
@@ -982,28 +776,40 @@ function populateForm(data) {
     }
 
     // Update TestMatch scores if present
-    if (Array.isArray(data.testmatch_scores)) {
+    if (Array.isArray(data.testmatch_scores) && data.testmatch_scores.length > 0) {
         data.testmatch_scores.forEach((testMatch, index) => {
             const testMatchHomePlayer = document.querySelector(`[name="testmatch[${index}][home_player]"]`);
             const testMatchAwayPlayer = document.querySelector(`[name="testmatch[${index}][away_player]"]`);
             const testMatchResult = document.querySelector(`[name="testmatch[${index}][1M]"]`);
 
+            // Populate test match home player
             if (testMatchHomePlayer) {
                 const homeOption = Array.from(testMatchHomePlayer.options).find(option => option.text.includes(testMatch.home_player_name));
-                if (homeOption) testMatchHomePlayer.value = homeOption.value;
+                testMatchHomePlayer.value = homeOption ? homeOption.value : '';
+            } else {
+                console.warn(`Test match home player input field for index ${index} not found.`);
             }
 
+            // Populate test match away player
             if (testMatchAwayPlayer) {
                 const awayOption = Array.from(testMatchAwayPlayer.options).find(option => option.text.includes(testMatch.away_player_name));
-                if (awayOption) testMatchAwayPlayer.value = awayOption.value;
+                testMatchAwayPlayer.value = awayOption ? awayOption.value : '';
+            } else {
+                console.warn(`Test match away player input field for index ${index} not found.`);
             }
 
+            // Populate test match result
             if (testMatchResult) {
-                testMatchResult.value = testMatch['1M'] || '';
+                testMatchResult.value = testMatch['1M'] || ''; // Default to empty string
+            } else {
+                console.warn(`Test match result input field for index ${index} not found.`);
             }
         });
+    } else {
+        console.warn('Test match scores data is not valid or missing:', data.testmatch_scores);
     }
 }
+
 
 
 // Helper function to populate captains and reserves
@@ -1065,8 +871,7 @@ function updateLiveScore(gameId) {
     // Fetch CSRF token
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     if (!csrfToken) {
-        console.error("CSRF token is missing.");
-        //("CSRF token ontbreekt. De score kan niet worden opgeslagen.");
+        alert("CSRF-token ontbreekt. De score kan niet worden opgeslagen.");
         return;
     }
 
@@ -1081,10 +886,10 @@ function updateLiveScore(gameId) {
     // Retrieve values from the form fields
     const homeScore = homeScoreInput ? parseInt(homeScoreInput.value) || 0 : null;
     const awayScore = awayScoreInput ? parseInt(awayScoreInput.value) || 0 : null;
-    const homeCaptain = homeCaptainInput ? homeCaptainInput.value || null : null;
-    const awayCaptain = awayCaptainInput ? awayCaptainInput.value || null : null;
-    const homeReserve = homeReserveInput ? homeReserveInput.value || null : null;
-    const awayReserve = awayReserveInput ? awayReserveInput.value || null : null;
+    const homeCaptain = homeCaptainInput?.value || null;
+    const awayCaptain = awayCaptainInput?.value || null;
+    const homeReserve = homeReserveInput?.value || null;
+    const awayReserve = awayReserveInput?.value || null;
 
     const scores = [];
     const testmatchScores = [];
@@ -1097,7 +902,6 @@ function updateLiveScore(gameId) {
         const secondManche = row.querySelector(`input[name="scores[${index}][2M]"]`)?.value || null;
         const belle = row.querySelector(`input[name="scores[${index}][Belle]"]`)?.value || null;
 
-        // Only include rows with both players selected
         if (homePlayer && awayPlayer) {
             scores.push({
                 home_player: homePlayer,
@@ -1130,18 +934,12 @@ function updateLiveScore(gameId) {
 
     // Validate payload
     if (!gameId || homeScore === null || awayScore === null) {
-        console.error("Validation failed: Game ID or scores are missing.", {
-            gameId,
-            homeScore,
-            awayScore,
-        });
-        //("Vul alle verplichte velden in voordat u de wedstrijd opslaat.");
+        alert("Vul alle verplichte velden in voordat u de wedstrijd opslaat.");
         return;
     }
 
     if (scores.length === 0) {
-        console.error("Validation failed: No valid scores found.");
-        //("Geen geldige wedstrijdscores gevonden. Controleer de invoer.");
+        alert("Geen geldige wedstrijdscores gevonden. Controleer de invoer.");
         return;
     }
 
@@ -1171,138 +969,28 @@ function updateLiveScore(gameId) {
     })
         .then(response => {
             if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                return response.json().then(err => {
+                    throw new Error(err.message || `HTTP error! Status: ${response.status}`);
+                });
             }
             return response.json();
         })
         .then(data => {
             if (data.success) {
                 console.log("Live score updated successfully:", data);
-                ////("De live score is succesvol opgeslagen!");
+                alert("De live score is succesvol opgeslagen!");
             } else {
                 console.error("Server-side validation failed:", data);
-                ////("Fout opgetreden bij het opslaan van de live score. Controleer de invoer.");
+                alert("Fout opgetreden bij het opslaan van de live score. Controleer de invoer.");
             }
         })
         .catch(error => {
             console.error("Error updating live score:", error);
-            ////("Er is een fout opgetreden bij het opslaan van de live score. Probeer het opnieuw.");
+            alert("Er is een fout opgetreden bij het opslaan van de live score. Probeer het opnieuw.");
         });
 }
 
 
-
-
-
-
-/* 
-function updateCupLiveScore(gameId) {
-    console.log("Updating Cup Live Score for Game ID:", gameId);
-
-    const homeScore = document.getElementById('home_score')?.value || null;
-    const awayScore = document.getElementById('away_score')?.value || null;
-    const homeCaptain = document.querySelector('select[name="home_captain"]')?.value || null;
-    const awayCaptain = document.querySelector('select[name="away_captain"]')?.value || null;
-    const homeReserve = document.querySelector('select[name="home_reserve"]')?.value || null;
-    const awayReserve = document.querySelector('select[name="away_reserve"]')?.value || null;
-
-    console.log("Captains and Reserves:", { homeCaptain, awayCaptain, homeReserve, awayReserve });
-
-    const scores = [];
-    const rows = document.querySelectorAll('tbody tr');
-
-    if (!rows.length) {
-        console.warn("No rows found in the table. Cannot update scores.");
-        return;
-    }
-
-    rows.forEach((row, index) => {
-        console.log(`Processing row ${index + 1}`);
-
-        const homePlayerSelect = row.querySelector(`select[name="scores[${index}][home_player]"]`);
-        const awayPlayerSelect = row.querySelector(`select[name="scores[${index}][away_player]"]`);
-        const firstMancheInput = row.querySelector(`input[name="scores[${index}][1M]"]`);
-        const secondMancheInput = row.querySelector(`input[name="scores[${index}][2M]"]`);
-        const belleInput = row.querySelector(`input[name="scores[${index}][Belle]"]`);
-
-        // Check if any required element is missing
-        if (!homePlayerSelect || !awayPlayerSelect || !firstMancheInput || !secondMancheInput || !belleInput) {
-            console.warn(`Row ${index + 1}: Missing required elements. Skipping this row.`);
-            console.log("Elements found:", {
-                homePlayerSelect,
-                awayPlayerSelect,
-                firstMancheInput,
-                secondMancheInput,
-                belleInput,
-            });
-            return; // Skip this row
-        }
-
-        const homePlayer = homePlayerSelect.value || null;
-        const awayPlayer = awayPlayerSelect.value || null;
-        const firstManche = firstMancheInput.value || null;
-        const secondManche = secondMancheInput.value || null;
-        const belle = belleInput.value || null;
-
-        console.log(`Row ${index + 1} Values:`, {
-            homePlayer,
-            awayPlayer,
-            firstManche,
-            secondManche,
-            belle,
-        });
-
-        scores.push({
-            home_player: homePlayer,
-            away_player: awayPlayer,
-            '1M': firstManche,
-            '2M': secondManche,
-            Belle: belle,
-        });
-    });
-
-    if (scores.length === 0) {
-        console.warn("No valid scores found to update.");
-        return;
-    }
-
-    console.log("Final Scores to Send:", scores);
-
-    fetch(`/cup-games/${gameId}/update-live-score`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-        },
-        body: JSON.stringify({
-            home_score: homeScore,
-            away_score: awayScore,
-            home_captain: homeCaptain,
-            away_captain: awayCaptain,
-            home_reserve: homeReserve,
-            away_reserve: awayReserve,
-            scores,
-        }),
-    })
-        .then((response) => {
-            if (!response.ok) {
-                throw new Error('Failed to update live score');
-            }
-            return response.json();
-        })
-        .then((data) => {
-            if (data.success) {
-                console.log('Live score updated successfully.');
-            } else {
-                //('Error occurred while saving.');
-            }
-        })
-        .catch((error) => {
-            console.error('Error updating live score:', error);
-            //('Error occurred while updating the live score.');
-        });
-}
- */
 
 // Function to fetch and update the total score
 function fetchTotalScore() {

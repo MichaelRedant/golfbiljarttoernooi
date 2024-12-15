@@ -40,12 +40,7 @@
                 <button type="submit" class="btn btn-primary">Opslaan</button>
             </form>
 
-            <!-- Button to select teams for the cup -->
-            <div class="mt-4">
-                <a href="{{ route('cups.select-teams', $cup->id) }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-users"></i> Teams Selecteren voor 1/8 Finale
-                </a>
-            </div>
+           
         </div>
     </div>
 </div>
