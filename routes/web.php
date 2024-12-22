@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\{
     ClubController, GameController, TeamController, UserController, BelleController, HomeController,
     MancheController, SponsorController, PlayerController, SeasonController, ProfileController, NewsController,
-    RankingController, CupController, CupGameController, DivisionController, ReservePlayerController, DashboardController, Auth\AuthenticatedSessionController, Auth\PasswordResetLinkController, Auth\NewPasswordController
+    RankingController, CupController, CupGameController, DivisionController, MancheCupController, ReservePlayerController, DashboardController, Auth\AuthenticatedSessionController, Auth\PasswordResetLinkController, Auth\NewPasswordController
 };
 use App\Models\Cup;
 use App\Models\CupGame;
@@ -114,7 +114,7 @@ Route::get('/api/divisions/{division}/teams', [DivisionController::class, 'getTe
 Route::get('cup/match/{game}', [GameController::class, 'editForm'])->name('cup.match.edit');
 Route::post('cup/match/{game}/update', [CupGameController::class, 'update'])->name('cup.match.update');
 
-
+Route::resource('manche_cups', MancheCupController::class);
 
 
 // News routes

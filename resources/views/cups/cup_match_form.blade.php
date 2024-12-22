@@ -342,7 +342,7 @@ function fetchLiveScoreData() {
         })
         .catch(error => {
             console.error("Error fetching live score data:", error);
-            alert("Er is een fout opgetreden bij het ophalen van live score gegevens. Controleer de verbinding en probeer opnieuw.");
+            //alert("Er is een fout opgetreden bij het ophalen van live score gegevens. Controleer de verbinding en probeer opnieuw.");
         });
 }
 
@@ -463,6 +463,31 @@ if (typeof playerSelects === 'undefined') {
     });
 }
 
+function handleForfeitSelection(row, homePlayer, awayPlayer) {
+    const firstMatchInput = row.querySelector(`input[name="scores[${row.dataset.rowIndex}][1M]"]`);
+    const secondMatchInput = row.querySelector(`input[name="scores[${row.dataset.rowIndex}][2M]"]`);
+
+    if (!firstMatchInput || !secondMatchInput) {
+        console.warn("Manche inputs not found in row:", row);
+        return;
+    }
+
+    // Reset inputs if neither player is "forfeit"
+    if (homePlayer !== 'forfeit' && awayPlayer !== 'forfeit') {
+        firstMatchInput.value = '';
+        secondMatchInput.value = '';
+        return;
+    }
+
+    // Apply forfeit rules
+    if (homePlayer === 'forfeit') {
+        firstMatchInput.value = '2';
+        secondMatchInput.value = '2';
+    } else if (awayPlayer === 'forfeit') {
+        firstMatchInput.value = '1';
+        secondMatchInput.value = '1';
+    }
+}
 
 
 
@@ -500,29 +525,27 @@ function updateResults() {
 
         const homePlayer = homePlayerSelect.value;
         const awayPlayer = awayPlayerSelect.value;
-        let isMatchComplete = false;
         let result = '';
+        let isMatchComplete = false;
 
+        // Logica voor "forfeit"
         if (!homePlayer && !awayPlayer) {
             result = ''; // Geen spelers geselecteerd
-        } else if (
-            homePlayer === 'forfeit' || 
-            awayPlayer === 'forfeit' || 
-            (firstMatchInput.value && secondMatchInput.value)
-        ) {
+        } else if (homePlayer === 'forfeit' || awayPlayer === 'forfeit') {
             isMatchComplete = true;
-        }
-
-        if (!isMatchComplete) {
-            result = 'Match loopt';
-        } else if (homePlayer === 'forfeit' && awayPlayer === 'forfeit') {
-            result = 'Beide forfait';
-        } else if (homePlayer === 'forfeit') {
-            awayScore++;
-            result = 'Uit wint (forfait)';
-        } else if (awayPlayer === 'forfeit') {
-            homeScore++;
-            result = 'Thuis wint (forfait)';
+            if (homePlayer === 'forfeit' && awayPlayer === 'forfeit') {
+                result = 'Beide forfait';
+            } else if (homePlayer === 'forfeit') {
+                awayScore++;
+                result = 'Uit wint (forfait)';
+                firstMatchInput.value = '2';
+                secondMatchInput.value = '2';
+            } else if (awayPlayer === 'forfeit') {
+                homeScore++;
+                result = 'Thuis wint (forfait)';
+                firstMatchInput.value = '1';
+                secondMatchInput.value = '1';
+            }
         } else {
             let homeSetsWon = 0;
             let awaySetsWon = 0;
@@ -555,6 +578,8 @@ function updateResults() {
             } else {
                 result = 'Gelijkspel';
             }
+
+            isMatchComplete = true;
         }
 
         // Update het resultaat in de UI
@@ -590,6 +615,7 @@ function updateResults() {
         `;
     }
 }
+
 
 // Eventlisteners toevoegen voor inputs en select-elementen
 document.addEventListener('DOMContentLoaded', () => {
@@ -871,7 +897,7 @@ function updateLiveScore(gameId) {
     // Fetch CSRF token
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     if (!csrfToken) {
-        alert("CSRF-token ontbreekt. De score kan niet worden opgeslagen.");
+        //alert("CSRF-token ontbreekt. De score kan niet worden opgeslagen.");
         return;
     }
 
@@ -934,12 +960,12 @@ function updateLiveScore(gameId) {
 
     // Validate payload
     if (!gameId || homeScore === null || awayScore === null) {
-        alert("Vul alle verplichte velden in voordat u de wedstrijd opslaat.");
+        //alert("Vul alle verplichte velden in voordat u de wedstrijd opslaat.");
         return;
     }
 
     if (scores.length === 0) {
-        alert("Geen geldige wedstrijdscores gevonden. Controleer de invoer.");
+        //alert("Geen geldige wedstrijdscores gevonden. Controleer de invoer.");
         return;
     }
 
@@ -978,15 +1004,15 @@ function updateLiveScore(gameId) {
         .then(data => {
             if (data.success) {
                 console.log("Live score updated successfully:", data);
-                alert("De live score is succesvol opgeslagen!");
+                //alert("De live score is succesvol opgeslagen!");
             } else {
                 console.error("Server-side validation failed:", data);
-                alert("Fout opgetreden bij het opslaan van de live score. Controleer de invoer.");
+                //alert("Fout opgetreden bij het opslaan van de live score. Controleer de invoer.");
             }
         })
         .catch(error => {
             console.error("Error updating live score:", error);
-            alert("Er is een fout opgetreden bij het opslaan van de live score. Probeer het opnieuw.");
+            //alert("Er is een fout opgetreden bij het opslaan van de live score. Probeer het opnieuw.");
         });
 }
 

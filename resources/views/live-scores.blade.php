@@ -16,12 +16,10 @@
             // Groepeer wedstrijden per beker en ronde
             $groupedGames = [];
             foreach($liveData as $data) {
-                // Voor cup games: gebruik bekernaam en ronde
-                if (isset($data['cup_name'], $data['round_name'])) {
-                    $groupName = $data['cup_name'] . ' - ' . $data['round_name'];
-                } else {
-                    $groupName = $data['division_name'] ?? ($data['round_name'] ?? 'Onbekende Reeks/Ronde');
-                }
+                // Gebruik cup_name en round_name voor Cup Games, anders divisie of ronde
+                $groupName = isset($data['cup_name'], $data['round_name']) 
+                    ? $data['cup_name'] . ' - ' . $data['round_name']
+                    : ($data['division_name'] ?? ($data['round_name'] ?? 'Onbekende Reeks/Ronde'));
                 $groupedGames[$groupName][] = $data;
             }
         @endphp
@@ -34,25 +32,36 @@
                     <div class="card mb-3">
                         <div class="card-header" id="heading-{{ Str::slug($groupName) }}">
                             <h2 class="mb-0">
-                                <button class="btn btn-link d-flex justify-content-between align-items-center w-100" type="button" data-toggle="collapse" data-target="#collapse-{{ Str::slug($groupName) }}" aria-expanded="true" aria-controls="collapse-{{ Str::slug($groupName) }}">
+                                <button class="btn btn-link d-flex justify-content-between align-items-center w-100" 
+                                        type="button" data-toggle="collapse" 
+                                        data-target="#collapse-{{ Str::slug($groupName) }}" 
+                                        aria-expanded="true" aria-controls="collapse-{{ Str::slug($groupName) }}">
                                     <span>{{ $groupName }}</span>
                                     <i class="fas fa-chevron-down"></i>
                                 </button>
                             </h2>
                         </div>
 
-                        <div id="collapse-{{ Str::slug($groupName) }}" class="collapse show" aria-labelledby="heading-{{ Str::slug($groupName) }}" data-parent="#accordionDivisions">
+                        <div id="collapse-{{ Str::slug($groupName) }}" 
+                             class="collapse show" 
+                             aria-labelledby="heading-{{ Str::slug($groupName) }}" 
+                             data-parent="#accordionDivisions">
                             <div class="card-body">
                                 <div class="accordion" id="accordionGames-{{ Str::slug($groupName) }}">
                                     @foreach($games as $index => $data)
                                         <div class="card mb-3">
                                             <div class="card-header" id="headingGame-{{ Str::slug($groupName) }}-{{ $index }}">
                                                 <h5 class="mb-0 d-flex justify-content-between align-items-center">
-                                                    <button class="btn btn-link d-flex justify-content-between align-items-center w-100" type="button" data-toggle="collapse" data-target="#collapseGame-{{ Str::slug($groupName) }}-{{ $index }}" aria-expanded="false" aria-controls="collapseGame-{{ Str::slug($groupName) }}-{{ $index }}">
+                                                    <button class="btn btn-link d-flex justify-content-between align-items-center w-100" 
+                                                            type="button" data-toggle="collapse" 
+                                                            data-target="#collapseGame-{{ Str::slug($groupName) }}-{{ $index }}" 
+                                                            aria-expanded="false" 
+                                                            aria-controls="collapseGame-{{ Str::slug($groupName) }}-{{ $index }}">
                                                         <span>
                                                             {{ $data['home_team_name'] ?? 'Nog niet gestart' }} vs {{ $data['away_team_name'] ?? 'Nog niet gestart' }}
                                                             @if(isset($data['forfeit_team']))
-                                                                | Forfait door {{ $data['forfeit_team'] == 'home' ? $data['home_team_name'] : $data['away_team_name'] }} (Score: {{ $data['forfeit_team'] == 'home' ? '0 - 6' : '6 - 0' }})
+                                                                | Forfait door {{ $data['forfeit_team'] == 'home' ? $data['home_team_name'] : $data['away_team_name'] }} 
+                                                                (Score: {{ $data['forfeit_team'] == 'home' ? '0 - 6' : '6 - 0' }})
                                                             @else
                                                                 | Score: {{ $data['home_score'] ?? '' }} - {{ $data['away_score'] ?? '' }}
                                                             @endif
@@ -62,13 +71,16 @@
                                                 </h5>
                                             </div>
 
-                                            <div id="collapseGame-{{ Str::slug($groupName) }}-{{ $index }}" class="collapse" aria-labelledby="headingGame-{{ Str::slug($groupName) }}-{{ $index }}" data-parent="#accordionGames-{{ Str::slug($groupName) }}">
+                                            <div id="collapseGame-{{ Str::slug($groupName) }}-{{ $index }}" 
+                                                 class="collapse" 
+                                                 aria-labelledby="headingGame-{{ Str::slug($groupName) }}-{{ $index }}" 
+                                                 data-parent="#accordionGames-{{ Str::slug($groupName) }}">
                                                 <div class="card-body">
                                                     <!-- Team en spelers details -->
-                                                    <p><strong>Kapitein {{ $data['home_team_name'] }}:</strong> {{ $data['home_captain_name'] ?? '' }}</p>
-                                                    <p><strong>Kapitein {{ $data['away_team_name'] }}:</strong> {{ $data['away_captain_name'] ?? '' }}</p>
-                                                    <p><strong>Reservespeler {{ $data['home_team_name'] }}:</strong> {{ $data['home_reserve_name'] ?? '' }}</p>
-                                                    <p><strong>Reservespeler {{ $data['away_team_name'] }}:</strong> {{ $data['away_reserve_name'] ?? '' }}</p>
+                                                    <p><strong>Kapitein {{ $data['home_team_name'] }}:</strong> {{ $data['home_captain_name'] ?? 'N/A' }}</p>
+                                                    <p><strong>Kapitein {{ $data['away_team_name'] }}:</strong> {{ $data['away_captain_name'] ?? 'N/A' }}</p>
+                                                    <p><strong>Reservespeler {{ $data['home_team_name'] }}:</strong> {{ $data['home_reserve_name'] ?? 'N/A' }}</p>
+                                                    <p><strong>Reservespeler {{ $data['away_team_name'] }}:</strong> {{ $data['away_reserve_name'] ?? 'N/A' }}</p>
                                                     
                                                     <!-- Scores tabel -->
                                                     <div class="table-responsive">

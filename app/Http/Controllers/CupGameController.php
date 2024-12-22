@@ -11,6 +11,7 @@ use App\Models\Player;
 use App\Models\Season;
 use App\Models\CupGame;
 use App\Models\LiveScore;
+use App\Models\MancheCup;
 use App\Models\LiveScoreCup;
 use Illuminate\Http\Request;
 use App\Services\GameService;
@@ -150,13 +151,22 @@ public function startGame(Cup $cup, CupGame $game)
 
 public function show(Cup $cup, CupGame $game)
 {
+    Log::info('Entering show method for CupGame', ['game_id' => $game->id, 'cup_id' => $cup->id]);
+
     // Haal de benodigde seizoensinformatie op
     $currentSeasonId = Season::latest('id')->value('id');
     $seasons = Season::all();
     $season = Season::find($currentSeasonId);
 
+    // Controleer of een actief seizoen beschikbaar is
+    if (!$currentSeasonId) {
+        Log::error('Geen actief seizoen gevonden.');
+        return back()->withErrors('Geen actief seizoen gevonden.');
+    }
+
     // Controleer of een bekerwedstrijd een knock-outwedstrijd is
-    $isKnockoutRound = str_contains($game->round->round_name, 'Terugwedstrijd') || in_array($game->round->round_name, ['1/8 Finale Terugwedstrijd', '1/4 Finale Terugwedstrijd']);
+    $isKnockoutRound = str_contains($game->round->round_name, 'Terugwedstrijd') 
+        || in_array($game->round->round_name, ['1/8 Finale Terugwedstrijd', '1/4 Finale Terugwedstrijd']);
 
     // Bereken de totale score als het een terugwedstrijd betreft
     $totalScore = $isKnockoutRound ? $this->getTotalScore($game) : null;
@@ -167,16 +177,10 @@ public function show(Cup $cup, CupGame $game)
         'awayTeam',
         'manches.player1',
         'manches.player2',
-        'round'
+        'round',
     ]);
 
-    Log::info('CupGame data:', $game->toArray());
-    Log::info('Manches data:', $game->manches->toArray());
-
-    // Controleer of een actief seizoen beschikbaar is
-    if (!$currentSeasonId) {
-        return back()->withErrors('Geen actief seizoen gevonden.');
-    }
+    Log::info('Loaded game relations', ['game_id' => $game->id]);
 
     // Haal alle bekerwedstrijden op voor de huidige beker, gesorteerd op datum
     $cupGames = CupGame::with(['homeTeam', 'awayTeam', 'round'])
@@ -198,6 +202,7 @@ public function show(Cup $cup, CupGame $game)
     $liveData = null;
 
     if ($mostRecentManche && $mostRecentManche->updated_at > ($game->updated_at ?? now())) {
+        // Gebruik manche data als deze recenter is dan de game-updates
         foreach ($game->manches as $manche) {
             $homePlayerName = optional($manche->player1)->first_name . ' ' . optional($manche->player1)->last_name;
             $awayPlayerName = optional($manche->player2)->first_name . ' ' . optional($manche->player2)->last_name;
@@ -213,6 +218,9 @@ public function show(Cup $cup, CupGame $game)
                 '1M' => $manche->score1 ?? 'N/A',
                 '2M' => $manche->score2 ?? 'N/A',
                 'Belle' => $manche->belle_score ?? 'N/A',
+                'Winner' => $manche->winner_id 
+                    ? $this->getPlayerName($manche->winner_id, $game->manches->keyBy('id')->toArray())
+                    : ($homePlayerName === 'forfeit' ? $awayPlayerName : ($awayPlayerName === 'forfeit' ? $homePlayerName : 'Onbekend')),
             ];
         }
     } else {
@@ -221,6 +229,13 @@ public function show(Cup $cup, CupGame $game)
         $liveData = $liveScore ? json_decode($liveScore->data, true) : null;
 
         if ($liveData && isset($liveData['scores'])) {
+            // Haal alle spelersinformatie op voor live data
+            $playerIds = array_merge(
+                array_column($liveData['scores'], 'home_player'),
+                array_column($liveData['scores'], 'away_player')
+            );
+            $players = Player::whereIn('id', $playerIds)->get()->keyBy('id')->toArray();
+
             foreach ($liveData['scores'] as $score) {
                 $homePlayerTeamName = $this->getPlayerActualTeamName($score['home_player_name']);
                 $awayPlayerTeamName = $this->getPlayerActualTeamName($score['away_player_name']);
@@ -233,17 +248,35 @@ public function show(Cup $cup, CupGame $game)
                     '1M' => $score['1M'] ?? 'N/A',
                     '2M' => $score['2M'] ?? 'N/A',
                     'Belle' => $score['Belle'] ?? 'N/A',
+                    'Winner' => $score['WinnerId'] 
+                        ? $this->getPlayerName($score['WinnerId'], $players)
+                        : ($score['home_player_name'] === 'forfeit' ? $score['away_player_name'] : ($score['away_player_name'] === 'forfeit' ? $score['home_player_name'] : 'Onbekend')),
                 ];
             }
         }
     }
 
-    return view('cupGames.show', compact('cup', 'game', 'cupGames', 'seasons', 'currentSeasonId', 'season', 'testMatchRequired', 'totalScore', 'scores', 'liveData'));
+    Log::info('Prepared scores for the view', ['scores' => $scores]);
+
+    // Return de view met alle relevante data
+    return view('cupGames.show', compact(
+        'cup',
+        'game',
+        'cupGames',
+        'seasons',
+        'currentSeasonId',
+        'season',
+        'testMatchRequired',
+        'totalScore',
+        'scores',
+        'liveData'
+    ));
 }
+
 
 public function edit(CupGame $game)
 {
-    Log::info('CupGame edit method called with:', ['game' => $game]);
+    Log::info('CupGame edit method called with:', ['game_id' => $game->id]);
 
     $user = auth()->user();
 
@@ -269,22 +302,46 @@ public function edit(CupGame $game)
 
     // Haal live score gegevens op
     $liveScore = LiveScoreCup::where('game_id', $game->id)->first();
-    $liveData = $liveScore ? json_decode($liveScore->data, true) : null;
+    $liveData = $liveScore ? json_decode($liveScore->data, true) : ['scores' => [], 'testmatch_scores' => []];
 
     // Spelerinformatie ophalen
-    $homeTeamPlayers = $game->homeTeam->club->teams->flatMap(fn($team) => $team->players)->unique('id');
-    $awayTeamPlayers = $game->awayTeam->club->teams->flatMap(fn($team) => $team->players)->unique('id');
+    $homeTeamPlayers = $game->homeTeam->club->teams->flatMap(fn($team) => $team->players)->keyBy('id');
+    $awayTeamPlayers = $game->awayTeam->club->teams->flatMap(fn($team) => $team->players)->keyBy('id');
 
     Log::info('Players fetched for editing', [
-        'home_team_players' => $homeTeamPlayers->pluck('id')->toArray(),
-        'away_team_players' => $awayTeamPlayers->pluck('id')->toArray(),
+        'home_team_players' => $homeTeamPlayers->keys()->toArray(),
+        'away_team_players' => $awayTeamPlayers->keys()->toArray(),
     ]);
 
-    // Verwerk spelersnamen in de scores
+    // Verwerk spelersnamen en forfait-logica in de scores
     $scores = $liveData['scores'] ?? [];
     foreach ($scores as &$score) {
-        $score['home_player_name'] = $this->getPlayerName($score['home_player'] ?? null, $homeTeamPlayers);
-        $score['away_player_name'] = $this->getPlayerName($score['away_player'] ?? null, $awayTeamPlayers);
+        // Valideer of de spelergegevens bestaan
+        $homePlayer = $score['home_player'] ?? null;
+        $awayPlayer = $score['away_player'] ?? null;
+
+        // Verwerk spelergegevens
+        $score['home_player_name'] = $homePlayer === 'forfeit'
+            ? 'Forfait'
+            : $this->getPlayerName($homePlayer, $homeTeamPlayers);
+        $score['away_player_name'] = $awayPlayer === 'forfeit'
+            ? 'Forfait'
+            : $this->getPlayerName($awayPlayer, $awayTeamPlayers);
+
+        // Pas de scorelogica toe voor forfait
+        if ($homePlayer === 'forfeit') {
+            $score['1M'] = '2';
+            $score['2M'] = '2';
+            $score['WinnerId'] = $this->getPlayerIdByName($score['away_player_name']);
+        } elseif ($awayPlayer === 'forfeit') {
+            $score['1M'] = '1';
+            $score['2M'] = '1';
+            $score['WinnerId'] = $this->getPlayerIdByName($score['home_player_name']);
+        } else {
+            // Als geen forfait, zorg ervoor dat bestaande waarden worden behouden
+            $score['1M'] = $score['1M'] ?? 'N/A';
+            $score['2M'] = $score['2M'] ?? 'N/A';
+        }
     }
 
     // Verwerk testmatch scores
@@ -295,11 +352,21 @@ public function edit(CupGame $game)
     }
 
     // Totale score berekenen op basis van gespeelde manches
-    $homeScore = array_reduce($scores, fn($carry, $item) => $carry + ($item['1M'] == 1 ? 1 : 0), 0);
-    $awayScore = array_reduce($scores, fn($carry, $item) => $carry + ($item['1M'] == 2 ? 1 : 0), 0);
+    $homeScore = array_reduce($scores, function ($carry, $item) {
+        $carry += ($item['1M'] ?? null) == 1 ? 1 : 0;
+        return $carry;
+    }, 0);
+
+    $awayScore = array_reduce($scores, function ($carry, $item) {
+        $carry += ($item['1M'] ?? null) == 2 ? 1 : 0;
+        return $carry;
+    }, 0);
+
+    Log::info('Calculated total scores', ['home_score' => $homeScore, 'away_score' => $awayScore]);
 
     return view('cupGames.edit', compact('game', 'homeTeamPlayers', 'awayTeamPlayers', 'scores', 'testmatchScores', 'homeScore', 'awayScore'));
 }
+
 
 public function editForm(Cup $cup, CupGame $game)
 {
@@ -318,17 +385,11 @@ public function editForm(Cup $cup, CupGame $game)
         'round',
     ]);
 
-    Log::info('Loaded game relations successfully', ['game_id' => $game->id]);
+    Log::info('Game relations loaded successfully', ['game_id' => $game->id]);
 
     // Haal alle spelers van het thuisteam en teams binnen dezelfde club op
-    $homeTeamPlayers = $game->homeTeam->club->teams->flatMap(function ($team) {
-        return $team->players;
-    })->unique('id');
-
-    // Haal alle spelers van het uitteam en teams binnen dezelfde club op
-    $awayTeamPlayers = $game->awayTeam->club->teams->flatMap(function ($team) {
-        return $team->players;
-    })->unique('id');
+    $homeTeamPlayers = $game->homeTeam->club->teams->flatMap(fn($team) => $team->players)->unique('id');
+    $awayTeamPlayers = $game->awayTeam->club->teams->flatMap(fn($team) => $team->players)->unique('id');
 
     // Haal of creëer de LiveScore voor de wedstrijd
     $liveScore = LiveScoreCup::firstOrCreate(
@@ -374,6 +435,15 @@ public function editForm(Cup $cup, CupGame $game)
             'WinnerId' => null,
         ], $score);
     }, $liveScoreData['scores'] ?? array_fill(0, 6, []));
+
+    // Verwerk forfait-logica
+    foreach ($liveScoreData['scores'] as &$score) {
+        if ($score['home_player_name'] === 'forfeit') {
+            $score['WinnerId'] = $this->getPlayerIdByName($score['away_player_name']);
+        } elseif ($score['away_player_name'] === 'forfeit') {
+            $score['WinnerId'] = $this->getPlayerIdByName($score['home_player_name']);
+        }
+    }
 
     // Valideer en standaardiseer `TestMatch`-scores
     $liveScoreData['testmatch_scores'] = array_map(function ($testMatch) use ($game) {
@@ -430,21 +500,43 @@ public function editForm(Cup $cup, CupGame $game)
 }
 
 
+
 public function showLiveScores()
-    {
-        Log::info('Entering showLiveScores method in CupGameController');
+{
+    Log::info('Entering showLiveScores method in CupGameController');
 
-        // Haal live scores op via de LiveScoreService
-        $liveData = $this->liveScoreService->getLiveScoresForGames();
+    // Haal live scores op via de LiveScoreService
+    $liveData = $this->liveScoreService->getLiveScoresForGames();
 
-        // Als er een bericht is (geen wedstrijden beschikbaar), toon dit aan de gebruiker
-        if (isset($liveData['message'])) {
-            return view('live-scores', ['message' => $liveData['message']]);
+    // Controleer of er een bericht is (bijvoorbeeld geen wedstrijden beschikbaar)
+    if (isset($liveData['message'])) {
+        return view('live-scores', ['message' => $liveData['message']]);
+    }
+
+    // Verwerk live scores en pas "forfeit"-logica toe
+    $processedLiveData = array_map(function ($game) {
+        // Controleer of er scores beschikbaar zijn
+        if (isset($game['scores']) && is_array($game['scores'])) {
+            foreach ($game['scores'] as &$score) {
+                // Verwerk "forfeit"-logica
+                if ($score['home_player'] === 'forfeit') {
+                    $score['1M'] = '2';
+                    $score['2M'] = '2';
+                } elseif ($score['away_player'] === 'forfeit') {
+                    $score['1M'] = '1';
+                    $score['2M'] = '1';
+                }
+            }
         }
 
-        // Toon de live scores in de view
-        return view('live-scores', ['liveData' => $liveData]);
-    }
+        return $game;
+    }, $liveData);
+
+    Log::info('Processed live data with forfeit logic:', ['processedLiveData' => $processedLiveData]);
+
+    // Toon de live scores in de view
+    return view('live-scores', ['liveData' => $processedLiveData]);
+}
 
 
 
@@ -575,125 +667,157 @@ public function update(Request $request, CupGame $game)
         ->with('success', 'Bekerwedstrijd succesvol bijgewerkt!');
 }
 
+protected function processManche(CupGame $game, int $index, array $scoreData)
+{
+    Log::info('Processing manche for game', ['game_id' => $game->id, 'manche_number' => $index + 1]);
 
+    // Spelerinformatie ophalen
+    $homePlayerId = $scoreData['home_player'] === 'forfeit' ? null : $scoreData['home_player'];
+    $awayPlayerId = $scoreData['away_player'] === 'forfeit' ? null : $scoreData['away_player'];
 
-
-
-/*     // Functie voor goedkeuring van een bekerwedstrijd
-    public function approve(Request $request, CupGame $game)
-    {
-        Log::info('Approve method called for CupGame', ['game_id' => $game->id]);
-        $validatedData = $request->validate([
-            'home_score' => 'required|integer',
-            'away_score' => 'required|integer',
-            'manches' => 'nullable|array',
-            'manches.*.player1_id' => 'nullable|exists:players,id',
-            'manches.*.player2_id' => 'nullable|exists:players,id',
-            'manches.*.score1' => 'nullable|integer',
-            'manches.*.score2' => 'nullable|integer',
-            'manches.*.belle_score' => 'nullable|integer',
-        ]);
-
-        // Verwerk de goedkeuring en werk de wedstrijdgegevens bij
-        $game->update($validatedData);
-        foreach ($validatedData['manches'] as $index => $mancheData) {
-            $this->processManche($game, $index, $mancheData);
-        }
-
-        $game->update(['approved' => true]);
-
-        return redirect()->route('cup.match.edit', $game->id)
-            ->with('success', 'Bekerwedstrijd succesvol goedgekeurd!');
-    } */
-
-    protected function processManche(CupGame $game, int $index, array $scoreData)
-    {
-        // Spelersvalidatie
-        if (empty($scoreData['home_player']) || empty($scoreData['away_player'])) {
-            Log::warning('Player data missing for manche.', [
-                'game_id' => $game->id,
-                'manche_number' => $index + 1,
-                'home_player' => $scoreData['home_player'] ?? 'None',
-                'away_player' => $scoreData['away_player'] ?? 'None'
-            ]);
-            return; // Skip manche processing
-        }
-
-        // Scorevalidatie en conversie naar numerieke waarden
-        $homeScore = is_numeric($scoreData['1M']) ? intval($scoreData['1M']) : null;
-        $awayScore = is_numeric($scoreData['2M']) ? intval($scoreData['2M']) : null;
-
-        // Belle score alleen verwerken als beide scores gelijk zijn
-        $belleScore = null;
-        if ($homeScore !== null && $awayScore !== null && $homeScore === $awayScore) {
-            $belleScore = ($scoreData['Belle'] !== 'N/A' && is_numeric($scoreData['Belle'])) ? intval($scoreData['Belle']) : null;
-        }
-
-        // Winnaar bepalen
-        $winnerId = $this->determineWinner($scoreData, $scoreData['home_player'], $scoreData['away_player']);
-
-        // Logging voor debugging
-        Log::info('Processing manche for game', [
+    // Controleer of beide spelers ontbreken
+    if ($homePlayerId === null && $awayPlayerId === null) {
+        Log::warning('Both players forfeited for manche.', [
             'game_id' => $game->id,
+            'manche_number' => $index + 1
+        ]);
+        return; // Skip processing, no valid players
+    }
+
+    // Scorevalidatie en conversie
+    $score1 = $homePlayerId === null || $awayPlayerId === null ? 0 : ($scoreData['1M'] === 'N/A' ? null : (int)$scoreData['1M']);
+    $score2 = $homePlayerId === null || $awayPlayerId === null ? 0 : ($scoreData['2M'] === 'N/A' ? null : (int)$scoreData['2M']);
+    $belleScore = $homePlayerId === null || $awayPlayerId === null ? null : ($scoreData['Belle'] === 'N/A' ? null : (int)$scoreData['Belle']);
+
+    // Belle score alleen verwerken als beide scores gelijk zijn en geen forfait
+    if ($score1 !== null && $score2 !== null && $score1 === $score2 && $homePlayerId !== null && $awayPlayerId !== null) {
+        $belleScore = ($scoreData['Belle'] !== 'N/A' && is_numeric($scoreData['Belle'])) ? (int)$scoreData['Belle'] : null;
+    }
+
+    // Winnaar bepalen
+    $winnerId = null;
+    if ($homePlayerId === null) {
+        $winnerId = $awayPlayerId; // Forfait door home_player
+        Log::info('Home player forfeited, setting away player as winner.', [
             'manche_number' => $index + 1,
-            'home_player' => $scoreData['home_player'],
-            'away_player' => $scoreData['away_player'],
-            'home_score' => $homeScore,
-            'away_score' => $awayScore,
-            'belle_score' => $belleScore,
             'winner_id' => $winnerId
         ]);
-
-        try {
-            // Update of creëer de manche
-            Manche::updateOrCreate(
-                [
-                    'game_id' => $game->id,
-                    'number' => $index + 1,
-                ],
-                [
-                    'player1_id' => $scoreData['home_player'],
-                    'player2_id' => $scoreData['away_player'],
-                    'score1' => $homeScore,
-                    'score2' => $awayScore,
-                    'belle_score' => $belleScore,
-                    'winner_id' => $winnerId,
-                ]
-            );
-
-            Log::info('Manche successfully processed and saved.', [
-                'game_id' => $game->id,
-                'manche_number' => $index + 1,
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Failed to process manche for game', [
-                'game_id' => $game->id,
-                'manche_number' => $index + 1,
-                'error' => $e->getMessage()
-            ]);
-        }
+    } elseif ($awayPlayerId === null) {
+        $winnerId = $homePlayerId; // Forfait door away_player
+        Log::info('Away player forfeited, setting home player as winner.', [
+            'manche_number' => $index + 1,
+            'winner_id' => $winnerId
+        ]);
+    } else {
+        $winnerId = $this->determineWinner($scoreData, $homePlayerId, $awayPlayerId);
     }
+
+    // Log manche details voor debugging
+    Log::info('Final manche details:', [
+        'game_id' => $game->id,
+        'manche_number' => $index + 1,
+        'home_player_id' => $homePlayerId,
+        'away_player_id' => $awayPlayerId,
+        'score1' => $score1,
+        'score2' => $score2,
+        'belle_score' => $belleScore,
+        'winner_id' => $winnerId,
+    ]);
+
+    try {
+        // Update of creëer de manche
+        MancheCup::updateOrCreate(
+            [
+                'game_id' => $game->id,
+                'number' => $index + 1,
+            ],
+            [
+                'player1_id' => $homePlayerId,
+                'player2_id' => $awayPlayerId,
+                'score1' => $score1,
+                'score2' => $score2,
+                'belle_score' => $belleScore,
+                'winner_id' => $winnerId,
+            ]
+        );
+
+        Log::info('Manche successfully processed and saved.', [
+            'game_id' => $game->id,
+            'manche_number' => $index + 1,
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Failed to process manche for game.', [
+            'game_id' => $game->id,
+            'manche_number' => $index + 1,
+            'error' => $e->getMessage(),
+        ]);
+    }
+}
+
     
 
     // Hulpmethode om de winnaar van een manche te bepalen
-    protected function determineWinner(array $score, $homePlayerId = null, $awayPlayerId = null)
-    {
-        $homePoints = 0;
-        $awayPoints = 0;
+    private function determineWinner(array $score, $homePlayerId, $awayPlayerId)
+{
+    Log::info('Determining winner for manche', [
+        'home_player_id' => $homePlayerId,
+        'away_player_id' => $awayPlayerId,
+        'scores' => $score
+    ]);
 
-        if (isset($score['1M'])) {
-            $score['1M'] == 1 ? $homePoints++ : $awayPoints++;
-        }
-        if (isset($score['2M'])) {
-            $score['2M'] == 1 ? $homePoints++ : $awayPoints++;
-        }
-        if ($homePoints == $awayPoints && isset($score['Belle'])) {
-            $score['Belle'] == 1 ? $homePoints++ : $awayPoints++;
-        }
-
-        return $homePoints > $awayPoints ? $homePlayerId : ($awayPoints > $homePoints ? $awayPlayerId : null);
+    // Forfait situatie: Home geeft forfait
+    if ($homePlayerId === null) {
+        Log::info('Home player forfeited. Away player wins by default.', [
+            'winner_id' => $awayPlayerId
+        ]);
+        return $awayPlayerId;
     }
+
+    // Forfait situatie: Away geeft forfait
+    if ($awayPlayerId === null) {
+        Log::info('Away player forfeited. Home player wins by default.', [
+            'winner_id' => $homePlayerId
+        ]);
+        return $homePlayerId;
+    }
+
+    // Validatie van scores en fallback naar 0 als waarden ontbreken
+    $score1M = is_numeric($score['1M']) ? (int)$score['1M'] : 0;
+    $score2M = is_numeric($score['2M']) ? (int)$score['2M'] : 0;
+    $belleScore = is_numeric($score['Belle']) ? (int)$score['Belle'] : 0;
+
+    // Bepalen van de winnaar op basis van manche scores
+    if ($score1M > $score2M) {
+        Log::info('Home player wins based on 1M and 2M scores.', [
+            'winner_id' => $homePlayerId
+        ]);
+        return $homePlayerId;
+    } elseif ($score1M < $score2M) {
+        Log::info('Away player wins based on 1M and 2M scores.', [
+            'winner_id' => $awayPlayerId
+        ]);
+        return $awayPlayerId;
+    }
+
+    // Gelijke stand in 1M en 2M: Belle score bepaalt de winnaar
+    if ($belleScore > 0) {
+        Log::info('Belle score breaks the tie.', [
+            'winner_id' => $belleScore === 1 ? $homePlayerId : $awayPlayerId
+        ]);
+        return $belleScore === 1 ? $homePlayerId : $awayPlayerId;
+    }
+
+    // Geen duidelijke winnaar: Log een waarschuwing
+    Log::warning('No winner could be determined based on the scores. Returning null.', [
+        'home_player_id' => $homePlayerId,
+        'away_player_id' => $awayPlayerId,
+        'scores' => $score
+    ]);
+
+    return null; // Geen winnaar bepaald
+}
+
     
     // Functie voor het ophalen van live scores voor een wedstrijd
     public function fetchLiveScore(CupGame $game)
@@ -759,9 +883,8 @@ public function updateLiveScore(Request $request, CupGame $game)
     Log::info('Update Live Score initiated for cup game:', ['game_id' => $game->id ?? null]);
 
     try {
+        // Controleer of de gebruiker geauthenticeerd is
         $user = auth()->user();
-
-        // Controleer of de gebruiker is geauthenticeerd
         if (!$user) {
             Log::warning('Unauthorized attempt to update live score.');
             return response()->json(['error' => 'Unauthorized access.'], 403);
@@ -791,9 +914,17 @@ public function updateLiveScore(Request $request, CupGame $game)
             'away_captain' => 'nullable|integer|exists:players,id',
             'home_reserve' => 'nullable|integer|exists:players,id',
             'away_reserve' => 'nullable|integer|exists:players,id',
-            'scores' => 'nullable|array',
-            'scores.*.home_player' => 'nullable|integer|exists:players,id',
-            'scores.*.away_player' => 'nullable|integer|exists:players,id',
+            'scores' => 'required|array',
+            'scores.*.home_player' => ['nullable', 'string', function ($attribute, $value, $fail) {
+                if ($value !== 'forfeit' && !ctype_digit($value)) {
+                    $fail("The $attribute must be a valid player ID or 'forfeit'.");
+                }
+            }],
+            'scores.*.away_player' => ['nullable', 'string', function ($attribute, $value, $fail) {
+                if ($value !== 'forfeit' && !ctype_digit($value)) {
+                    $fail("The $attribute must be a valid player ID or 'forfeit'.");
+                }
+            }],
             'scores.*.1M' => 'nullable|string|in:1,2,N/A',
             'scores.*.2M' => 'nullable|string|in:1,2,N/A',
             'scores.*.Belle' => 'nullable|string|in:1,2,N/A',
@@ -841,52 +972,43 @@ public function updateLiveScore(Request $request, CupGame $game)
         // Verwerk reguliere scores
         $scores = [];
         foreach ($validatedData['scores'] ?? [] as $index => $score) {
-            $homePlayerName = isset($players[$score['home_player']])
-                ? $players[$score['home_player']]['first_name'] . ' ' . $players[$score['home_player']]['last_name']
-                : 'Nog niet gestart';
-            $awayPlayerName = isset($players[$score['away_player']])
-                ? $players[$score['away_player']]['first_name'] . ' ' . $players[$score['away_player']]['last_name']
-                : 'Nog niet gestart';
-
-            $winnerId = $this->determineWinner($score, $score['home_player'], $score['away_player']);
-
-            $scores[] = [
-                'home_player_name' => $homePlayerName,
-                'away_player_name' => $awayPlayerName,
-                '1M' => $score['1M'] === 'N/A' ? null : (int)$score['1M'],
-                '2M' => $score['2M'] === 'N/A' ? null : (int)$score['2M'],
-                'Belle' => $score['Belle'] === 'N/A' ? null : (int)$score['Belle'],
-                'WinnerId' => $winnerId,
-            ];
-
-            // Update of maak manche aan
-            Manche::updateOrCreate(
+            $homePlayerId = $score['home_player'] === 'forfeit' ? null : $score['home_player'];
+            $awayPlayerId = $score['away_player'] === 'forfeit' ? null : $score['away_player'];
+        
+            $score1 = $homePlayerId === null || $awayPlayerId === null ? 0 : ($score['1M'] === 'N/A' ? null : (int)$score['1M']);
+            $score2 = $homePlayerId === null || $awayPlayerId === null ? 0 : ($score['2M'] === 'N/A' ? null : (int)$score['2M']);
+            $belleScore = $homePlayerId === null || $awayPlayerId === null ? null : ($score['Belle'] === 'N/A' ? null : (int)$score['Belle']);
+        
+            // Bepaal winnaar
+            $winnerId = null;
+            if ($homePlayerId === null) {
+                $winnerId = $awayPlayerId; // Forfait door home_player
+            } elseif ($awayPlayerId === null) {
+                $winnerId = $homePlayerId; // Forfait door away_player
+            } else {
+                $winnerId = $this->determineWinner($score, $homePlayerId, $awayPlayerId);
+            }
+        
+            // Opslaan van manche
+            MancheCup::updateOrCreate(
                 ['game_id' => $game->id, 'number' => $index + 1],
                 [
-                    'player1_id' => $score['home_player'],
-                    'player2_id' => $score['away_player'],
-                    'score1' => $score['1M'] === 'N/A' ? null : (int)$score['1M'],
-                    'score2' => $score['2M'] === 'N/A' ? null : (int)$score['2M'],
-                    'belle_score' => $score['Belle'] === 'N/A' ? null : (int)$score['Belle'],
+                    'player1_id' => $homePlayerId,
+                    'player2_id' => $awayPlayerId,
+                    'score1' => $score1,
+                    'score2' => $score2,
+                    'belle_score' => $belleScore,
                     'winner_id' => $winnerId,
                 ]
             );
-        }
 
-        // Verwerk testmatch scores
-        $testmatchScores = [];
-        foreach ($validatedData['testmatch'] ?? [] as $testmatch) {
-            $homePlayerName = isset($players[$testmatch['home_player']])
-                ? $players[$testmatch['home_player']]['first_name'] . ' ' . $players[$testmatch['home_player']]['last_name']
-                : '';
-            $awayPlayerName = isset($players[$testmatch['away_player']])
-                ? $players[$testmatch['away_player']]['first_name'] . ' ' . $players[$testmatch['away_player']]['last_name']
-                : '';
-
-            $testmatchScores[] = [
-                'home_player_name' => $homePlayerName,
-                'away_player_name' => $awayPlayerName,
-                '1M' => $testmatch['1M'] === 'N/A' ? null : (int)$testmatch['1M'],
+            $scores[] = [
+                'home_player_name' => $homePlayerId ? $players[$homePlayerId]['first_name'] . ' ' . $players[$homePlayerId]['last_name'] : 'Forfait',
+                'away_player_name' => $awayPlayerId ? $players[$awayPlayerId]['first_name'] . ' ' . $players[$awayPlayerId]['last_name'] : 'Forfait',
+                '1M' => $score1,
+                '2M' => $score2,
+                'Belle' => $belleScore,
+                'WinnerId' => $winnerId,
             ];
         }
 
@@ -901,7 +1023,6 @@ public function updateLiveScore(Request $request, CupGame $game)
             'home_reserve_name' => $homeReserveName,
             'away_reserve_name' => $awayReserveName,
             'scores' => $scores,
-            'testmatch_scores' => $testmatchScores,
         ];
 
         Log::info('Final data to be stored in LiveScore:', $dataToStore);
@@ -926,6 +1047,7 @@ public function updateLiveScore(Request $request, CupGame $game)
         return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
 }
+
     
 public function requestApproval($cup_id, $game_id)
 {
@@ -1046,7 +1168,7 @@ public function approveGame(Request $request, Cup $cup, CupGame $game)
             ]);
 
             if (!$isDryRun) {
-                Manche::updateOrCreate(
+                MancheCup::updateOrCreate(
                     [
                         'game_id' => $game->id,
                         'number' => $index + 1,
@@ -1079,7 +1201,7 @@ public function approveGame(Request $request, Cup $cup, CupGame $game)
             ]);
 
             if (!$isDryRun) {
-                Manche::updateOrCreate(
+                MancheCup::updateOrCreate(
                     [
                         'game_id' => $game->id,
                         'number' => 100 + $index, // Offset voor testmatches
@@ -1186,7 +1308,7 @@ public function approveGame(Request $request, Cup $cup, CupGame $game)
             'WinnerId' => $this->determineWinner($score, $score['home_player'], $score['away_player']),
         ];
 
-        Manche::updateOrCreate(
+        MancheCup::updateOrCreate(
             ['game_id' => $game->id, 'number' => $index + 1],
             [
                 'player1_id' => $score['home_player'] === 'forfeit' ? null : $score['home_player'],
